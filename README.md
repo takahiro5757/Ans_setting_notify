@@ -1,61 +1,29 @@
-<<<<<<< HEAD
-# 携帯販売営業代行会社バックオフィス効率化Webアプリ
+# ANSTEYPE - 携帯販売営業管理システム
 
-このアプリケーションは、携帯販売の営業代行会社のバックオフィス業務を効率化するためのWebアプリケーションです。
+携帯販売代理店の営業活動と実績管理をサポートするWebアプリケーションです。
 
-## 機能
+## 主な機能
 
-- **営業実績管理**: 日次・月次の販売実績を記録・分析
-- **顧客管理**: 顧客情報の管理と状況追跡
-- **案件管理**: 進行中の案件のステータス管理
-- **スケジュール管理**: 営業スタッフのスケジュール管理
-- **レポート生成**: 販売実績や顧客データに基づくレポート生成
-
-## 技術スタック
-
-- **フロントエンド**: Angular 17
-- **スタイリング**: SCSS, Angular Material
-- **データ可視化**: Chart.js, ng2-charts
-- **データ管理**: ローカルストレージ（バックエンド不要）
-
-## 使用方法
-
-1. リポジトリをクローン
-2. `npm install` で依存関係をインストール
-3. `npm start` で開発サーバーを起動
-4. ブラウザで `http://localhost:4200` にアクセス
-
-## 開発
-
-このアプリケーションはバックエンドを使用せず、全てのデータはブラウザのローカルストレージに保存されます。 
-=======
-<<<<<<< HEAD
-# ANSTEYPE - イベントプロモーション営業支援アプリケーション
-
-イベント代行会社の営業活動をサポートするAIエージェントチャットツールです。
-
-## 機能
-
-- AIエージェントチャット
-- イベント情報管理
-- 顧客管理
-- 会話履歴保存
-- 提案書生成
-- シフト管理
+### 販売管理機能
+- 週次キャパシティ管理
+- 販売実績の記録・管理
+- 詳細/サマリービューの切り替え
+- 帯案件の管理
 
 ## 技術スタック
 
-- Next.js 14.1.0
-- TypeScript
-- Material-UI
-- React 18.2.0
+- **フロントエンド**
+  - Next.js 14.1.0
+  - React 18.2.0
+  - TypeScript
+  - Material-UI (MUI)
 
 ## 開発環境のセットアップ
 
 1. リポジトリのクローン:
 ```bash
-git clone [repository-url]
-cd ansteype3
+git clone https://github.com/Festal-KM/ANSTEYPE.git
+cd ANSTEYPE
 ```
 
 2. 依存関係のインストール:
@@ -70,12 +38,12 @@ npm run dev
 
 4. ブラウザで開く:
 ```
-http://localhost:3000
+http://localhost:3004
 ```
 
 ## 利用可能なスクリプト
 
-- `npm run dev` - 開発サーバーを起動
+- `npm run dev` - 開発サーバーを起動（ポート3004）
 - `npm run build` - プロダクションビルドを作成
 - `npm run start` - プロダクションサーバーを起動
 - `npm run lint` - コードの静的解析を実行
@@ -83,104 +51,37 @@ http://localhost:3000
 ## プロジェクト構造
 
 ```
-ansteype3/
+ANSTEYPE/
 ├── src/
 │   ├── app/
 │   │   ├── layout.tsx
 │   │   ├── page.tsx
-│   │   └── globals.css
-│   ├── components/
-│   │   ├── Chat.tsx
-│   │   ├── Header.tsx
-│   │   └── Navigation.tsx
-│   ├── types/
-│   │   └── index.ts
-│   ├── utils/
-│   ├── hooks/
-│   └── styles/
+│   │   └── sales/
+│   │       └── page.tsx
+│   └── components/
+│       ├── Header.tsx
+│       └── SalesTable.tsx
 ├── public/
 ├── package.json
 └── tsconfig.json
 ```
 
-## ライセンス
+## 機能詳細
 
-=======
-# ANSTEYPE - イベントプロモーション営業支援アプリケーション
+### 販売管理機能
+- **週次キャパシティ管理**
+  - 週ごとのCloser、Girl、最大キャパシティの設定
+  - キャパシティの可視化と管理
 
-イベント代行会社の営業活動をサポートするAIエージェントチャットツールです。
+- **販売実績管理**
+  - 年月選択による期間指定
+  - 週次の実績データの記録
+  - 詳細ビューとサマリービューの切り替え
 
-## 機能
-
-- AIエージェントチャット
-- イベント情報管理
-- 顧客管理
-- 会話履歴保存
-- 提案書生成
-- シフト管理
-
-## 技術スタック
-
-- Next.js 14.1.0
-- TypeScript
-- Material-UI
-- React 18.2.0
-
-## 開発環境のセットアップ
-
-1. リポジトリのクローン:
-```bash
-git clone [repository-url]
-cd ansteype3
-```
-
-2. 依存関係のインストール:
-```bash
-npm install
-```
-
-3. 開発サーバーの起動:
-```bash
-npm run dev
-```
-
-4. ブラウザで開く:
-```
-http://localhost:3000
-```
-
-## 利用可能なスクリプト
-
-- `npm run dev` - 開発サーバーを起動
-- `npm run build` - プロダクションビルドを作成
-- `npm run start` - プロダクションサーバーを起動
-- `npm run lint` - コードの静的解析を実行
-
-## プロジェクト構造
-
-```
-ansteype3/
-├── src/
-│   ├── app/
-│   │   ├── layout.tsx
-│   │   ├── page.tsx
-│   │   └── globals.css
-│   ├── components/
-│   │   ├── Chat.tsx
-│   │   ├── Header.tsx
-│   │   └── Navigation.tsx
-│   ├── types/
-│   │   └── index.ts
-│   ├── utils/
-│   ├── hooks/
-│   └── styles/
-├── public/
-├── package.json
-└── tsconfig.json
-```
+- **帯案件管理**
+  - 帯案件の登録と管理
+  - ステータス管理と進捗追跡
 
 ## ライセンス
 
->>>>>>> 37241cc9 (Initial commit)
-このプロジェクトはMITライセンスの下で公開されています。 
->>>>>>> 9f855fd7b8e421deef8ca42330d7625b836ac15b
+このプロジェクトはMITライセンスの下で公開されています。
