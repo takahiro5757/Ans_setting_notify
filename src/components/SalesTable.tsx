@@ -1468,14 +1468,7 @@ const SalesTable: React.FC<SalesTableProps> = ({ initialViewMode = 'summary' }) 
         selectedWeek={selectedWeek}
         onWeekChange={setSelectedWeek}
       />
-      <Box sx={{ mb: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={handleAdd}
-        >
-          新規作成
-        </Button>
+      <Box sx={{ mb: 2, display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
         <ToggleButtonGroup
           value={viewMode}
           exclusive
@@ -1483,10 +1476,16 @@ const SalesTable: React.FC<SalesTableProps> = ({ initialViewMode = 'summary' }) 
           size="small"
         >
           <ToggleButton value="summary">
-            <ViewListIcon />
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <ViewListIcon />
+              <Typography variant="body2">サマリ表示</Typography>
+            </Box>
           </ToggleButton>
           <ToggleButton value="detail">
-            <ViewModuleIcon />
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <ViewModuleIcon />
+              <Typography variant="body2">詳細表示</Typography>
+            </Box>
           </ToggleButton>
         </ToggleButtonGroup>
       </Box>
@@ -1614,6 +1613,25 @@ const SalesTable: React.FC<SalesTableProps> = ({ initialViewMode = 'summary' }) 
           </TableBody>
         </Table>
       </TableContainer>
+
+      <Box sx={{ display: 'flex', justifyContent: 'flex-start' }}>
+        <Button
+          variant="contained"
+          startIcon={<AddIcon />}
+          onClick={handleAdd}
+          sx={{
+            bgcolor: 'grey.300',
+            color: 'text.primary',
+            '&:hover': {
+              bgcolor: 'grey.400'
+            },
+            minWidth: '160px',
+            px: 3
+          }}
+        >
+          新規追加
+        </Button>
+      </Box>
 
       <Dialog
         open={isDialogOpen}
