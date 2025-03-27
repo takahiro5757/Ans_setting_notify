@@ -22,7 +22,11 @@ import {
   SelectChangeEvent,
   ToggleButtonGroup,
   ToggleButton,
-  Tooltip
+  Tooltip,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import CheckIcon from '@mui/icons-material/Check';
@@ -38,7 +42,6 @@ import FaceIcon from '@mui/icons-material/Face';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import TerrainIcon from '@mui/icons-material/Terrain';
 import FlightIcon from '@mui/icons-material/Flight';
-import { EditDialog } from './EditDialog';
 
 interface SalesData {
   id: string;
@@ -562,7 +565,7 @@ const Memo = ({ memo, isEditing, onEdit }: MemoProps) => (
 );
 
 interface SalesTableProps {
-  viewMode?: 'list' | 'grid';
+  initialViewMode?: 'detail' | 'summary';
 }
 
 interface WeekTabsProps {
@@ -668,7 +671,7 @@ const WeeklyCapacityTable: React.FC<WeeklyCapacityTableProps> = ({ weeks }) => (
   </Box>
 );
 
-export const SalesTable: React.FC<SalesTableProps> = () => {
+const SalesTable: React.FC<SalesTableProps> = ({ initialViewMode = 'summary' }) => {
   const [selectedWeek, setSelectedWeek] = useState(1);
   const [records, setRecords] = useState<SalesData[]>([
     {
@@ -1033,22 +1036,28 @@ export const SalesTable: React.FC<SalesTableProps> = () => {
     }
   ]);
 
-  const [editingId, setEditingId] = useState<string | null>(null);
   const [editingRecord, setEditingRecord] = useState<SalesData | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [displayMode, setDisplayMode] = useState<'detail' | 'summary'>('summary');
+  const [viewMode, setViewMode] = useState<'detail' | 'summary'>(initialViewMode);
 
-  const handleSave = () => {
-    if (editingRecord) {
-      setRecords(records.map(record => 
-        record.id === editingRecord.id ? editingRecord : record
-      ));
-      setEditingRecord(null);
-    }
+  const handleEdit = (record: SalesData) => {
+    setEditingRecord(record);
+    setIsDialogOpen(true);
   };
 
-  const handleCancel = () => {
+  const handleSave = (updatedRecord: SalesData) => {
+    setRecords(prev =>
+      prev.map(record =>
+        record.id === updatedRecord.id ? updatedRecord : record
+      )
+    );
+    setIsDialogOpen(false);
     setEditingRecord(null);
+  };
+
+  const handleAdd = () => {
+    setEditingRecord(null);
+    setIsDialogOpen(true);
   };
 
   const columnWidths = {
@@ -1067,10 +1076,10 @@ export const SalesTable: React.FC<SalesTableProps> = () => {
     <TableRow key="new" sx={{ bgcolor: '#fff' }}>
       <TableCell padding="checkbox" sx={{ width: '60px' }}>
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-          <IconButton size="small" onClick={handleSave}>
+          <IconButton size="small" onClick={() => handleSave(record)}>
             <SaveIcon fontSize="small" color="primary" />
           </IconButton>
-          <IconButton size="small" onClick={handleCancel}>
+          <IconButton size="small" onClick={() => setIsDialogOpen(false)}>
             <CloseIcon fontSize="small" color="error" />
           </IconButton>
         </Box>
@@ -1459,24 +1468,25 @@ export const SalesTable: React.FC<SalesTableProps> = () => {
         selectedWeek={selectedWeek}
         onWeekChange={setSelectedWeek}
       />
-      <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
+      <Box sx={{ mb: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Button
+          variant="contained"
+          startIcon={<AddIcon />}
+          onClick={handleAdd}
+        >
+          新規作成
+        </Button>
         <ToggleButtonGroup
-          value={displayMode}
+          value={viewMode}
           exclusive
-          onChange={(e, value) => value && setDisplayMode(value)}
+          onChange={(_, newMode) => newMode && setViewMode(newMode)}
           size="small"
         >
-          <ToggleButton value="detail" sx={{ px: 2 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <ViewListIcon fontSize="small" />
-              <Typography variant="body2">詳細表示</Typography>
-            </Box>
+          <ToggleButton value="summary">
+            <ViewListIcon />
           </ToggleButton>
-          <ToggleButton value="summary" sx={{ px: 2 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <ViewModuleIcon fontSize="small" />
-              <Typography variant="body2">サマリ表示</Typography>
-            </Box>
+          <ToggleButton value="detail">
+            <ViewModuleIcon />
           </ToggleButton>
         </ToggleButtonGroup>
       </Box>
@@ -1599,20 +1609,36 @@ export const SalesTable: React.FC<SalesTableProps> = () => {
           </TableHead>
           <TableBody>
             {records.map((record, index) => (
-              editingRecord?.id === record.id ? 
-                renderEditableRow(record) :
-                displayMode === 'detail' ? renderDetailRow(record) : renderSummaryRow(record)
+              viewMode === 'detail' ? renderDetailRow(record) : renderSummaryRow(record)
             ))}
           </TableBody>
         </Table>
       </TableContainer>
 
-      <EditDialog
+      <Dialog
         open={isDialogOpen}
         onClose={() => setIsDialogOpen(false)}
-        record={editingRecord || emptyRecord}
-        onSave={handleSave}
-      />
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle>
+          {editingRecord ? '案件を編集' : '新規案件'}
+        </DialogTitle>
+        <DialogContent>
+          {/* Form fields will be added here */}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setIsDialogOpen(false)}>
+            キャンセル
+          </Button>
+          <Button
+            variant="contained"
+            onClick={() => handleSave(editingRecord || emptyRecord)}
+          >
+            保存
+          </Button>
+        </DialogActions>
+      </Dialog>
     </>
   );
 }

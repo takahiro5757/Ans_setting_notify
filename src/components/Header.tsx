@@ -3,7 +3,6 @@
 import { Box, AppBar, Toolbar, Button, Typography, Avatar } from '@mui/material';
 import { Settings as SettingsIcon } from '@mui/icons-material';
 import { useRouter, usePathname } from 'next/navigation';
-import Logo from './Logo';
 import HomeIcon from '@mui/icons-material/Home';
 import BusinessIcon from '@mui/icons-material/Business';
 import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
@@ -15,7 +14,6 @@ export default function Header() {
 
   return (
     <Box>
-      <Logo />
       <AppBar position="static" sx={{ bgcolor: '#1B3C8C' }}>
         <Toolbar sx={{ minHeight: '56px', p: 0 }}>
           <Box sx={{ 

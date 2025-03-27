@@ -2,7 +2,6 @@
 
 import { Inter } from 'next/font/google'
 import './globals.css'
-import { SalesProvider } from '@/contexts/SalesContext'
 import Header from '@/components/Header'
 import { Box, ThemeProvider, CssBaseline } from '@mui/material'
 import theme from '@/theme'
@@ -19,14 +18,12 @@ export default function RootLayout({
       <body className={inter.className}>
         <ThemeProvider theme={theme}>
           <CssBaseline />
-          <SalesProvider>
-            <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
-              <Header />
-              <Box component="main" sx={{ flex: 1 }}>
-                {children}
-              </Box>
+          <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+            <Header />
+            <Box component="main" sx={{ flex: 1 }}>
+              {children}
             </Box>
-          </SalesProvider>
+          </Box>
         </ThemeProvider>
       </body>
     </html>
