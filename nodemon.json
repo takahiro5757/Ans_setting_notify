@@ -1,6 +1,17 @@
 {
-  "watch": ["src", "app"],
+  "watch": ["src/**/*"],
   "ext": ".ts,.tsx,.js,.jsx",
-  "ignore": ["src/**/*.spec.ts", "src/**/*.test.ts"],
-  "exec": "next dev"
+  "ignore": [
+    ".git",
+    "node_modules/**/node_modules",
+    "src/**/*.spec.ts",
+    "src/**/*.test.ts",
+    ".next"
+  ],
+  "exec": "next dev -p 3004",
+  "events": {
+    "restart": "kill-port 3004",
+    "crash": "kill-port 3004"
+  },
+  "delay": "1000"
 } 

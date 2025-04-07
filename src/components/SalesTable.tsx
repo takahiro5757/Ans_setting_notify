@@ -20,8 +20,6 @@ import {
   InputLabel,
   Button,
   SelectChangeEvent,
-  ToggleButtonGroup,
-  ToggleButton,
   Tooltip,
   Dialog,
   DialogTitle,
@@ -32,9 +30,7 @@ import EditIcon from '@mui/icons-material/Edit';
 import CheckIcon from '@mui/icons-material/Check';
 import SaveIcon from '@mui/icons-material/Save';
 import CloseIcon from '@mui/icons-material/Close';
-import ViewListIcon from '@mui/icons-material/ViewList';
-import ViewModuleIcon from '@mui/icons-material/ViewModule';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import AddIcon from '@mui/icons-material/Add';
 import PersonIcon from '@mui/icons-material/Person';
 import SchoolIcon from '@mui/icons-material/School';
@@ -42,6 +38,24 @@ import FaceIcon from '@mui/icons-material/Face';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import TerrainIcon from '@mui/icons-material/Terrain';
 import FlightIcon from '@mui/icons-material/Flight';
+
+// ステータスに応じた色を返す関数
+const getStatusColor = (status: string): "default" | "primary" | "secondary" | "error" | "info" | "success" | "warning" => {
+  switch (status) {
+    case '確定':
+      return 'success';
+    case '代理店調整中':
+      return 'warning';
+    default:
+      return 'default';
+  }
+};
+
+// 曜日のラベルを返す関数
+const getDayLabel = (index: number): string => {
+  const days = ['月', '火', '水', '木', '金', '土', '日'];
+  return days[index];
+};
 
 interface SalesData {
   id: string;
@@ -129,168 +143,182 @@ interface LocationDetailsProps {
   };
   phone: string;
   isEditing: boolean;
-  onEdit: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement> | SelectChangeEvent<string | string[]> | React.ChangeEvent<HTMLInputElement>) => void;
+  onEdit: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement> | SelectChangeEvent<string | string[]>) => void;
 }
 
-const LocationDetails = ({ location, phone, isEditing, onEdit }: LocationDetailsProps) => (
-  <Box sx={{ minWidth: '200px', flex: '0 0 auto' }}>
-    <Box sx={{ mb: 2 }}>
-      {isEditing ? (
-        <>
-          <TextField
-            fullWidth
-            size="small"
-            label="場所名"
-            value={location.name}
-            onChange={onEdit}
-            sx={{ mb: 1 }}
-          />
-          <Box sx={{ display: 'flex', gap: 1, mb: 1 }}>
+const LocationDetails = ({ location, phone, isEditing, onEdit }: LocationDetailsProps) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement> | SelectChangeEvent<string | string[]>) => {
+    onEdit(e);
+  };
+
+  return (
+    <Box sx={{ minWidth: '200px', flex: '0 0 auto' }}>
+      <Box sx={{ mb: 2 }}>
+        {isEditing ? (
+          <>
             <TextField
+              fullWidth
               size="small"
-              label="担当MG"
-              value={location.manager}
-              onChange={onEdit}
-              sx={{ flex: 1 }}
+              label="場所名"
+              name="location.name"
+              value={location.name}
+              onChange={handleChange}
+              sx={{ mb: 1 }}
             />
-            <TextField
-              size="small"
-              label="電話番号"
-              value={phone}
-              onChange={onEdit}
-              sx={{ flex: 1 }}
-            />
-          </Box>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mb: 1 }}>
-            <FormControl size="small" fullWidth>
-              <InputLabel>開催店舗</InputLabel>
-              <Select
-                value={location.mainStore}
-                label="開催店舗"
-                onChange={onEdit}
-              >
-                <MenuItem value="大宮">大宮</MenuItem>
-                <MenuItem value="浦和">浦和</MenuItem>
-                <MenuItem value="川越">川越</MenuItem>
-                <MenuItem value="所沢">所沢</MenuItem>
-              </Select>
-            </FormControl>
-            <FormControl size="small" fullWidth>
-              <InputLabel>連名店舗</InputLabel>
-              <Select
-                multiple
-                value={location.jointStores}
-                label="連名店舗"
-                onChange={onEdit}
-              >
-                <MenuItem value="大宮">大宮</MenuItem>
-                <MenuItem value="浦和">浦和</MenuItem>
-                <MenuItem value="川越">川越</MenuItem>
-                <MenuItem value="所沢">所沢</MenuItem>
-              </Select>
-            </FormControl>
-          </Box>
-          <Box sx={{ display: 'flex', gap: 2 }}>
-            <FormControl>
-              <Checkbox
-                checked={location.hasLocation}
-                onChange={onEdit}
+            <Box sx={{ display: 'flex', gap: 1, mb: 1 }}>
+              <TextField
                 size="small"
+                label="担当MG"
+                name="location.manager"
+                value={location.manager}
+                onChange={handleChange}
+                sx={{ flex: 1 }}
               />
-              <Typography variant="caption">場所取りあり</Typography>
-            </FormControl>
-            <FormControl>
-              <Checkbox
-                checked={location.isOutdoor}
-                onChange={onEdit}
+              <TextField
                 size="small"
+                label="電話番号"
+                name="phone"
+                value={phone}
+                onChange={handleChange}
+                sx={{ flex: 1 }}
               />
-              <Typography variant="caption">外現場</Typography>
-            </FormControl>
-            <FormControl>
-              <Checkbox
-                checked={location.hasBusinessTrip}
-                onChange={onEdit}
-                size="small"
-              />
-              <Typography variant="caption">出張あり</Typography>
-            </FormControl>
-          </Box>
-        </>
-      ) : (
-        <>
-          <Typography variant="h6" sx={{ fontSize: '1rem', fontWeight: 'bold', mb: 1 }}>
-            {location.name}
-          </Typography>
-          <Box sx={{ display: 'flex', gap: 2, mb: 1 }}>
-            <Box>
-              <Typography variant="caption" color="textSecondary">担当MG</Typography>
-              <Typography variant="body2">{location.manager}</Typography>
             </Box>
-            <Box>
-              <Typography variant="caption" color="textSecondary">電話番号</Typography>
-              <Typography variant="body2">{phone}</Typography>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mb: 1 }}>
+              <FormControl size="small" fullWidth>
+                <InputLabel>開催店舗</InputLabel>
+                <Select
+                  value={location.mainStore}
+                  label="開催店舗"
+                  name="location.mainStore"
+                  onChange={handleChange}
+                >
+                  <MenuItem value="大宮">大宮</MenuItem>
+                  <MenuItem value="浦和">浦和</MenuItem>
+                  <MenuItem value="川越">川越</MenuItem>
+                  <MenuItem value="所沢">所沢</MenuItem>
+                </Select>
+              </FormControl>
+              <FormControl size="small" fullWidth>
+                <InputLabel>連名店舗</InputLabel>
+                <Select
+                  multiple
+                  value={location.jointStores}
+                  label="連名店舗"
+                  name="location.jointStores"
+                  onChange={handleChange}
+                >
+                  <MenuItem value="大宮">大宮</MenuItem>
+                  <MenuItem value="浦和">浦和</MenuItem>
+                  <MenuItem value="川越">川越</MenuItem>
+                  <MenuItem value="所沢">所沢</MenuItem>
+                </Select>
+              </FormControl>
             </Box>
-          </Box>
-          <Box sx={{ mb: 1 }}>
-            <Typography variant="caption" color="textSecondary">開催店舗</Typography>
-            <Typography variant="body2">{location.mainStore}</Typography>
-          </Box>
-          {location.jointStores.length > 0 && (
+            <Box sx={{ display: 'flex', gap: 2 }}>
+              <FormControl>
+                <Checkbox
+                  checked={location.hasLocation}
+                  onChange={handleChange}
+                  name="location.hasLocation"
+                  size="small"
+                />
+                <Typography variant="caption">場所取りあり</Typography>
+              </FormControl>
+              <FormControl>
+                <Checkbox
+                  checked={location.isOutdoor}
+                  onChange={handleChange}
+                  name="location.isOutdoor"
+                  size="small"
+                />
+                <Typography variant="caption">外現場</Typography>
+              </FormControl>
+              <FormControl>
+                <Checkbox
+                  checked={location.hasBusinessTrip}
+                  onChange={handleChange}
+                  name="location.hasBusinessTrip"
+                  size="small"
+                />
+                <Typography variant="caption">出張あり</Typography>
+              </FormControl>
+            </Box>
+          </>
+        ) : (
+          <>
+            <Typography variant="h6" sx={{ fontSize: '1rem', fontWeight: 'bold', mb: 1 }}>
+              {location.name}
+            </Typography>
+            <Box sx={{ display: 'flex', gap: 2, mb: 1 }}>
+              <Box>
+                <Typography variant="caption" color="textSecondary">担当MG</Typography>
+                <Typography variant="body2">{location.manager}</Typography>
+              </Box>
+              <Box>
+                <Typography variant="caption" color="textSecondary">電話番号</Typography>
+                <Typography variant="body2">{phone}</Typography>
+              </Box>
+            </Box>
             <Box sx={{ mb: 1 }}>
-              <Typography variant="caption" color="textSecondary">連名店舗</Typography>
-              <Typography variant="body2">{location.jointStores.join('、')}</Typography>
+              <Typography variant="caption" color="textSecondary">開催店舗</Typography>
+              <Typography variant="body2">{location.mainStore}</Typography>
             </Box>
-          )}
-          <Box sx={{ display: 'flex', gap: 2 }}>
-            {location.hasLocation && (
-              <Tooltip title="場所取りあり" arrow>
-                <Box sx={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  gap: 0.5,
-                  color: 'primary.main',
-                  fontSize: '0.875rem'
-                }}>
-                  <LocationOnIcon sx={{ fontSize: '1.2rem' }} />
-                  <Typography variant="body2">場所取り</Typography>
-                </Box>
-              </Tooltip>
+            {location.jointStores.length > 0 && (
+              <Box sx={{ mb: 1 }}>
+                <Typography variant="caption" color="textSecondary">連名店舗</Typography>
+                <Typography variant="body2">{location.jointStores.join('、')}</Typography>
+              </Box>
             )}
-            {location.isOutdoor && (
-              <Tooltip title="外現場" arrow>
-                <Box sx={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  gap: 0.5,
-                  color: '#4caf50',
-                  fontSize: '0.875rem'
-                }}>
-                  <TerrainIcon sx={{ fontSize: '1.2rem' }} />
-                  <Typography variant="body2">外現場</Typography>
-                </Box>
-              </Tooltip>
-            )}
-            {location.hasBusinessTrip && (
-              <Tooltip title="出張あり" arrow>
-                <Box sx={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  gap: 0.5,
-                  color: '#ff9800',
-                  fontSize: '0.875rem'
-                }}>
-                  <FlightIcon sx={{ fontSize: '1.2rem' }} />
-                  <Typography variant="body2">出張</Typography>
-                </Box>
-              </Tooltip>
-            )}
-          </Box>
-        </>
-      )}
+            <Box sx={{ display: 'flex', gap: 2 }}>
+              {location.hasLocation && (
+                <Tooltip title="場所取りあり" arrow>
+                  <Box sx={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: 0.5,
+                    color: 'primary.main',
+                    fontSize: '0.875rem'
+                  }}>
+                    <LocationOnIcon sx={{ fontSize: '1.2rem' }} />
+                    <Typography variant="body2">場所取り</Typography>
+                  </Box>
+                </Tooltip>
+              )}
+              {location.isOutdoor && (
+                <Tooltip title="外現場" arrow>
+                  <Box sx={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: 0.5,
+                    color: '#4caf50',
+                    fontSize: '0.875rem'
+                  }}>
+                    <TerrainIcon sx={{ fontSize: '1.2rem' }} />
+                    <Typography variant="body2">外現場</Typography>
+                  </Box>
+                </Tooltip>
+              )}
+              {location.hasBusinessTrip && (
+                <Tooltip title="出張あり" arrow>
+                  <Box sx={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: 0.5,
+                    color: '#ff9800',
+                    fontSize: '0.875rem'
+                  }}>
+                    <FlightIcon sx={{ fontSize: '1.2rem' }} />
+                    <Typography variant="body2">出張</Typography>
+                  </Box>
+                </Tooltip>
+              )}
+            </Box>
+          </>
+        )}
+      </Box>
     </Box>
-  </Box>
-);
+  );
+};
 
 interface SalesDetailsProps {
   counts: {
@@ -565,114 +593,10 @@ const Memo = ({ memo, isEditing, onEdit }: MemoProps) => (
 );
 
 interface SalesTableProps {
-  initialViewMode?: 'detail' | 'summary';
+  initialViewMode: 'detail' | 'summary';
 }
 
-interface WeekTabsProps {
-  selectedWeek: number;
-  onWeekChange: (week: number) => void;
-}
-
-const WeekTabs: React.FC<WeekTabsProps> = ({ selectedWeek, onWeekChange }) => (
-  <Box sx={{ mb: 2 }}>
-    <ToggleButtonGroup
-      value={selectedWeek}
-      exclusive
-      onChange={(e, value) => value !== null && onWeekChange(value)}
-      size="small"
-    >
-      {[1, 2, 3, 4, 5].map((week) => (
-        <ToggleButton
-          key={week}
-          value={week}
-          sx={{
-            px: 3,
-            py: 1,
-            '&.Mui-selected': {
-              backgroundColor: '#1976d2',
-              color: '#fff',
-              '&:hover': {
-                backgroundColor: '#1565c0',
-              },
-            },
-          }}
-        >
-          <Typography variant="body2">{week}週目</Typography>
-        </ToggleButton>
-      ))}
-    </ToggleButtonGroup>
-  </Box>
-);
-
-interface WeeklyCapacityTableProps {
-  weeks: {
-    week: string;
-    closerCapacity: number;
-    girlCapacity: number;
-    maxCapacity: number;
-  }[];
-}
-
-const WeeklyCapacityTable: React.FC<WeeklyCapacityTableProps> = ({ weeks }) => (
-  <Box sx={{ mb: 3 }}>
-    <TableContainer component={Paper}>
-      <Table size="small" sx={{ 
-        '& .MuiTableCell-root': { 
-          borderColor: '#e0e0e0',
-          py: 1
-        }
-      }}>
-        <TableHead>
-          <TableRow>
-            <TableCell sx={{ width: '80px', bgcolor: '#fafafa' }}>
-              <Typography variant="caption" sx={{ color: '#666666', fontWeight: 'normal' }}>週</Typography>
-            </TableCell>
-            {weeks.map((week) => (
-              <TableCell key={week.week} align="center" sx={{ width: '80px', bgcolor: '#fafafa' }}>
-                <Typography variant="caption" sx={{ color: '#666666', fontWeight: 'normal' }}>{week.week}</Typography>
-              </TableCell>
-            ))}
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          <TableRow>
-            <TableCell sx={{ bgcolor: '#fafafa' }}>
-              <Typography variant="caption" sx={{ color: '#1976d2', fontWeight: 'normal' }}>クローザー枠数</Typography>
-            </TableCell>
-            {weeks.map((week) => (
-              <TableCell key={week.week} align="center">
-                <Typography variant="body2" sx={{ color: '#1976d2', fontWeight: 'bold' }}>{week.closerCapacity}名</Typography>
-              </TableCell>
-            ))}
-          </TableRow>
-          <TableRow>
-            <TableCell sx={{ bgcolor: '#fafafa' }}>
-              <Typography variant="caption" sx={{ color: '#e91e63', fontWeight: 'normal' }}>ガール枠数</Typography>
-            </TableCell>
-            {weeks.map((week) => (
-              <TableCell key={week.week} align="center">
-                <Typography variant="body2" sx={{ color: '#e91e63', fontWeight: 'bold' }}>{week.girlCapacity}名</Typography>
-              </TableCell>
-            ))}
-          </TableRow>
-          <TableRow>
-            <TableCell sx={{ bgcolor: '#fafafa' }}>
-              <Typography variant="caption" sx={{ color: '#666666', fontWeight: 'normal' }}>稼働可能人数</Typography>
-            </TableCell>
-            {weeks.map((week) => (
-              <TableCell key={week.week} align="center">
-                <Typography variant="body2">{week.maxCapacity}名</Typography>
-              </TableCell>
-            ))}
-          </TableRow>
-        </TableBody>
-      </Table>
-    </TableContainer>
-  </Box>
-);
-
-const SalesTable: React.FC<SalesTableProps> = ({ initialViewMode = 'summary' }) => {
-  const [selectedWeek, setSelectedWeek] = useState(1);
+const SalesTable: React.FC<SalesTableProps> = ({ initialViewMode }) => {
   const [records, setRecords] = useState<SalesData[]>([
     {
       id: '1',
@@ -1040,17 +964,28 @@ const SalesTable: React.FC<SalesTableProps> = ({ initialViewMode = 'summary' }) 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'detail' | 'summary'>(initialViewMode);
 
+  useEffect(() => {
+    setViewMode(initialViewMode);
+  }, [initialViewMode]);
+
   const handleEdit = (record: SalesData) => {
     setEditingRecord(record);
     setIsDialogOpen(true);
   };
 
-  const handleSave = (updatedRecord: SalesData) => {
-    setRecords(prev =>
-      prev.map(record =>
-        record.id === updatedRecord.id ? updatedRecord : record
-      )
-    );
+  const handleSave = (event: React.MouseEvent<HTMLButtonElement>) => {
+    event.preventDefault();
+    if (editingRecord) {
+      setRecords(prev => 
+        prev.map(record => record.id === editingRecord.id ? editingRecord : record)
+      );
+    } else {
+      const newRecord = {
+        ...emptyRecord,
+        id: `temp-${Date.now()}`,
+      };
+      setRecords(prev => [...prev, newRecord]);
+    }
     setIsDialogOpen(false);
     setEditingRecord(null);
   };
@@ -1076,7 +1011,7 @@ const SalesTable: React.FC<SalesTableProps> = ({ initialViewMode = 'summary' }) 
     <TableRow key="new" sx={{ bgcolor: '#fff' }}>
       <TableCell padding="checkbox" sx={{ width: '60px' }}>
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-          <IconButton size="small" onClick={() => handleSave(record)}>
+          <IconButton size="small" onClick={handleSave}>
             <SaveIcon fontSize="small" color="primary" />
           </IconButton>
           <IconButton size="small" onClick={() => setIsDialogOpen(false)}>
@@ -1452,186 +1387,68 @@ const SalesTable: React.FC<SalesTableProps> = ({ initialViewMode = 'summary' }) 
     </TableRow>
   );
 
-  const weeklyCapacity = [
-    { week: '0W', closerCapacity: 30, girlCapacity: 20, maxCapacity: 50 },
-    { week: '1W', closerCapacity: 30, girlCapacity: 20, maxCapacity: 50 },
-    { week: '2W', closerCapacity: 30, girlCapacity: 20, maxCapacity: 50 },
-    { week: '3W', closerCapacity: 30, girlCapacity: 20, maxCapacity: 50 },
-    { week: '4W', closerCapacity: 30, girlCapacity: 20, maxCapacity: 50 },
-    { week: '5W', closerCapacity: 30, girlCapacity: 20, maxCapacity: 50 }
-  ];
-
   return (
-    <>
-      <WeeklyCapacityTable weeks={weeklyCapacity} />
-      <WeekTabs
-        selectedWeek={selectedWeek}
-        onWeekChange={setSelectedWeek}
-      />
-      <Box sx={{ mb: 2, display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
-        <ToggleButtonGroup
-          value={viewMode}
-          exclusive
-          onChange={(_, newMode) => newMode && setViewMode(newMode)}
-          size="small"
-        >
-          <ToggleButton value="summary">
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <ViewListIcon />
-              <Typography variant="body2">サマリ表示</Typography>
-            </Box>
-          </ToggleButton>
-          <ToggleButton value="detail">
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <ViewModuleIcon />
-              <Typography variant="body2">詳細表示</Typography>
-            </Box>
-          </ToggleButton>
-        </ToggleButtonGroup>
-      </Box>
-
-      <TableContainer component={Paper} sx={{ 
-        mb: 3,
-        maxHeight: 'calc(100vh - 250px)',
-        overflow: 'auto',
-        '& .MuiTable-root': {
-          tableLayout: 'fixed',
-          width: '100%'
-        },
-        '& .MuiTableHead-root': {
-          position: 'sticky',
-          top: 0,
-          zIndex: 1,
-          backgroundColor: '#fff',
-          '& .MuiTableCell-root': {
-            backgroundColor: '#fff',
-            fontWeight: 'normal'
-          }
-        }
-      }}>
-        <Table size="small" stickyHeader>
+    <Box>
+      <TableContainer component={Paper}>
+        <Table>
           <TableHead>
             <TableRow>
               <TableCell padding="checkbox" sx={{ width: columnWidths.checkbox }}></TableCell>
-              <TableCell sx={{ width: columnWidths.assignee }}>
-                <Typography variant="caption" sx={{ color: '#666666', fontWeight: 'normal' }}>担当者</Typography>
-              </TableCell>
-              <TableCell sx={{ width: columnWidths.updater }}>
-                <Typography variant="caption" sx={{ color: '#666666', fontWeight: 'normal' }}>更新者</Typography>
-              </TableCell>
-              <TableCell sx={{ width: columnWidths.status }}>
-                <Typography variant="caption" sx={{ color: '#666666', fontWeight: 'normal' }}>ステータス</Typography>
-              </TableCell>
-              <TableCell sx={{ width: columnWidths.agency }}>
-                <Typography variant="caption" sx={{ color: '#666666', fontWeight: 'normal' }}>代理店</Typography>
-              </TableCell>
-              <TableCell 
-                align="center" 
-                sx={{ 
-                  width: columnWidths.weekday,
-                  borderLeft: '1px solid #e0e0e0',
-                  px: 0
-                }}
-              >
-                <Typography variant="caption" sx={{ color: '#666666', fontWeight: 'normal' }}>火</Typography>
-              </TableCell>
-              <TableCell 
-                align="center" 
-                sx={{ 
-                  width: columnWidths.weekday,
-                  px: 0
-                }}
-              >
-                <Typography variant="caption" sx={{ color: '#666666', fontWeight: 'normal' }}>水</Typography>
-              </TableCell>
-              <TableCell 
-                align="center" 
-                sx={{ 
-                  width: columnWidths.weekday,
-                  px: 0
-                }}
-              >
-                <Typography variant="caption" sx={{ color: '#666666', fontWeight: 'normal' }}>木</Typography>
-              </TableCell>
-              <TableCell 
-                align="center" 
-                sx={{ 
-                  width: columnWidths.weekday,
-                  px: 0
-                }}
-              >
-                <Typography variant="caption" sx={{ color: '#666666', fontWeight: 'normal' }}>金</Typography>
-              </TableCell>
-              <TableCell 
-                align="center" 
-                sx={{ 
-                  width: columnWidths.weekday,
-                  px: 0
-                }}
-              >
-                <Typography variant="caption" sx={{ color: '#666666', fontWeight: 'normal' }}>土</Typography>
-              </TableCell>
-              <TableCell 
-                align="center" 
-                sx={{ 
-                  width: columnWidths.weekday,
-                  px: 0
-                }}
-              >
-                <Typography variant="caption" sx={{ color: '#666666', fontWeight: 'normal' }}>日</Typography>
-              </TableCell>
-              <TableCell 
-                align="center" 
-                sx={{ 
-                  width: columnWidths.weekday,
-                  borderRight: '1px solid #e0e0e0',
-                  px: 0
-                }}
-              >
-                <Typography variant="caption" sx={{ color: '#666666', fontWeight: 'normal' }}>月</Typography>
-              </TableCell>
-              <TableCell 
-                sx={{ 
-                  width: columnWidths.dayType, 
-                  borderRight: '1px solid #e0e0e0'
-                }}
-              >
-                <Typography variant="caption" sx={{ color: '#666666', fontWeight: 'normal' }}>平日/週末</Typography>
-              </TableCell>
-              <TableCell sx={{ width: columnWidths.bandProject, borderRight: '1px solid #e0e0e0' }}>
-                <Typography variant="caption" sx={{ color: '#666666', fontWeight: 'normal' }}>帯案件</Typography>
-              </TableCell>
-              <TableCell sx={{ width: columnWidths.details }}>
-                <Typography variant="caption" sx={{ color: '#666666', fontWeight: 'normal' }}>詳細</Typography>
-              </TableCell>
+              <TableCell sx={{ width: columnWidths.assignee }}>担当者</TableCell>
+              <TableCell sx={{ width: columnWidths.updater }}>更新者</TableCell>
+              <TableCell sx={{ width: columnWidths.status }}>ステータス</TableCell>
+              <TableCell sx={{ width: columnWidths.agency }}>代理店</TableCell>
+              {[1, 2, 3, 4, 5, 6, 7].map((day) => (
+                <TableCell 
+                  key={day} 
+                  align="center"
+                  sx={{ 
+                    width: columnWidths.weekday,
+                    borderLeft: day === 1 ? '1px solid #e0e0e0' : 'none',
+                    borderRight: day === 7 ? '1px solid #e0e0e0' : 'none',
+                    px: 0
+                  }}
+                >
+                  <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5 }}>
+                    <Typography variant="caption" sx={{ color: '#666666' }}>{getDayLabel(day - 1)}</Typography>
+                    <Typography variant="caption" sx={{ color: '#666666' }}>{day}日</Typography>
+                  </Box>
+                </TableCell>
+              ))}
+              <TableCell sx={{ width: columnWidths.dayType, borderRight: '1px solid #e0e0e0' }}>曜日</TableCell>
+              <TableCell align="center" sx={{ width: columnWidths.bandProject, borderRight: '1px solid #e0e0e0' }}>帯案件</TableCell>
+              <TableCell sx={{ width: columnWidths.details }}>詳細</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
-            {records.map((record, index) => (
-              viewMode === 'detail' ? renderDetailRow(record) : renderSummaryRow(record)
+            {records.map((record) => (
+              viewMode === 'summary' ? renderSummaryRow(record) : renderDetailRow(record)
             ))}
+            {isDialogOpen && renderEditableRow(editingRecord || emptyRecord)}
+          </TableBody>
+          <TableBody>
+            <TableRow>
+              <TableCell colSpan={12} sx={{ border: 'none', pt: 2, pb: 2 }}>
+                <Button
+                  variant="contained"
+                  startIcon={<AddIcon />}
+                  onClick={handleAdd}
+                  sx={{ 
+                    bgcolor: '#f5f5f5', 
+                    color: '#666666',
+                    '&:hover': { 
+                      bgcolor: '#e0e0e0'
+                    },
+                    boxShadow: 'none'
+                  }}
+                >
+                  新規追加
+                </Button>
+              </TableCell>
+            </TableRow>
           </TableBody>
         </Table>
       </TableContainer>
-
-      <Box sx={{ display: 'flex', justifyContent: 'flex-start' }}>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={handleAdd}
-          sx={{
-            bgcolor: 'grey.300',
-            color: 'text.primary',
-            '&:hover': {
-              bgcolor: 'grey.400'
-            },
-            minWidth: '160px',
-            px: 3
-          }}
-        >
-          新規追加
-        </Button>
-      </Box>
 
       <Dialog
         open={isDialogOpen}
@@ -1640,24 +1457,24 @@ const SalesTable: React.FC<SalesTableProps> = ({ initialViewMode = 'summary' }) 
         fullWidth
       >
         <DialogTitle>
-          {editingRecord ? '案件を編集' : '新規案件'}
+          {editingRecord ? '案件編集' : '新規追加'}
         </DialogTitle>
         <DialogContent>
-          {/* Form fields will be added here */}
+          {/* フォームの内容 */}
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setIsDialogOpen(false)}>
-            キャンセル
-          </Button>
+          <Button onClick={() => setIsDialogOpen(false)}>キャンセル</Button>
           <Button
             variant="contained"
-            onClick={() => handleSave(editingRecord || emptyRecord)}
+            onClick={handleSave}
+            startIcon={<SaveIcon />}
+            sx={{ bgcolor: '#1976d2', '&:hover': { bgcolor: '#1565c0' } }}
           >
             保存
           </Button>
         </DialogActions>
       </Dialog>
-    </>
+    </Box>
   );
 }
 

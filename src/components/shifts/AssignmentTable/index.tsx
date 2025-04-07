@@ -629,8 +629,8 @@ export const AssignmentTable = ({
         onClose={handleEditDialogClose}
         PaperProps={{
           sx: {
-            width: '600px',
-            maxWidth: '600px'
+            width: '1000px',
+            maxWidth: '90vw'
           }
         }}
       >
