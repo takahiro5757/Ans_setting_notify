@@ -21,10 +21,12 @@ const initialSummary = {
 
 // ToggleButtonGroup共通スタイル
 const toggleButtonGroupStyle = {
-  border: '1px solid rgba(0, 0, 0, 0.12)',
   '& .MuiToggleButton-root': {
-    '&:not(:first-of-type)': {
-      borderLeft: '1px solid rgba(0, 0, 0, 0.12)',
+    borderTop: '1px solid rgba(0, 0, 0, 0.12)',
+    borderBottom: '1px solid rgba(0, 0, 0, 0.12)',
+    borderLeft: '1px solid rgba(0, 0, 0, 0.12)',
+    '&:last-of-type': {
+      borderRight: '1px solid rgba(0, 0, 0, 0.12)',
     }
   }
 };
@@ -510,11 +512,28 @@ export default function Shifts() {
   const [selectedWeek, setSelectedWeek] = useState<number>(1);
   const [summary, setSummary] = useState(initialSummary);
   const [subTabValue, setSubTabValue] = useState<number>(0);
-  const [selectedDate, setSelectedDate] = useState<string>('1/5');
+  const [selectedDates, setSelectedDates] = useState<string[]>([]);
+  const [selectedLevels, setSelectedLevels] = useState<number[]>([]);
   const weeks = getWeeks(year, month);
 
   const handleSubTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setSubTabValue(newValue);
+  };
+
+  const handleDateChange = (event: React.MouseEvent<HTMLElement>, date: string) => {
+    setSelectedDates(prev => 
+      prev.includes(date)
+        ? prev.filter(d => d !== date)
+        : [...prev, date]
+    );
+  };
+
+  const handleLevelClick = (level: number) => {
+    setSelectedLevels(prev => 
+      prev.includes(level) 
+        ? prev.filter(l => l !== level)
+        : [...prev, level]
+    );
   };
 
   return (
@@ -590,7 +609,6 @@ export default function Shifts() {
           <Box sx={{ mb: 3 }}>
             <ToggleButtonGroup
               value={selectedWeek}
-              exclusive
               onChange={(e, value) => value !== null && setSelectedWeek(value)}
               size="small"
               sx={toggleButtonGroupStyle}
@@ -644,7 +662,7 @@ export default function Shifts() {
               }}>
                 {/* 左側：アサイン表エリア */}
                 <Box sx={{ 
-                  width: '85%', // アサイン表の幅を85%に拡大
+                  width: '55%', // アサイン表の幅を55%に変更
                   display: 'flex',
                   flexDirection: 'column',
                   overflow: 'hidden'
@@ -665,7 +683,7 @@ export default function Shifts() {
 
                 {/* 右側：要員リストエリア */}
                 <Box sx={{ 
-                  width: '15%', // 要員リストの幅を15%に縮小
+                  width: '45%', // 要員リストの幅を45%に変更
                   display: 'flex',
                   flexDirection: 'column',
                   overflow: 'hidden',
@@ -699,30 +717,29 @@ export default function Shifts() {
                   {/* 要員リストのヘッダー */}
                   <Box sx={{ 
                     display: 'flex',
-                    flexDirection: 'column',
-                    gap: 2,
+                    alignItems: 'center',
+                    gap: 3,
                     mb: 2,
                     flexShrink: 0
                   }}>
                     <Typography 
                       variant="h6" 
                       sx={{ 
-                        fontSize: '1rem',
-                        fontWeight: 'bold'
+                        fontSize: '1.25rem',
+                        fontWeight: 'bold',
+                        whiteSpace: 'nowrap'
                       }}
                     >
                       要員リスト
                     </Typography>
                     <ToggleButtonGroup
-                      value={selectedDate}
-                      exclusive
-                      onChange={(e, value) => value !== null && setSelectedDate(value)}
+                      value={selectedDates}
+                      onChange={(_, newDates) => setSelectedDates(newDates)}
                       size="small"
                       sx={{
-                        ...toggleButtonGroupStyle,
-                        display: 'grid',
-                        gridTemplateColumns: 'repeat(7, 1fr)',
-                        width: '100%'
+                        display: 'flex',
+                        flexDirection: 'row',
+                        flex: 1,
                       }}
                     >
                       {sampleDays.map((day) => (
@@ -731,22 +748,88 @@ export default function Shifts() {
                           value={day.date}
                           sx={{
                             ...weekToggleButtonStyle,
-                            px: 1,
-                            py: 0.5,
-                            fontSize: '0.75rem'
+                            px: 0.5,
+                            py: 0.25,
+                            fontSize: '0.75rem',
+                            flex: 1,
+                            minWidth: '45px',
+                            maxWidth: '45px'
                           }}
                         >
                           <Box sx={{ textAlign: 'center' }}>
-                            <Typography variant="caption" display="block">
+                            <Typography variant="caption" display="block" sx={{ fontSize: '0.7rem' }}>
                               {day.weekday}
                             </Typography>
-                            <Typography variant="caption" display="block">
+                            <Typography variant="caption" display="block" sx={{ fontSize: '0.7rem' }}>
                               {day.date}
                             </Typography>
                           </Box>
                         </ToggleButton>
                       ))}
                     </ToggleButtonGroup>
+                  </Box>
+
+                  {/* レベル選択ボタン */}
+                  <Box sx={{ 
+                    display: 'flex',
+                    gap: 1,
+                    mb: 2,
+                    flexShrink: 0
+                  }}>
+                    <Button
+                      variant="contained"
+                      size="small"
+                      onClick={() => handleLevelClick(3)}
+                      sx={{
+                        backgroundColor: selectedLevels.includes(3) ? '#90caf9' : '#e0e0e0',
+                        py: 0.25,
+                        px: 1,
+                        fontSize: '0.75rem',
+                        minHeight: '24px',
+                        minWidth: '60px',
+                        '&:hover': {
+                          backgroundColor: selectedLevels.includes(3) ? '#64b5f6' : '#bdbdbd'
+                        }
+                      }}
+                    >
+                      レベル3
+                    </Button>
+                    <Button
+                      variant="contained"
+                      size="small"
+                      onClick={() => handleLevelClick(2)}
+                      sx={{
+                        backgroundColor: selectedLevels.includes(2) ? '#a5d6a7' : '#e0e0e0',
+                        py: 0.25,
+                        px: 1,
+                        fontSize: '0.75rem',
+                        minHeight: '24px',
+                        minWidth: '60px',
+                        '&:hover': {
+                          backgroundColor: selectedLevels.includes(2) ? '#81c784' : '#bdbdbd'
+                        }
+                      }}
+                    >
+                      レベル2
+                    </Button>
+                    <Button
+                      variant="contained"
+                      size="small"
+                      onClick={() => handleLevelClick(1)}
+                      sx={{
+                        backgroundColor: selectedLevels.includes(1) ? '#ffcc80' : '#e0e0e0',
+                        py: 0.25,
+                        px: 1,
+                        fontSize: '0.75rem',
+                        minHeight: '24px',
+                        minWidth: '60px',
+                        '&:hover': {
+                          backgroundColor: selectedLevels.includes(1) ? '#ffb74d' : '#bdbdbd'
+                        }
+                      }}
+                    >
+                      レベル1
+                    </Button>
                   </Box>
                   
                   {/* 要員リストの内容部分 */}
