@@ -6,7 +6,7 @@ import WeeklySummary from '@/components/WeeklySummary';
 import SettingsIcon from '@mui/icons-material/Settings';
 import { AssignmentTable } from '@/components/shifts/AssignmentTable';
 import { DayInfo, Venue, Assignment, SlotInfo } from '@/components/shifts/types';
-import { DragDropContext, Droppable, Draggable, DroppableProvided, DraggableProvided, DropResult } from '@hello-pangea/dnd';
+import { DragDropContext, Droppable, Draggable, DroppableProvided, DraggableProvided, DropResult } from 'react-beautiful-dnd';
 
 // 週別タブの定義
 const getWeeks = (year: string, month: string) => {
@@ -487,7 +487,7 @@ const sampleVenues: Venue[] = [
   }
 ];
 
-// サンプルスロット情報（アサイン表のセルが利用可能かどうかを示す）
+// スロット情報のサンプルデータ
 const sampleSlots: SlotInfo[] = [
   // 各会場のスロット情報を生成
   ...sampleVenues.flatMap(venue => 
@@ -497,24 +497,15 @@ const sampleSlots: SlotInfo[] = [
         orderId: order.id,
         date: day.date,
         hasSlot: (() => {
-          const isWeekend = ['土', '日'].includes(day.weekday);
-          // 会場IDの番号が偶数なら週末に利用可能、奇数なら平日に利用可能
-          const isWeekendAvailable = parseInt(venue.id.split('-')[1]) % 2 === 0;
-          return isWeekendAvailable ? isWeekend : !isWeekend;
+          const isWeekend = ['土', '日'].includes(sampleDays.find(d => d.date === day.date)?.weekday || '');
+          // 会場ごとに週末のみか平日のみかをランダムに決定（会場IDをもとに一貫性を保つ）
+          const isWeekendOnly = parseInt(venue.id.split('-')[1]) % 2 === 0;
+          return isWeekendOnly ? isWeekend : !isWeekend;
         })()
       }))
     )
   )
 ];
-
-// スロット情報を取得する関数（白いセルかどうかを判定）
-const getSlotInfo = (venueId: string, orderId: string, date: string): boolean => {
-  return sampleSlots.find(slot => 
-    slot.venueId === venueId && 
-    slot.orderId === orderId && 
-    slot.date === date
-  )?.hasSlot ?? false;
-};
 
 // ステータスタイルの定義
 interface StatusTile {
@@ -537,10 +528,14 @@ export default function Shifts() {
   const [subTabValue, setSubTabValue] = useState<number>(0);
   const [selectedDates, setSelectedDates] = useState<string[]>([]);
   const [selectedLevels, setSelectedLevels] = useState<number[]>([]);
-  const [draggingItemId, setDraggingItemId] = useState<string | null>(null);
-  const [draggedTileInfo, setDraggedTileInfo] = useState<{id: string, type: string} | null>(null);
   const weeks = getWeeks(year, month);
 
+  // ドラッグ中のアイテムIDを管理
+  const [draggingItemId, setDraggingItemId] = useState<string | null>(null);
+  
+  // ドラッグしているタイルの情報を保持
+  const [draggedTileInfo, setDraggedTileInfo] = useState<{id: string, type: string} | null>(null);
+  
   // ドラッグ開始時の処理
   const onDragStart = (start: any) => {
     setDraggingItemId(start.draggableId);
@@ -559,10 +554,10 @@ export default function Shifts() {
   
   // ドラッグ終了時の処理
   const onDragEnd = (result: DropResult) => {
+    const { source, destination, draggableId } = result;
+    
     // ドラッグ中のアイテムIDをリセット
     setDraggingItemId(null);
-
-    const { source, destination, draggableId } = result;
     
     // ドロップ先がない場合は処理終了
     if (!destination) {
@@ -571,39 +566,24 @@ export default function Shifts() {
     }
     
     // 同じ場所にドロップした場合は何もしない
-    if (source.droppableId === destination.droppableId) {
+    if (source.droppableId === destination.droppableId && 
+        source.index === destination.index) {
       setDraggedTileInfo(null);
       return;
     }
     
     // ステータスタイルからアサイン表へのドラッグの場合
-    if (source.droppableId === 'status-tiles' && destination.droppableId.startsWith('cell-')) {
+    if (source.droppableId === 'status-tiles' && destination.droppableId === 'assignment-table') {
       const draggedTile = statusTiles.find(tile => tile.id === draggableId);
       if (draggedTile) {
-        // ドロップ先のセル情報を解析
-        const [_, venueId, orderId, date] = destination.droppableId.split('-');
+        console.log(`ステータスタイル「${draggedTile.label}」をアサイン表にドロップしました`, {
+          tile: draggedTile,
+          destination: destination
+        });
         
-        // セルが利用可能かどうかを確認
-        const isSlotAvailable = getSlotInfo(venueId, orderId, date);
-        
-        if (isSlotAvailable) {
-          // ドロップされたことをコンソールに出力
-          console.log(`「${draggedTile.label}」をアサイン表の有効なセルにドロップしました:`, {
-            venueId,
-            orderId,
-            date,
-            status: draggedTile.label
-          });
-          
-          // UIのフィードバックとして一時的にメッセージを表示
-          alert(`${draggedTile.label}を配置しました！\nセル: ${venueId}, ${orderId}, ${date}`);
-        } else {
-          // 利用できないセルにドロップした場合
-          console.log('利用できないセル（グレーのセル）にはドロップできません');
-          
-          // UIのフィードバックとして一時的にメッセージを表示
-          alert('利用できないセル（グレーのセル）にはドロップできません');
-        }
+        // ここで実際のアサイン処理を行います
+        // 例: アサイン表のセルの状態を更新する
+        // setAssignments(prev => [...prev, { status: draggedTile.id, cellId: destination.index }]);
       }
     }
     
@@ -784,18 +764,12 @@ export default function Shifts() {
                       flex: 1,
                       overflow: 'auto'
                     }}>
-                      <Droppable
-                        droppableId="assignment-table"
-                      >
+                      <Droppable droppableId="assignment-table">
                         {(provided: DroppableProvided) => (
                           <Box
                             ref={provided.innerRef}
                             {...provided.droppableProps}
-                            sx={{
-                              height: '100%',
-                              width: '100%',
-                              position: 'relative'
-                            }}
+                            sx={{ height: '100%', width: '100%' }}
                           >
                             <AssignmentTable
                               venues={sampleVenues}
@@ -902,11 +876,7 @@ export default function Shifts() {
                     <Box sx={{ width: '300px', p: 2, overflowY: 'auto' }}>
                     
                       {/* ステータスタイル */}
-                      <Droppable
-                        droppableId="status-tiles"
-                        direction="horizontal"
-                        isDropDisabled={true}
-                      >
+                      <Droppable droppableId="status-tiles" direction="horizontal" isDropDisabled={true}>
                         {(provided: DroppableProvided) => (
                           <Box
                             ref={provided.innerRef}
@@ -936,8 +906,6 @@ export default function Shifts() {
                                       cursor: 'grab',
                                       fontSize: '0.875rem',
                                       boxShadow: snapshot.isDragging ? '0 5px 10px rgba(0,0,0,0.2)' : 'none',
-                                      transform: snapshot.isDragging ? 'scale(1.05)' : 'scale(1)',
-                                      transition: 'transform 0.2s, box-shadow 0.2s',
                                       '&:hover': {
                                         opacity: 0.8
                                       }
