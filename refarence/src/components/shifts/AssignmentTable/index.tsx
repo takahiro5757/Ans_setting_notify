@@ -7,7 +7,6 @@ import LockIcon from '@mui/icons-material/Lock';
 import EditIcon from '@mui/icons-material/Edit';
 import { useState, MouseEvent, useEffect } from 'react';
 import { Venue, DayInfo, Assignment, SlotInfo } from '../types';
-import { Droppable } from '@hello-pangea/dnd';
 
 // セルの色定義
 const CELL_COLORS = {
@@ -332,79 +331,10 @@ export const AssignmentTable = ({
     };
   }, [clickTimer]);
 
-  // セルのレンダリング
-  const renderCell = (venueId: string, orderId: string, date: string, rowIndex: number, colIndex: number) => {
-    const hasSlot = getSlotInfo(venueId, orderId, date);
-    const cellColor = getCellColor(venueId, orderId, date);
-    const cellMemo = getCellMemo(venueId, orderId, date);
-    const isLocked = getCellLock(venueId, orderId, date);
-
-    return (
-      <Droppable droppableId={`cell-${venueId}-${orderId}-${date}`} isDropDisabled={!hasSlot}>
-        {(provided, snapshot) => (
-          <TableCell
-            ref={provided.innerRef}
-            {...provided.droppableProps}
-            onContextMenu={(e) => handleContextMenu(e, venueId, orderId, date)}
-            onClick={() => handleCellClick(venueId, orderId, date)}
-            sx={{
-              position: 'relative',
-              minWidth: 100,
-              height: 60,
-              padding: 0,
-              backgroundColor: hasSlot ? CELL_COLORS[cellColor] : '#f5f5f5',
-              border: '1px solid #e0e0e0',
-              cursor: hasSlot ? 'pointer' : 'not-allowed',
-              '&:hover': {
-                backgroundColor: hasSlot ? `${CELL_COLORS[cellColor]}99` : '#f5f5f5',
-              },
-              ...(snapshot.isDraggingOver && {
-                backgroundColor: hasSlot ? `${CELL_COLORS[cellColor]}99` : '#f5f5f5',
-                border: '2px dashed #1976d2',
-              }),
-            }}
-          >
-            {cellMemo && (
-              <Typography
-                variant="caption"
-                sx={{
-                  position: 'absolute',
-                  top: 2,
-                  left: 2,
-                  color: '#666',
-                  fontSize: '0.6rem',
-                  maxWidth: '90%',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                {cellMemo}
-              </Typography>
-            )}
-            {isLocked && (
-              <LockIcon
-                sx={{
-                  position: 'absolute',
-                  top: 2,
-                  right: 2,
-                  fontSize: '1rem',
-                  color: '#666',
-                }}
-              />
-            )}
-            {provided.placeholder}
-          </TableCell>
-        )}
-      </Droppable>
-    );
-  };
-
   return (
-    <TableContainer>
+    <TableContainer sx={{ maxWidth: '48%' }}>
       <Table size="small" sx={{
         borderCollapse: 'collapse',
-        width: '100%',
         '& th, & td': {
           border: '1px solid #ddd',
           padding: '4px 8px',
@@ -524,7 +454,7 @@ export const AssignmentTable = ({
                 </TableCell>
                 
                 {/* 各日付のアサイン */}
-                {days.map((day, colIndex) => {
+                {days.map(day => {
                   const hasSlot = getSlotInfo(venue.id, order.id, day.date);
                   const dayAssignments = assignments.filter(a => 
                     a.venueId === venue.id && 

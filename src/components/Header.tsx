@@ -1,16 +1,66 @@
 'use client';
 
-import { Box, AppBar, Toolbar, Button, Typography, Avatar } from '@mui/material';
+import { Box, AppBar, Toolbar, Button, Typography, Avatar, Popper, Paper, MenuList, MenuItem, Grow, ClickAwayListener } from '@mui/material';
 import { Settings as SettingsIcon } from '@mui/icons-material';
 import { useRouter, usePathname } from 'next/navigation';
 import HomeIcon from '@mui/icons-material/Home';
 import BusinessIcon from '@mui/icons-material/Business';
 import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
 import EventIcon from '@mui/icons-material/Event';
+import { useState, useRef } from 'react';
+import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 
 export default function Header() {
   const router = useRouter();
   const pathname = usePathname();
+  
+  // シフト管理メニューの状態管理
+  const [shiftsMenuOpen, setShiftsMenuOpen] = useState(false);
+  const shiftsAnchorRef = useRef<HTMLButtonElement>(null);
+
+  // シフト管理メニューの表示/非表示を切り替える
+  const handleShiftsMenuToggle = () => {
+    setShiftsMenuOpen((prevOpen) => !prevOpen);
+  };
+
+  // メニュー外をクリックした時に閉じる
+  const handleShiftsMenuClose = (event: Event | React.SyntheticEvent) => {
+    if (
+      shiftsAnchorRef.current &&
+      shiftsAnchorRef.current.contains(event.target as HTMLElement)
+    ) {
+      return;
+    }
+    setShiftsMenuOpen(false);
+  };
+
+  // マウスが離れた時にメニューを閉じる
+  const handleShiftsMenuLeave = () => {
+    setShiftsMenuOpen(false);
+  };
+
+  // サブメニューアイテムをクリックした時の処理
+  const handleShiftsMenuItemClick = (path: string) => {
+    router.push(path);
+    setShiftsMenuOpen(false);
+  };
+
+  // シフト関連ページかどうかをチェック
+  const isShiftsActive = pathname === '/shifts' || 
+                         pathname === '/shifts/assign' || 
+                         pathname === '/shifts/management' || 
+                         pathname === '/shifts/venue-assign';
+
+  // 共通のボタンスタイル
+  const buttonStyle = {
+    color: 'white',
+    fontSize: '0.9rem',
+    px: 1.5,
+    minWidth: '140px', // 横幅を統一
+    justifyContent: 'flex-start', // テキストを左寄せ
+    height: '40px', // 高さも統一
+    '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.2)' }
+  };
 
   return (
     <Box>
@@ -26,12 +76,8 @@ export default function Header() {
             <Button
               startIcon={<HomeIcon />}
               sx={{
-                color: 'white',
-                fontSize: '0.9rem',
-                px: 1.5,
-                minWidth: 'auto',
+                ...buttonStyle,
                 bgcolor: pathname === '/' ? 'rgba(255, 255, 255, 0.1)' : 'transparent',
-                '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.2)' }
               }}
               onClick={() => router.push('/')}
             >
@@ -40,12 +86,8 @@ export default function Header() {
             <Button
               startIcon={<BusinessIcon />}
               sx={{
-                color: 'white',
-                fontSize: '0.9rem',
-                px: 1.5,
-                minWidth: 'auto',
+                ...buttonStyle,
                 bgcolor: pathname === '/sales' ? 'rgba(255, 255, 255, 0.1)' : 'transparent',
-                '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.2)' }
               }}
               onClick={() => router.push('/sales')}
             >
@@ -54,40 +96,88 @@ export default function Header() {
             <Button
               startIcon={<AccountBalanceIcon />}
               sx={{
-                color: 'white',
-                fontSize: '0.9rem',
-                px: 1.5,
-                minWidth: 'auto',
+                ...buttonStyle,
                 bgcolor: pathname === '/accounting' ? 'rgba(255, 255, 255, 0.1)' : 'transparent',
-                '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.2)' }
               }}
               onClick={() => router.push('/accounting')}
             >
               経理処理
             </Button>
-            <Button
-              startIcon={<EventIcon />}
-              sx={{
-                color: 'white',
-                fontSize: '0.9rem',
-                px: 1.5,
-                minWidth: 'auto',
-                bgcolor: pathname === '/shifts' ? 'rgba(255, 255, 255, 0.1)' : 'transparent',
-                '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.2)' }
-              }}
-              onClick={() => router.push('/shifts')}
+            
+            {/* シフト調整ボタンとサブメニュー */}
+            <Box 
+              sx={{ position: 'relative' }}
+              onMouseEnter={() => setShiftsMenuOpen(true)}
+              onMouseLeave={handleShiftsMenuLeave}
             >
-              シフト管理
-            </Button>
+              <Button
+                ref={shiftsAnchorRef}
+                startIcon={<EventIcon />}
+                endIcon={<ArrowDropDownIcon />}
+                sx={{
+                  ...buttonStyle,
+                  bgcolor: isShiftsActive ? 'rgba(255, 255, 255, 0.1)' : 'transparent',
+                }}
+                onClick={() => router.push('/shifts/assign')}
+              >
+                シフト調整
+              </Button>
+              <Popper
+                open={shiftsMenuOpen}
+                anchorEl={shiftsAnchorRef.current}
+                placement="bottom-start"
+                transition
+                disablePortal
+                style={{ zIndex: 1300 }}
+              >
+                {({ TransitionProps }) => (
+                  <Grow
+                    {...TransitionProps}
+                    style={{ transformOrigin: 'top left' }}
+                  >
+                    <Paper elevation={3} sx={{ mt: 0.5, minWidth: '180px' }}>
+                      <ClickAwayListener onClickAway={handleShiftsMenuClose}>
+                        <MenuList autoFocusItem={shiftsMenuOpen}>
+                          <MenuItem 
+                            onClick={() => handleShiftsMenuItemClick('/shifts/assign')}
+                            sx={{ 
+                              fontSize: '0.9rem',
+                              bgcolor: pathname === '/shifts/assign' ? 'rgba(0, 0, 0, 0.04)' : 'transparent'
+                            }}
+                          >
+                            アサイン
+                          </MenuItem>
+                          <MenuItem 
+                            onClick={() => handleShiftsMenuItemClick('/shifts/management')}
+                            sx={{ 
+                              fontSize: '0.9rem',
+                              bgcolor: pathname === '/shifts/management' ? 'rgba(0, 0, 0, 0.04)' : 'transparent'
+                            }}
+                          >
+                            シフト管理
+                          </MenuItem>
+                          <MenuItem 
+                            onClick={() => handleShiftsMenuItemClick('/shifts/venue-assign')}
+                            sx={{ 
+                              fontSize: '0.9rem',
+                              bgcolor: pathname === '/shifts/venue-assign' ? 'rgba(0, 0, 0, 0.04)' : 'transparent'
+                            }}
+                          >
+                            現場×アサイン確認
+                          </MenuItem>
+                        </MenuList>
+                      </ClickAwayListener>
+                    </Paper>
+                  </Grow>
+                )}
+              </Popper>
+            </Box>
+
             <Button
               startIcon={<SettingsIcon />}
               sx={{
-                color: 'white',
-                fontSize: '0.9rem',
-                px: 1.5,
-                minWidth: 'auto',
+                ...buttonStyle,
                 bgcolor: pathname === '/settings' ? 'rgba(255, 255, 255, 0.1)' : 'transparent',
-                '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.2)' }
               }}
               onClick={() => router.push('/settings')}
             >
@@ -96,7 +186,7 @@ export default function Header() {
             <Box sx={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 2 }}>
               <Avatar sx={{ width: 32, height: 32 }} />
               <Typography sx={{ fontSize: '0.9rem', color: 'white' }}>
-                田中 太郎
+                バカ 将大
               </Typography>
               <Button
                 variant="contained"

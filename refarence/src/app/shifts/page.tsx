@@ -1,12 +1,13 @@
 'use client';
 
-import { Box, Container, Typography, FormControl, InputLabel, Select, MenuItem, ToggleButtonGroup, ToggleButton, Tabs, Tab, Button, Paper } from '@mui/material';
+import { Box, Container, Typography, FormControl, InputLabel, Select, MenuItem, ToggleButtonGroup, ToggleButton, Tabs, Tab, Button } from '@mui/material';
 import { useState } from 'react';
 import WeeklySummary from '@/components/WeeklySummary';
 import SettingsIcon from '@mui/icons-material/Settings';
 import { AssignmentTable } from '@/components/shifts/AssignmentTable';
+import { SpreadsheetGrid } from '@/components/shifts/SpreadsheetGrid';
+import type { Shift } from '@/components/shifts/SpreadsheetGrid';
 import { DayInfo, Venue, Assignment, SlotInfo } from '@/components/shifts/types';
-import { DragDropContext, Droppable, Draggable, DroppableProvided, DraggableProvided, DropResult } from 'react-beautiful-dnd';
 
 // 週別タブの定義
 const getWeeks = (year: string, month: string) => {
@@ -22,12 +23,10 @@ const initialSummary = {
 
 // ToggleButtonGroup共通スタイル
 const toggleButtonGroupStyle = {
+  border: '1px solid rgba(0, 0, 0, 0.12)',
   '& .MuiToggleButton-root': {
-    borderTop: '1px solid rgba(0, 0, 0, 0.12)',
-    borderBottom: '1px solid rgba(0, 0, 0, 0.12)',
+    '&:not(:first-of-type)': {
       borderLeft: '1px solid rgba(0, 0, 0, 0.12)',
-    '&:last-of-type': {
-      borderRight: '1px solid rgba(0, 0, 0, 0.12)',
     }
   }
 };
@@ -507,152 +506,363 @@ const sampleSlots: SlotInfo[] = [
   )
 ];
 
-// ステータスタイルの定義
-interface StatusTile {
-  id: string;
-  label: string;
-  color: string;
-}
-
-const statusTiles: StatusTile[] = [
-  { id: 'absence', label: '欠勤', color: '#ffebee' },
-  { id: 'tm', label: 'TM', color: '#e3f2fd' },
-  { id: 'selected', label: '選択中', color: '#f1f8e9' }
+// サンプルのスプレッドシートデータ
+const sampleSpreadsheetData = [
+  { date: '5/1', weekday: '木', status: '○', venue: 'イオンモール上尾', location: 'センターコート' },
+  { date: '5/2', weekday: '金', status: '○', venue: 'イトーヨーカドー立場', location: '1F入口前' },
+  { date: '5/3', weekday: '土', status: '○', venue: 'マルエツ松江', location: '店舗前' },
+  { date: '5/4', weekday: '日', status: '○', venue: 'コーナン西新井', location: '1F通路' },
+  { date: '5/5', weekday: '月', status: '○', venue: '錦糸町マルイ', location: 'たい焼き屋前' },
 ];
 
-export default function Shifts() {
+// サンプルの社員データ
+const sampleEmployee = {
+  name: '阿部 将大',
+  nameKana: 'アベ ショウダイ',
+  role: 'クローザー',
+  type: '大卒',
+  dailyRate: 25000,
+  holidayRate: 30000,
+  tel: '090-6485-9258',
+  id: '1205000017'
+};
+
+// サンプルのシフトデータ
+const sampleShifts = [
+  // 阿部 將大のシフト
+  { staffId: '1', date: '11/9', status: '○', venue: 'イオンモール上尾', price: 30000 },
+  { staffId: '1', date: '11/10', status: '○', venue: 'イオンモール上尾', price: 30000 },
+  { staffId: '1', date: '11/16', status: '○', venue: 'イオンモール上尾', price: 30000 },
+  { staffId: '1', date: '11/17', status: '○', venue: 'イオンモール上尾', price: 30000 },
+  { staffId: '1', date: '11/23', status: '○', venue: 'G店-CTOKYOS', price: 30000 },
+  { staffId: '1', date: '11/24', status: '○', venue: 'G店-CTOKYOS', price: 30000 },
+  { staffId: '1', date: '11/30', status: '○', venue: 'G店-上恵土', price: 30000 },
+
+  // 安部 隼登のシフト
+  { staffId: '2', date: '11/9', status: '○', venue: 'イオンモール上尾', price: 30000 },
+  { staffId: '2', date: '11/10', status: '×', venue: '', price: 0 },
+  { staffId: '2', date: '11/16', status: '○', venue: 'たいム たいM店', price: 30000 },
+  { staffId: '2', date: '11/17', status: '○', venue: 'たいム たいM店', price: 30000 },
+  { staffId: '2', date: '11/23', status: '○', venue: '篠原店/G-JIT', price: 30000 },
+  { staffId: '2', date: '11/24', status: '○', venue: '篠原店/G-JIT', price: 30000 },
+  { staffId: '2', date: '11/30', status: '○', venue: 'イオンモール上尾', price: 30000 },
+
+  // 木間 大地のシフト
+  { staffId: '3', date: '11/4', status: '○', venue: 'イオンモール上尾', price: 25000 },
+  { staffId: '3', date: '11/9', status: '○', venue: 'イオンモール上尾', price: 30000 },
+  { staffId: '3', date: '11/10', status: '○', venue: 'イオンモール上尾', price: 30000 },
+  { staffId: '3', date: '11/16', status: '○', venue: 'スタジアムX大宮', price: 30000 },
+  { staffId: '3', date: '11/17', status: '○', venue: 'スタジアムX大宮', price: 30000 },
+  { staffId: '3', date: '11/23', status: '○', venue: 'イオンモール上尾', price: 30000 },
+  { staffId: '3', date: '11/24', status: '○', venue: 'イオンモール上尾', price: 30000 },
+  { staffId: '3', date: '11/30', status: '○', venue: 'カートン大宮西口', price: 30000 },
+
+  // 堀田 慎之介のシフト
+  { staffId: '4', date: '11/1', status: '○', venue: 'ホーム大宮西口', price: 25000 },
+  { staffId: '4', date: '11/8', status: '○', venue: 'ホーム大宮西口', price: 25000 },
+  { staffId: '4', date: '11/9', status: '○', venue: 'ホーム大宮西口', price: 30000 },
+  { staffId: '4', date: '11/10', status: '○', venue: 'ホーム大宮西口', price: 30000 },
+  { staffId: '4', date: '11/15', status: '○', venue: 'イオンモール上尾', price: 25000 },
+  { staffId: '4', date: '11/16', status: '○', venue: 'イオンモール上尾', price: 30000 },
+  { staffId: '4', date: '11/17', status: '○', venue: 'イオンモール上尾', price: 30000 },
+  { staffId: '4', date: '11/22', status: '○', venue: 'イオンモール上尾', price: 25000 },
+  { staffId: '4', date: '11/23', status: '○', venue: 'イオンモール上尾', price: 30000 },
+  { staffId: '4', date: '11/24', status: '○', venue: 'イオンモール上尾', price: 30000 },
+  { staffId: '4', date: '11/29', status: '○', venue: 'コーナン千手店', price: 25000 },
+  { staffId: '4', date: '11/30', status: '○', venue: 'G店-上恵土', price: 30000 },
+
+  // 上嶋内 啓太のシフト
+  { staffId: '5', date: '11/1', status: '○', venue: 'ヨーカドー新山下', price: 25000 },
+  { staffId: '5', date: '11/4', status: '○', venue: 'アピタ長津田', price: 25000 },
+  { staffId: '5', date: '11/5', status: '○', venue: 'エルミ鴻巣', price: 25000 },
+  { staffId: '5', date: '11/6', status: '○', venue: 'ホーム大宮西口', price: 25000 },
+  { staffId: '5', date: '11/7', status: '○', venue: 'ホーム大宮西口', price: 25000 },
+  { staffId: '5', date: '11/8', status: '○', venue: 'ホーム大宮西口', price: 25000 },
+  { staffId: '5', date: '11/9', status: '○', venue: 'イオンモール上尾', price: 30000 },
+  { staffId: '5', date: '11/10', status: '○', venue: 'イオンモール上尾', price: 30000 },
+  { staffId: '5', date: '11/13', status: '○', venue: '丸井特設コミケ跡', price: 25000 },
+  { staffId: '5', date: '11/14', status: '○', venue: '丸井特設コミケ跡', price: 25000 },
+  { staffId: '5', date: '11/15', status: '○', venue: 'ヨーカドー武蔵', price: 25000 },
+  { staffId: '5', date: '11/16', status: '○', venue: 'ヨーカドー武蔵', price: 30000 },
+  { staffId: '5', date: '11/17', status: '○', venue: 'ヨーカドー武蔵', price: 30000 },
+  { staffId: '5', date: '11/18', status: '○', venue: 'ヨーカドー武蔵', price: 25000 },
+  { staffId: '5', date: '11/21', status: '○', venue: 'タッチーワラジ', price: 25000 },
+  { staffId: '5', date: '11/22', status: '○', venue: 'ペニバナ横川', price: 25000 },
+  { staffId: '5', date: '11/23', status: '○', venue: 'マルサン横川', price: 30000 },
+  { staffId: '5', date: '11/24', status: '○', venue: 'マルサン横川', price: 30000 },
+  { staffId: '5', date: '11/28', status: '○', venue: 'オーケー南町', price: 25000 },
+  { staffId: '5', date: '11/29', status: '○', venue: 'オーケー南町', price: 25000 },
+
+  // 竹本 日伊瑠のシフト
+  { staffId: '7', date: '11/9', status: '○', venue: 'イオンモール上尾', price: 30000 },
+  { staffId: '7', date: '11/10', status: '○', venue: 'イオンモール上尾', price: 30000 },
+  { staffId: '7', date: '11/16', status: '○', venue: 'イオンモール上尾', price: 30000 },
+  { staffId: '7', date: '11/17', status: '○', venue: 'イオンモール上尾', price: 30000 },
+  { staffId: '7', date: '11/23', status: '○', venue: 'イオンモール上尾', price: 30000 },
+  { staffId: '7', date: '11/24', status: '○', venue: 'イオンモール上尾', price: 30000 },
+
+  // 丸山 剛史のシフト
+  { staffId: '8', date: '11/9', status: '○', venue: 'イオンモール上尾', price: 30000 },
+  { staffId: '8', date: '11/10', status: '×', venue: '', price: 0 },
+  { staffId: '8', date: '11/16', status: '○', venue: 'イオンモール上尾', price: 30000 },
+  { staffId: '8', date: '11/17', status: '○', venue: 'イオンモール上尾', price: 30000 },
+  { staffId: '8', date: '11/23', status: '○', venue: 'イオンモール上尾', price: 30000 },
+  { staffId: '8', date: '11/24', status: '×', venue: '', price: 0 },
+
+  // 松山 家紋のシフト
+  { staffId: '9', date: '11/9', status: '○', venue: 'アリオ相模', price: 30000 },
+  { staffId: '9', date: '11/10', status: '○', venue: 'アリオ相模', price: 30000 },
+  { staffId: '9', date: '11/16', status: '○', venue: 'イオンモール上尾', price: 30000 },
+  { staffId: '9', date: '11/17', status: '○', venue: 'イオンモール上尾', price: 30000 },
+  { staffId: '9', date: '11/23', status: '○', venue: 'ニットワーク小倉', price: 30000 },
+  { staffId: '9', date: '11/24', status: '○', venue: 'ニットワーク小倉', price: 30000 },
+
+  // 松尾 圭蔵のシフト
+  { staffId: '10', date: '11/9', status: '○', venue: 'ペニバナ横川', price: 30000 },
+  { staffId: '10', date: '11/10', status: '○', venue: 'ペニバナ横川', price: 30000 },
+  { staffId: '10', date: '11/23', status: '○', venue: 'エルミ鴻巣', price: 30000 },
+  { staffId: '10', date: '11/24', status: '○', venue: 'エルミ鴻巣', price: 30000 }
+];
+
+// サンプルの会社データ
+const sampleCompanies = [
+  { id: 'festal', name: 'Festal' },
+  { id: 'ansteype', name: 'ANSTEYPE' },
+  { id: 'festal-ansteype', name: 'Festal × ANSTEYPE' }
+];
+
+// サンプルのスタッフデータ
+const staffMembers = [
+  {
+    id: '1205000017',
+    name: '阿部 將大',
+    nameKana: 'アベ ショウダイ',
+    role: 'クローザー',
+    station: '大宮',
+    weekdayRate: 25000,
+    holidayRate: 30000,
+    tel: '090-6485-9258',
+    totalAmount: 210000,
+    workType: '土日のみ'
+  },
+  {
+    id: '1205000018',
+    name: '本間 大地',
+    nameKana: 'ホンマ ダイチ',
+    role: 'クローザー',
+    station: '大宮',
+    weekdayRate: 25000,
+    holidayRate: 30000,
+    tel: '070-4128-4990',
+    totalAmount: 365000,
+    workType: ''
+  },
+  {
+    id: '1205000085',
+    name: '須郷 瑠斗',
+    nameKana: 'スゴウ ルイト',
+    role: 'クローザー',
+    station: '大宮',
+    weekdayRate: 25000,
+    holidayRate: 28000,
+    tel: '070-2797-6982',
+    totalAmount: 495000,
+    workType: ''
+  },
+  {
+    id: '1205000239',
+    name: '竹本 巳伊瑠',
+    nameKana: 'タケモト ミイル',
+    role: 'クローザー',
+    station: '大宮',
+    weekdayRate: 25000,
+    holidayRate: 28000,
+    tel: '070-8934-4359',
+    totalAmount: 196000,
+    workType: ''
+  },
+  {
+    id: '5',
+    name: '上嶋内 啓太',
+    nameKana: 'カミシマウチ ケイタ',
+    role: 'クローザー',
+    station: '大宮',
+    weekdayRate: 25000,
+    holidayRate: 28000,
+    tel: '080-3721-4990',
+    totalAmount: 525000,
+    workType: ''
+  },
+  {
+    id: '6',
+    name: '須﨑 謙斗',
+    nameKana: 'スザキ ケント',
+    role: 'クローザー',
+    station: '大宮',
+    weekdayRate: 25000,
+    holidayRate: 28000,
+    tel: '070-5834-4028',
+    totalAmount: 0,
+    workType: ''
+  },
+  {
+    id: '7',
+    name: '竹本 日伊瑠',
+    nameKana: 'タケモト ヒイル',
+    role: 'クローザー',
+    station: '大宮',
+    weekdayRate: 25000,
+    holidayRate: 28000,
+    tel: '070-8934-4359',
+    totalAmount: 180000,
+    workType: ''
+  },
+  {
+    id: '8',
+    name: '丸山 剛史',
+    nameKana: 'マルヤマ ツヨシ',
+    role: 'クローザー',
+    station: '大宮',
+    weekdayRate: 25000,
+    holidayRate: 28000,
+    tel: '080-4515-1198',
+    totalAmount: 120000,
+    workType: ''
+  },
+  {
+    id: '9',
+    name: '松山 家紋',
+    nameKana: 'マツヤマ イエモン',
+    role: 'クローザー',
+    station: '大宮',
+    weekdayRate: 25000,
+    holidayRate: 28000,
+    tel: '090-4326-8309',
+    totalAmount: 180000,
+    workType: ''
+  },
+  {
+    id: '10',
+    name: '松尾 圭蔵',
+    nameKana: 'マツオ ケイゾウ',
+    role: 'クローザー',
+    station: '大宮',
+    weekdayRate: 25000,
+    holidayRate: 28000,
+    tel: '090-2710-9893',
+    totalAmount: 120000,
+    workType: ''
+  }
+];
+
+// 稼働場所のサンプルデータ
+const SAMPLE_LOCATIONS = [
+  'イオンモール上尾',
+  'イオンモール高崎',
+  'ホームズ足立小台',
+  'ステラタウン大宮',
+  'エルミ湯巻',
+  'ベニバナ稲川',
+  'シ・キホーテ板橋点',
+  'イオンモール新井',
+  'ホームズ足立小台',
+  '島忠ホーム大宮枝川'
+];
+
+// ランダムなシフトを生成する関数
+const generateRandomShifts = (year: number, month: number, staffMembers: any[]): Shift[] => {
+  const shifts: Shift[] = [];
+  const daysInMonth = new Date(year, month, 0).getDate();
+
+  for (let day = 1; day <= daysInMonth; day++) {
+    const date = new Date(year, month - 1, day);
+    const dateStr = date.toISOString().split('T')[0];
+
+    for (const staff of staffMembers) {
+      // 70%の確率で希望を入れる（30%は'-'のまま）
+      if (Math.random() < 0.7) {
+        // ○を60%、×を40%の確率で設定
+        const status: '○' | '×' = Math.random() < 0.6 ? '○' : '×';
+        shifts.push({
+          date: dateStr,
+          staffId: staff.id,
+          status: status,
+          // ○の場合はランダムな稼働場所を設定
+          location: status === '○' ? SAMPLE_LOCATIONS[Math.floor(Math.random() * SAMPLE_LOCATIONS.length)] : undefined
+        });
+      } else {
+        // 残りの30%は'-'を設定
+        shifts.push({
+          date: dateStr,
+          staffId: staff.id,
+          status: '-',
+          location: undefined
+        });
+      }
+    }
+  }
+
+  return shifts;
+};
+
+export default function ShiftsPage() {
   const [year, setYear] = useState<string>('2024');
   const [month, setMonth] = useState<string>('1');
   const [selectedWeek, setSelectedWeek] = useState<number>(1);
   const [summary, setSummary] = useState(initialSummary);
   const [subTabValue, setSubTabValue] = useState<number>(0);
-  const [selectedDates, setSelectedDates] = useState<string[]>([]);
-  const [selectedLevels, setSelectedLevels] = useState<number[]>([]);
+  const [selectedDate, setSelectedDate] = useState<string>('1/5');
   const weeks = getWeeks(year, month);
 
-  // ドラッグ中のアイテムIDを管理
-  const [draggingItemId, setDraggingItemId] = useState<string | null>(null);
-  
-  // ドラッグしているタイルの情報を保持
-  const [draggedTileInfo, setDraggedTileInfo] = useState<{id: string, type: string} | null>(null);
-  
-  // ドラッグ開始時の処理
-  const onDragStart = (start: any) => {
-    setDraggingItemId(start.draggableId);
-    
-    // ステータスタイルからのドラッグの場合、情報を保存
-    if (start.source.droppableId === 'status-tiles') {
-      const draggedTile = statusTiles.find(tile => tile.id === start.draggableId);
-      if (draggedTile) {
-        setDraggedTileInfo({
-          id: draggedTile.id,
-          type: 'status'
-        });
-      }
-    }
-  };
-  
-  // ドラッグ終了時の処理
-  const onDragEnd = (result: DropResult) => {
-    const { source, destination, draggableId } = result;
-    
-    // ドラッグ中のアイテムIDをリセット
-    setDraggingItemId(null);
-    
-    // ドロップ先がない場合は処理終了
-    if (!destination) {
-      setDraggedTileInfo(null);
-      return;
-    }
-    
-    // 同じ場所にドロップした場合は何もしない
-    if (source.droppableId === destination.droppableId && 
-        source.index === destination.index) {
-      setDraggedTileInfo(null);
-      return;
-    }
-    
-    // ステータスタイルからアサイン表へのドラッグの場合
-    if (source.droppableId === 'status-tiles' && destination.droppableId === 'assignment-table') {
-      const draggedTile = statusTiles.find(tile => tile.id === draggableId);
-      if (draggedTile) {
-        console.log(`ステータスタイル「${draggedTile.label}」をアサイン表にドロップしました`, {
-          tile: draggedTile,
-          destination: destination
-        });
-        
-        // ここで実際のアサイン処理を行います
-        // 例: アサイン表のセルの状態を更新する
-        // setAssignments(prev => [...prev, { status: draggedTile.id, cellId: destination.index }]);
-      }
-    }
-    
-    // 保存したドラッグ情報をリセット
-    setDraggedTileInfo(null);
-  };
-  
-  // アサイン表のドロップ処理
-  const handleAssignmentDrop = (data: any) => {
-    // 保存されたドラッグ情報があれば使用
-    if (draggedTileInfo) {
-      const draggedTile = statusTiles.find(tile => tile.id === draggedTileInfo.id);
-      if (draggedTile) {
-        console.log(`${draggedTile.label}をアサイン: `, data);
-        // 実際のアプリケーションでは、この情報を使ってアサインメントを更新します
-      }
-      // ドラッグ情報をリセット
-      setDraggedTileInfo(null);
-    } else {
-      console.log('Assignment drop:', data);
-    }
-  };
+  // 年の選択肢を生成（現在年から5年分）
+  const years = Array.from({ length: 5 }, (_, i) => {
+    const year = new Date().getFullYear() + i;
+    return { value: year.toString(), label: `${year}年` };
+  });
+
+  // 月の選択肢を生成
+  const months = Array.from({ length: 12 }, (_, i) => {
+    const month = i + 1;
+    return { value: month.toString(), label: `${month}月` };
+  });
 
   const handleSubTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setSubTabValue(newValue);
   };
 
-  const handleDateChange = (event: React.MouseEvent<HTMLElement>, date: string) => {
-    setSelectedDates(prev => 
-      prev.includes(date)
-        ? prev.filter(d => d !== date)
-        : [...prev, date]
-    );
+  const handleCompanyChange = (companyId: string) => {
+    console.log('Selected company:', companyId);
+    // ここで会社選択時の処理を実装
   };
 
-  const handleLevelClick = (level: number) => {
-    setSelectedLevels(prev => 
-      prev.includes(level) 
-        ? prev.filter(l => l !== level)
-        : [...prev, level]
-    );
-  };
+  // ランダムなシフトデータを生成
+  const shifts = generateRandomShifts(parseInt(year), parseInt(month), staffMembers);
 
   return (
-    <DragDropContext onDragStart={onDragStart} onDragEnd={onDragEnd}>
-      <Container 
-        maxWidth={false} 
-        sx={{ 
-          bgcolor: '#f5f5f5', 
-          minHeight: '100vh', 
-          py: 3,
-          px: '24px !important',
-          minWidth: '1200px' // 最小幅を1200pxに調整
-        }}
-      >
+    <Container 
+      maxWidth={false} 
+      sx={{ 
+        bgcolor: '#f5f5f5', 
+        minHeight: '100vh', 
+        py: 3,
+        px: '24px !important',
+        minWidth: '1200px'
+      }}
+    >
       {/* パンくずリスト */}
       <Box sx={{ mb: 3 }}>
         <Typography variant="body2" sx={{ color: '#666' }}>
           ホーム / シフト管理
         </Typography>
-              </Box>
+      </Box>
 
       {/* メインコンテンツエリア */}
-        <Box sx={{ 
-          position: 'relative',
-          height: 'calc(100vh - 100px)'
-        }}>
+      <Box sx={{ 
+        position: 'relative',
+        height: 'calc(100vh - 100px)'
+      }}>
         {/* 週別サマリー（右上に固定） */}
-            <Box sx={{ 
+        <Box sx={{ 
           position: 'absolute', 
           top: -20,
           right: 0, 
@@ -662,37 +872,41 @@ export default function Shifts() {
           backgroundColor: '#f5f5f5'
         }}>
           <WeeklySummary weeks={weeks} summary={summary} />
-            </Box>
+        </Box>
 
         {/* 左側のコンテンツ */}
-          <Box sx={{ 
-            display: 'flex',
-            flexDirection: 'column',
-            height: '100%',
-            overflow: 'hidden'
-          }}>
+        <Box sx={{ 
+          display: 'flex',
+          flexDirection: 'column',
+          height: '100%',
+          overflow: 'hidden'
+        }}>
           {/* 年月選択 */}
           <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
             <FormControl size="small">
               <InputLabel>対象年</InputLabel>
               <Select
-              value={year}
+                value={year}
                 label="対象年"
                 onChange={(e) => setYear(e.target.value)}
                 sx={{ width: 120 }}
               >
-                <MenuItem value="2024">2024年</MenuItem>
+                {years.map(({ value, label }) => (
+                  <MenuItem key={value} value={value}>{label}</MenuItem>
+                ))}
               </Select>
             </FormControl>
             <FormControl size="small">
               <InputLabel>対象月</InputLabel>
               <Select
-              value={month}
+                value={month}
                 label="対象月"
                 onChange={(e) => setMonth(e.target.value)}
                 sx={{ width: 120 }}
               >
-                <MenuItem value="1">1月</MenuItem>
+                {months.map(({ value, label }) => (
+                  <MenuItem key={value} value={value}>{label}</MenuItem>
+                ))}
               </Select>
             </FormControl>
           </Box>
@@ -701,8 +915,9 @@ export default function Shifts() {
           <Box sx={{ mb: 3 }}>
             <ToggleButtonGroup
               value={selectedWeek}
+              exclusive
               onChange={(e, value) => value !== null && setSelectedWeek(value)}
-                size="small"
+              size="small"
               sx={toggleButtonGroupStyle}
             >
               {[0, 1, 2, 3, 4, 5].map((week) => (
@@ -715,16 +930,16 @@ export default function Shifts() {
                 </ToggleButton>
               ))}
             </ToggleButtonGroup>
-                          </Box>
+          </Box>
 
           {/* サブタブ */}
           <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
             <Tabs 
               value={subTabValue} 
               onChange={handleSubTabChange}
-                          sx={{
+              sx={{
                 '& .MuiTabs-indicator': {
-                              backgroundColor: '#1976d2',
+                  backgroundColor: '#1976d2',
                   height: 2,
                 },
                 '& .MuiTab-root': {
@@ -736,264 +951,46 @@ export default function Shifts() {
             >
               <Tab label="アサイン" />
               <Tab label="シフト調整" />
+              <Tab label="スプレッドシート" />
             </Tabs>
-                            </Box>
+          </Box>
 
           {/* メインコンテンツエリア（サブタブの内容） */}
-            <Box sx={{ 
-              flex: 1,
-              overflow: 'hidden',
-              display: 'flex',
-              flexDirection: 'column'
-            }}>
+          <Box sx={{ 
+            flex: 1,
+            overflow: 'hidden',
+            display: 'flex',
+            flexDirection: 'column'
+          }}>
             {subTabValue === 0 && (
-                <Box sx={{ 
-                  display: 'flex', 
-                  height: '100%',
-                  overflow: 'hidden'
-                }}>
-                  {/* 左側：アサイン表エリア */}
-                  <Box sx={{ 
-                    width: '55%', // アサイン表の幅を55%に変更
-                    display: 'flex',
-                    flexDirection: 'column',
-                    overflow: 'hidden'
-                  }}>
-                    {/* アサインテーブル */}
-                    <Box sx={{ 
-                      flex: 1,
-                      overflow: 'auto'
-                    }}>
-                      <Droppable droppableId="assignment-table">
-                        {(provided: DroppableProvided) => (
-                          <Box
-                            ref={provided.innerRef}
-                            {...provided.droppableProps}
-                            sx={{ height: '100%', width: '100%' }}
-                          >
-                            <AssignmentTable
-                              venues={sampleVenues}
-                              days={sampleDays}
-                              assignments={sampleSlots}
-                              slots={sampleSlots}
-                            />
-                            {provided.placeholder}
-                          </Box>
-                        )}
-                      </Droppable>
-                    </Box>
-                  </Box>
-
-                  {/* 右側：要員リストエリア */}
-                  <Box sx={{ 
-                    width: '45%', // 要員リストの幅を45%に変更
-                    display: 'flex',
-                    flexDirection: 'column',
-                    overflow: 'hidden',
-                    pl: 3
-                  }}>
-                    {/* 自動配置実行ボタン */}
-                    <Box sx={{ 
-                      display: 'flex',
-                      justifyContent: 'flex-end',
-                      alignItems: 'center',
-                      gap: 1,
-                      mb: 2,
-                      flexShrink: 0
-                    }}>
-                      <Button
-                        variant="contained"
-                        color="primary"
-                        sx={{
-                          backgroundColor: '#1976D2',
-                          minWidth: '160px',
-                          '&:hover': {
-                            backgroundColor: '#1565C0',
-                          }
-                        }}
-                      >
-                        自動配置実行
-                      </Button>
-                      <SettingsIcon sx={{ color: '#1976D2', cursor: 'pointer' }} />
-                    </Box>
-
-                    {/* 要員リストのヘッダー */}
-                    <Box sx={{ 
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 3,
-                      mb: 2,
-                      flexShrink: 0
-                    }}>
-                      <Typography 
-                        variant="h6" 
-                        sx={{ 
-                          fontSize: '1.25rem',
-                          fontWeight: 'bold',
-                          whiteSpace: 'nowrap'
-                        }}
-                      >
-                        要員リスト
-                      </Typography>
-                      <ToggleButtonGroup
-                        value={selectedDates}
-                        onChange={(_, newDates) => setSelectedDates(newDates)}
-                        size="small"
-                        sx={{
-                          display: 'flex',
-                          flexDirection: 'row',
-                          flex: 1,
-                        }}
-                      >
-                        {sampleDays.map((day) => (
-                          <ToggleButton
-                            key={day.date}
-                            value={day.date}
-                            sx={{
-                              ...weekToggleButtonStyle,
-                              px: 0.5,
-                              py: 0.25,
-                              fontSize: '0.75rem',
-                              flex: 1,
-                              minWidth: '45px',
-                              maxWidth: '45px'
-                            }}
-                          >
-                            <Box sx={{ textAlign: 'center' }}>
-                              <Typography variant="caption" display="block" sx={{ fontSize: '0.7rem' }}>
-                                {day.weekday}
-                              </Typography>
-                              <Typography variant="caption" display="block" sx={{ fontSize: '0.7rem' }}>
-                                {day.date}
-                              </Typography>
-                            </Box>
-                          </ToggleButton>
-                        ))}
-                      </ToggleButtonGroup>
-                    </Box>
-
-                    {/* スタッフリストエリア */}
-                    <Box sx={{ width: '300px', p: 2, overflowY: 'auto' }}>
-                    
-                      {/* ステータスタイル */}
-                      <Droppable droppableId="status-tiles" direction="horizontal" isDropDisabled={true}>
-                        {(provided: DroppableProvided) => (
-                          <Box
-                            ref={provided.innerRef}
-                            {...provided.droppableProps}
-                            sx={{
-                              display: 'flex',
-                              gap: 1,
-                              mb: 2
-                            }}
-                          >
-                            {statusTiles.map((status, index) => (
-                              <Draggable
-                                key={status.id}
-                                draggableId={status.id}
-                                index={index}
-                              >
-                                {(provided: DraggableProvided, snapshot) => (
-                                  <Paper
-                                    ref={provided.innerRef}
-                                    {...provided.draggableProps}
-                                    {...provided.dragHandleProps}
-                                    sx={{
-                                      p: 0.5,
-                                      minWidth: '70px',
-                                      textAlign: 'center',
-                                      bgcolor: status.color,
-                                      cursor: 'grab',
-                                      fontSize: '0.875rem',
-                                      boxShadow: snapshot.isDragging ? '0 5px 10px rgba(0,0,0,0.2)' : 'none',
-                                      '&:hover': {
-                                        opacity: 0.8
-                                      }
-                                    }}
-                                  >
-                                    {status.label}
-                                  </Paper>
-                                )}
-                              </Draggable>
-                            ))}
-                            {provided.placeholder}
-                          </Box>
-                        )}
-                      </Droppable>
-                    
-                      {/* レベル選択ボタン */}
-                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mb: 2 }}>
-                        <Box sx={{ display: 'flex', gap: 1 }}>
-                          <Button
-                            variant="contained"
-                            size="small"
-                            onClick={() => handleLevelClick(3)}
-                            sx={{
-                              backgroundColor: selectedLevels.includes(3) ? '#90caf9' : '#e0e0e0',
-                              py: 0.25,
-                              px: 1,
-                              fontSize: '0.75rem',
-                              minHeight: '24px',
-                              minWidth: '60px',
-                              '&:hover': {
-                                backgroundColor: selectedLevels.includes(3) ? '#64b5f6' : '#bdbdbd'
-                              }
-                            }}
-                          >
-                            レベル3
-                          </Button>
-                          <Button
-                            variant="contained"
-                            size="small"
-                            onClick={() => handleLevelClick(2)}
-                            sx={{
-                              backgroundColor: selectedLevels.includes(2) ? '#a5d6a7' : '#e0e0e0',
-                              py: 0.25,
-                              px: 1,
-                              fontSize: '0.75rem',
-                              minHeight: '24px',
-                              minWidth: '60px',
-                              '&:hover': {
-                                backgroundColor: selectedLevels.includes(2) ? '#81c784' : '#bdbdbd'
-                              }
-                            }}
-                          >
-                            レベル2
-                          </Button>
-                          <Button
-                            variant="contained"
-                            size="small"
-                            onClick={() => handleLevelClick(1)}
-                            sx={{
-                              backgroundColor: selectedLevels.includes(1) ? '#ffcc80' : '#e0e0e0',
-                              py: 0.25,
-                              px: 1,
-                              fontSize: '0.75rem',
-                              minHeight: '24px',
-                              minWidth: '60px',
-                              '&:hover': {
-                                backgroundColor: selectedLevels.includes(1) ? '#ffb74d' : '#bdbdbd'
-                              }
-                            }}
-                          >
-                            レベル1
-                          </Button>
-                        </Box>
-                      </Box>
-                    </Box>
-                  </Box>
-                                </Box>
+              <Box sx={{ mt: 2 }}>
+                    <AssignmentTable
+                      days={sampleDays}
+                  venues={sampleVenues}
+                  assignments={[]}
+                      slots={sampleSlots}
+                  onLockChange={(locks) => {
+                    console.log('Locks changed:', locks);
+                  }}
+                  onVenueEdit={(venueId, orders) => {
+                    console.log('Venue edited:', venueId, orders);
+                  }}
+                />
+              </Box>
             )}
             {subTabValue === 1 && (
-              <Box>
-                {/* シフト調整の内容 */}
-                <Typography>シフト調整の内容をここに表示</Typography>
-                                    </Box>
-                                )}
-                              </Box>
-                              </Box>
+              <Box sx={{ mt: 2 }}>
+                <SpreadsheetGrid
+                  year={parseInt(year)}
+                  month={parseInt(month)}
+                  staffMembers={staffMembers}
+                  shifts={shifts}
+                />
+              </Box>
+            )}
+          </Box>
         </Box>
-      </Container>
-    </DragDropContext>
+      </Box>
+    </Container>
   );
 } 

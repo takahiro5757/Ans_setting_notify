@@ -1,147 +1,255 @@
 'use client';
 
-import { Box, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography } from '@mui/material';
+import { Box, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, useTheme, ToggleButtonGroup, ToggleButton } from '@mui/material';
+import { useState } from 'react';
 
+// 週情報の型
 interface WeeklySummaryProps {
-  weeks: string[];  // ['0W', '1W', '2W', '3W', '4W', '5W']
+  weeks: string[];
   summary: {
-    closerCapacity: number[];  // 各週のクローザー枠数
-    girlCapacity: number[];    // 各週のガール枠数
-    totalCapacity: number[];   // 各週の稼働可能人数
+    closerCapacity: number[];
+    girlCapacity: number[];
+    totalCapacity: number[];
   };
 }
 
-// ヘッダーセルのスタイル
-const headerCellStyle = {
-  backgroundColor: '#f5f5f5',
-  padding: '8px',
-  borderBottom: '1px solid #e0e0e0',
-  borderRight: '1px solid #e0e0e0',
-  width: 'calc(900px / 6)'  // 6列で均等に分割
-};
-
-// データセルのスタイル
-const dataCellStyle = {
-  padding: '8px',
-  borderBottom: '1px solid #e0e0e0',
-  borderRight: '1px solid #e0e0e0',
-  width: 'calc(900px / 6)'  // 6列で均等に分割
-};
+// フィルタータイプの定義
+type FilterType = 'all' | 'weekday' | 'weekend';
 
 const WeeklySummary = ({ weeks, summary }: WeeklySummaryProps) => {
-  return (
-    <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
-      {/* 左側の項目名 */}
-      <Box sx={{ 
-        display: 'flex', 
-        flexDirection: 'column', 
-        gap: '1px',
-        mt: '40px', // ヘッダーの高さ分調整
-        minWidth: '120px', // 項目名が改行しないように最小幅を設定
-      }}>
-        <Typography sx={{ 
-          color: '#0066CC',
-          fontSize: '0.875rem',
-          height: '40px',
-          display: 'flex',
-          alignItems: 'center',
-          whiteSpace: 'nowrap' // 改行を防ぐ
-        }}>
-          クローザー枠数
-        </Typography>
-        <Typography sx={{ 
-          color: '#FF1493',
-          fontSize: '0.875rem',
-          height: '40px',
-          display: 'flex',
-          alignItems: 'center',
-          whiteSpace: 'nowrap' // 改行を防ぐ
-        }}>
-          ガール枠数
-        </Typography>
-        <Typography sx={{ 
-          color: '#333333',
-          fontSize: '0.875rem',
-          height: '40px',
-          display: 'flex',
-          alignItems: 'center',
-          whiteSpace: 'nowrap' // 改行を防ぐ
-        }}>
-          稼働可能人数
-        </Typography>
-      </Box>
+  const theme = useTheme();
+  const [filter, setFilter] = useState<FilterType>('all');
+  
+  // 月間合計を計算
+  const monthlyTotal = {
+    closer: summary.closerCapacity.reduce((acc, curr) => acc + curr, 0),
+    girl: summary.girlCapacity.reduce((acc, curr) => acc + curr, 0)
+  };
 
-      {/* 右側の数値テーブル */}
-      <TableContainer sx={{ 
-        width: '900px',
-        backgroundColor: '#ffffff',
-        border: '1px solid #e0e0e0',
-        borderRadius: '4px',
-        overflow: 'hidden'
-      }}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              {weeks.map((week) => (
+  // 週ラベルを明示的に作成
+  const weekLabels = ['0W', '1W', '2W', '3W', '4W', '5W'];
+
+  // フィルター変更ハンドラー
+  const handleFilterChange = (
+    event: React.MouseEvent<HTMLElement>,
+    newFilter: FilterType,
+  ) => {
+    if (newFilter !== null) {
+      setFilter(newFilter);
+    }
+  };
+
+  return (
+    <Box sx={{ mb: 1 }}>
+      <Paper 
+        elevation={1} 
+        sx={{ 
+          borderRadius: 1.5,
+          overflow: 'hidden',
+          border: 'none',
+          '& .MuiTableCell-root': {
+            borderColor: 'rgba(224, 224, 224, 0.4)',
+          }
+        }}
+      >
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end', p: 0.75, borderBottom: '1px solid rgba(224, 224, 224, 0.4)' }}>
+          <ToggleButtonGroup
+            size="small"
+            value={filter}
+            exclusive
+            onChange={handleFilterChange}
+            aria-label="シフト表示フィルター"
+            sx={{ 
+              '& .MuiToggleButtonGroup-root': {
+                height: '24px'
+              },
+              '& .MuiToggleButton-root': {
+                px: 1,
+                py: 0.2,
+                fontSize: '0.7rem',
+                textTransform: 'none',
+                borderColor: 'rgba(224, 224, 224, 0.4)',
+                color: theme.palette.text.secondary,
+                minWidth: '70px',
+                height: '24px',
+                '&.Mui-selected': {
+                  backgroundColor: 'rgba(25, 118, 210, 0.08)',
+                  color: '#1976d2',
+                  fontWeight: 500,
+                }
+              }
+            }}
+          >
+            <ToggleButton value="all">すべて</ToggleButton>
+            <ToggleButton value="weekday">平日のみ</ToggleButton>
+            <ToggleButton value="weekend">週末のみ</ToggleButton>
+          </ToggleButtonGroup>
+        </Box>
+        <TableContainer sx={{ maxHeight: '110px' }}>
+          <Table size="small" sx={{ minWidth: 650 }}>
+            <TableHead>
+              <TableRow sx={{ backgroundColor: 'rgba(245, 245, 250, 0.5)' }}>
                 <TableCell 
-                  key={week} 
-                  align="center"
-                  sx={headerCellStyle}
-                >
-                  <Typography variant="body1" sx={{ fontWeight: 'normal' }}>{week}</Typography>
-                </TableCell>
-              ))}
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {/* クローザー枠 */}
-            <TableRow>
-              {summary.closerCapacity.map((capacity, index) => (
-                <TableCell 
-                  key={`closer-${index}`} 
-                  align="center"
-                  sx={dataCellStyle}
-                >
-                  <Typography sx={{ color: '#0066CC', fontSize: '1rem', whiteSpace: 'nowrap' }}>
-                    {`${capacity}枠`}
-                  </Typography>
-                </TableCell>
-              ))}
-            </TableRow>
-            {/* ガール枠 */}
-            <TableRow>
-              {summary.girlCapacity.map((capacity, index) => (
-                <TableCell 
-                  key={`girl-${index}`} 
-                  align="center"
-                  sx={dataCellStyle}
-                >
-                  <Typography sx={{ color: '#FF1493', fontSize: '1rem', whiteSpace: 'nowrap' }}>
-                    {`${capacity}枠`}
-                  </Typography>
-                </TableCell>
-              ))}
-            </TableRow>
-            {/* 稼働可能人数 */}
-            <TableRow>
-              {summary.totalCapacity.map((capacity, index) => (
-                <TableCell 
-                  key={`total-${index}`} 
-                  align="center"
-                  sx={{
-                    ...dataCellStyle,
-                    borderBottom: 'none'  // 最後の行は下線なし
+                  sx={{ 
+                    textAlign: 'center', 
+                    p: 0.75, 
+                    fontWeight: 500,
+                    color: theme.palette.text.secondary,
+                    width: '120px'
                   }}
                 >
-                  <Typography sx={{ color: '#333333', fontSize: '1rem', whiteSpace: 'nowrap' }}>
-                    {`${capacity}人`}
-                  </Typography>
                 </TableCell>
-              ))}
-            </TableRow>
-          </TableBody>
-        </Table>
-      </TableContainer>
+                {weekLabels.map((label, idx) => (
+                  <TableCell 
+                    key={idx} 
+                    sx={{ 
+                      textAlign: 'center', 
+                      p: 0.75, 
+                      fontWeight: 500,
+                      color: theme.palette.text.secondary,
+                      width: '70px'
+                    }}
+                  >
+                    {label}
+                  </TableCell>
+                ))}
+                <TableCell 
+                  sx={{ 
+                    textAlign: 'center', 
+                    p: 0.75, 
+                    fontWeight: 500,
+                    color: theme.palette.text.secondary,
+                    width: '70px'
+                  }}
+                >
+                  合計
+                </TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {/* クローザー枠数 */}
+              <TableRow hover>
+                <TableCell 
+                  sx={{ 
+                    textAlign: 'center', 
+                    p: 0.75, 
+                    color: '#2196f3', 
+                    fontWeight: 500,
+                  }}
+                >
+                  <Box sx={{ whiteSpace: 'nowrap' }}>
+                    クローザー枠数
+                  </Box>
+                </TableCell>
+                {weekLabels.map((_, idx) => (
+                  <TableCell 
+                    key={idx} 
+                    sx={{ 
+                      textAlign: 'center', 
+                      p: 0.75, 
+                      color: '#2196f3',
+                      fontWeight: 500,
+                    }}
+                  >
+                    <Box sx={{ 
+                      display: 'inline-block', 
+                      backgroundColor: 'rgba(33, 150, 243, 0.08)',
+                      borderRadius: 1,
+                      px: 0.75,
+                      py: 0.2,
+                      minWidth: '45px',
+                      whiteSpace: 'nowrap'
+                    }}>
+                      {summary.closerCapacity[idx] || 0}枠
+                    </Box>
+                  </TableCell>
+                ))}
+                <TableCell 
+                  sx={{ 
+                    textAlign: 'center', 
+                    p: 0.75, 
+                    color: '#2196f3',
+                    fontWeight: 600,
+                    backgroundColor: 'rgba(33, 150, 243, 0.04)',
+                  }}
+                >
+                  <Box sx={{ 
+                    display: 'inline-block',
+                    backgroundColor: 'rgba(33, 150, 243, 0.12)',
+                    borderRadius: 1,
+                    px: 0.75,
+                    py: 0.2,
+                    minWidth: '45px',
+                    whiteSpace: 'nowrap'
+                  }}>
+                    {monthlyTotal.closer}枠
+                  </Box>
+                </TableCell>
+              </TableRow>
+              
+              {/* ガール枠数 */}
+              <TableRow hover>
+                <TableCell 
+                  sx={{ 
+                    textAlign: 'center', 
+                    p: 0.75, 
+                    color: '#e91e63', 
+                    fontWeight: 500,
+                  }}
+                >
+                  <Box sx={{ whiteSpace: 'nowrap' }}>
+                    ガール枠数
+                  </Box>
+                </TableCell>
+                {weekLabels.map((_, idx) => (
+                  <TableCell 
+                    key={idx} 
+                    sx={{ 
+                      textAlign: 'center', 
+                      p: 0.75, 
+                      color: '#e91e63',
+                      fontWeight: 500,
+                    }}
+                  >
+                    <Box sx={{ 
+                      display: 'inline-block',
+                      backgroundColor: 'rgba(233, 30, 99, 0.08)',
+                      borderRadius: 1,
+                      px: 0.75,
+                      py: 0.2,
+                      minWidth: '45px',
+                      whiteSpace: 'nowrap'
+                    }}>
+                      {summary.girlCapacity[idx] || 0}枠
+                    </Box>
+                  </TableCell>
+                ))}
+                <TableCell 
+                  sx={{ 
+                    textAlign: 'center', 
+                    p: 0.75, 
+                    color: '#e91e63',
+                    fontWeight: 600,
+                    backgroundColor: 'rgba(233, 30, 99, 0.04)',
+                  }}
+                >
+                  <Box sx={{ 
+                    display: 'inline-block',
+                    backgroundColor: 'rgba(233, 30, 99, 0.12)',
+                    borderRadius: 1,
+                    px: 0.75,
+                    py: 0.2,
+                    minWidth: '45px',
+                    whiteSpace: 'nowrap'
+                  }}>
+                    {monthlyTotal.girl}枠
+                  </Box>
+                </TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
+        </TableContainer>
+      </Paper>
     </Box>
   );
 };
