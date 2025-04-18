@@ -672,6 +672,15 @@ export default function AssignmentTable({ assignments, dates, onEdit }: Assignme
     return getBackgroundColor(isAvailable, assignmentId, date, orderId);
   };
 
+  // メモ入力フィールドのキーダウンイベントハンドラ
+  const handleMemoKeyDown = (event: React.KeyboardEvent) => {
+    // Shift + Enterが押された場合
+    if (event.key === 'Enter' && event.shiftKey) {
+      event.preventDefault(); // デフォルトの改行を防止
+      handleSendMemo(); // メモを送信
+    }
+  };
+
   return (
     <>
       <Paper>
@@ -893,98 +902,84 @@ export default function AssignmentTable({ assignments, dates, onEdit }: Assignme
       </Paper>
 
       {/* メモポップアップ */}
-      {memoPopupPosition && (
-        <div
-          style={{
-            position: 'fixed',
-            top: `${memoPopupPosition.top + 10}px`,
-            left: `${memoPopupPosition.left}px`,
-            zIndex: 1300,
-            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)',
-            borderRadius: '8px',
-            backgroundColor: 'white',
-            width: '320px',
-            padding: '16px',
-          }}
-        >
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-            <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
-              メモ
+      <Popover
+        open={isMemoOpen}
+        anchorReference="anchorPosition"
+        anchorPosition={
+          memoPopupPosition !== null
+            ? { top: memoPopupPosition.top, left: memoPopupPosition.left }
+            : undefined
+        }
+        onClose={handleCloseMemoPopup}
+        anchorOrigin={{
+          vertical: 'bottom',
+          horizontal: 'left',
+        }}
+        transformOrigin={{
+          vertical: 'top',
+          horizontal: 'left',
+        }}
+        PaperProps={{
+          sx: {
+            p: 2,
+            width: 300,
+            maxHeight: 400,
+            display: 'flex',
+            flexDirection: 'column'
+          }
+        }}
+      >
+        {/* メモスレッド表示 */}
+        {currentMemoCell && (
+          <Box sx={{ mb: 2, overflowY: 'auto', maxHeight: 200 }}>
+            <Typography variant="subtitle2" sx={{ mb: 1 }}>
+              メモ履歴
             </Typography>
-            <IconButton size="small" onClick={handleCloseMemoPopup}>
-              <CancelIcon fontSize="small" />
-            </IconButton>
+            {assignments
+              .find(a => a.id === currentMemoCell.assignmentId)
+              ?.memos?.[currentMemoCell.orderId]?.[currentMemoCell.date]
+              ?.map((memo, index) => (
+                <Box key={memo.id} sx={{ mb: 1, pb: 1, borderBottom: index !== (assignments.find(a => a.id === currentMemoCell?.assignmentId)?.memos?.[currentMemoCell.orderId]?.[currentMemoCell.date]?.length || 0) - 1 ? '1px solid #eee' : 'none' }}>
+                  <Typography variant="caption" sx={{ display: 'block', color: 'text.secondary' }}>
+                    {memo.user} | {new Date(memo.timestamp).toLocaleString('ja-JP')}
+                  </Typography>
+                  <Typography variant="body2">
+                    {memo.text}
+                  </Typography>
+                </Box>
+              )) || (
+                <Typography variant="body2" color="text.secondary">
+                  メモはありません
+                </Typography>
+              )}
           </Box>
-          
-          {/* メモリスト */}
-          {currentMemoCell && (() => {
-            const targetAssignment = assignments.find(a => a.id === currentMemoCell.assignmentId);
-            const memoList = targetAssignment?.memos?.[currentMemoCell.orderId]?.[currentMemoCell.date] || [];
-            return memoList.length > 0 ? (
-              <List sx={{ mb: 2, maxHeight: 200, overflow: 'auto' }}>
-                {memoList.map((memo) => (
-                  <ListItem alignItems="flex-start" key={memo.id} sx={{ px: 0 }}>
-                    <ListItemAvatar sx={{ minWidth: 40 }}>
-                      <Avatar sx={{ width: 32, height: 32 }}>
-                        <AccountCircleIcon />
-                      </Avatar>
-                    </ListItemAvatar>
-                    <ListItemText
-                      primary={
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                          <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
-                            {memo.user}
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            {new Date(memo.timestamp).toLocaleString()}
-                          </Typography>
-                        </Box>
-                      }
-                      secondary={
-                        <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap', mt: 0.5 }}>
-                          {memo.text}
-                        </Typography>
-                      }
-                    />
-                  </ListItem>
-                ))}
-              </List>
-            ) : (
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                このセルにはまだメモがありません。
-              </Typography>
-            );
-          })()}
-          
-          <Divider sx={{ my: 1 }} />
-          
-          {/* メモ入力フォーム */}
-          <Box sx={{ display: 'flex', mt: 2 }}>
-            <TextField
-              fullWidth
-              size="small"
-              placeholder="メモを入力..."
-              multiline
-              maxRows={3}
-              value={memoText}
-              onChange={(e) => setMemoText(e.target.value)}
-              InputProps={{
-                endAdornment: (
-                  <InputAdornment position="end">
-                    <IconButton 
-                      edge="end" 
-                      onClick={handleSendMemo}
-                      disabled={!memoText.trim()}
-                    >
-                      <SendIcon fontSize="small" />
-                    </IconButton>
-                  </InputAdornment>
-                ),
-              }}
-            />
-          </Box>
-        </div>
-      )}
+        )}
+        
+        {/* メモ入力欄 */}
+        <TextField
+          label="メモを入力"
+          multiline
+          rows={3}
+          variant="outlined"
+          fullWidth
+          value={memoText}
+          onChange={(e) => setMemoText(e.target.value)}
+          onKeyDown={handleMemoKeyDown}
+          InputProps={{
+            endAdornment: (
+              <InputAdornment position="end">
+                <IconButton 
+                  onClick={handleSendMemo}
+                  edge="end"
+                  disabled={!memoText.trim()}
+                >
+                  <SendIcon />
+                </IconButton>
+              </InputAdornment>
+            ),
+          }}
+        />
+      </Popover>
 
       {/* 編集ダイアログ */}
       <Dialog open={editDialogOpen} onClose={handleCloseEditDialog}>
