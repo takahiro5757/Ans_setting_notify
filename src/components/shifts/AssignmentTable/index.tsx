@@ -150,6 +150,16 @@ function getBackgroundColor(isAvailable: boolean, assignmentId: string, date: st
   return (hash % 10 < 7) ? '#fff' : '#f9f9f9';
 }
 
+// セルが利用可能かどうかを判断する関数を追加
+function isCellAvailable(baseAvailability: boolean, assignmentId: string, date: string, orderId: string): boolean {
+  // 基本的な利用可能性が false なら利用不可
+  if (!baseAvailability) return false;
+  
+  // 灰色セルも利用不可に設定
+  const bgColor = getBackgroundColor(true, assignmentId, date, orderId);
+  return bgColor === '#fff'; // 白いセルのみ利用可能
+}
+
 // ステータス表示用のスタイル付きコンポーネント
 const StatusChip = styled('div')<{ status: string }>(({ theme, status }) => {
   // ステータスに応じた色を設定
@@ -351,16 +361,19 @@ export default function AssignmentTable({ assignments, dates, onEdit }: Assignme
                       {order.name}
                     </OrderCell>
                     {dates.map((date) => {
-                      // 明示的に真偽値として扱う
-                      const isAvailable = assignment.availability[date.date] === true;
+                      // 基本的な利用可能性を確認
+                      const baseAvailable = assignment.availability[date.date] === true;
+                      
+                      // 背景色を決定
+                      const bgColor = getBackgroundColor(baseAvailable, assignment.id, date.date, order.id);
+                      
+                      // セルが実際に利用可能かどうかを判断
+                      const isAvailable = isCellAvailable(baseAvailable, assignment.id, date.date, order.id);
                       
                       // デバッグ用ログを追加（開発時のみ表示）
                       if (process.env.NODE_ENV !== 'production' && orderIndex === 0) {
-                        console.log(`Assignment: ${assignment.id}, Date: ${date.date}, Available: ${isAvailable}`);
+                        console.log(`Assignment: ${assignment.id}, Date: ${date.date}, Available: ${isAvailable}, Color: ${bgColor}`);
                       }
-                      
-                      // 背景色を決定
-                      const bgColor = getBackgroundColor(isAvailable, assignment.id, date.date, order.id);
                       
                       // セルのステータスを取得
                       const status = assignment.statuses?.[order.id]?.[date.date] || '';
@@ -378,10 +391,13 @@ export default function AssignmentTable({ assignments, dates, onEdit }: Assignme
                             <DroppableCell
                               ref={provided.innerRef}
                               {...provided.droppableProps}
-                              isAvailable={isAvailable}
+                              isAvailable={baseAvailable}
                               isGirl={order.isGirl}
                               className={snapshot.isDraggingOver ? 'dragOver' : ''}
-                              sx={{ backgroundColor: bgColor }}
+                              sx={{ 
+                                backgroundColor: bgColor,
+                                cursor: isAvailable ? 'default' : 'not-allowed'
+                              }}
                               onMouseEnter={() => setHoveredCell(cellId)}
                               onMouseLeave={() => setHoveredCell(null)}
                             >
