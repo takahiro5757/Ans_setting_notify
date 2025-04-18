@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { 
   Table, 
   TableBody, 
@@ -18,12 +18,24 @@ import {
   TextField,
   Typography,
   Box,
-  styled
+  styled,
+  Popover,
+  List,
+  ListItem,
+  ListItemText,
+  ListItemAvatar,
+  Avatar,
+  InputAdornment,
+  Divider,
+  Tooltip
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import FlightIcon from '@mui/icons-material/Flight';
 import CancelIcon from '@mui/icons-material/Cancel';
+import LockIcon from '@mui/icons-material/Lock';
+import SendIcon from '@mui/icons-material/Send';
+import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import { Droppable } from '@hello-pangea/dnd';
 
 // スタイル付きコンポーネント
@@ -117,6 +129,23 @@ interface AssignmentItem {
   statuses?: {
     [orderId: string]: {
       [date: string]: string;
+    };
+  };
+  // メモ情報を追加
+  memos?: {
+    [orderId: string]: {
+      [date: string]: {
+        id: string;
+        text: string;
+        timestamp: string;
+        user: string;
+      }[];
+    };
+  };
+  // ロック情報を追加
+  locks?: {
+    [orderId: string]: {
+      [date: string]: boolean;
     };
   };
 }
@@ -246,6 +275,17 @@ const CellContent = styled(Box)({
   height: '100%',
 });
 
+// セル内にロックアイコンを表示するためのスタイル
+const LockIconWrapper = styled(Box)(({ theme }) => ({
+  position: 'absolute',
+  top: '2px',
+  right: '2px',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  zIndex: 5,
+}));
+
 export default function AssignmentTable({ assignments, dates, onEdit }: AssignmentTableProps) {
   // 状態管理
   const [editDialogOpen, setEditDialogOpen] = useState<boolean>(false);
@@ -253,6 +293,131 @@ export default function AssignmentTable({ assignments, dates, onEdit }: Assignme
   const [editedVenue, setEditedVenue] = useState<string>('');
   const [editedVenueDetail, setEditedVenueDetail] = useState<string>('');
   const [hoveredCell, setHoveredCell] = useState<string | null>(null);
+  
+  // メモポップアップ用の状態
+  const [memoAnchorEl, setMemoAnchorEl] = useState<HTMLElement | null>(null);
+  const [memoText, setMemoText] = useState<string>('');
+  const [currentMemoCell, setCurrentMemoCell] = useState<{
+    assignmentId: string;
+    date: string;
+    orderId: string;
+  } | null>(null);
+  
+  // クリックタイマー（シングルクリックとダブルクリックを区別するため）
+  const clickTimerRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // メモポップアップの開閉状態
+  const isMemoOpen = Boolean(memoAnchorEl);
+  
+  // メモポップアップを開く
+  const handleOpenMemoPopup = (
+    event: React.MouseEvent<HTMLElement>,
+    assignmentId: string,
+    date: string,
+    orderId: string
+  ) => {
+    // ダブルクリック処理中なら何もしない
+    if (clickTimerRef.current) return;
+    
+    // クリックタイマーをセット
+    clickTimerRef.current = setTimeout(() => {
+      setMemoAnchorEl(event.currentTarget);
+      setCurrentMemoCell({ assignmentId, date, orderId });
+      setMemoText('');
+      clickTimerRef.current = null;
+    }, 200); // 200msの遅延でシングルクリック判定
+  };
+  
+  // メモポップアップを閉じる
+  const handleCloseMemoPopup = () => {
+    setMemoAnchorEl(null);
+    setCurrentMemoCell(null);
+  };
+  
+  // メモを送信
+  const handleSendMemo = () => {
+    if (!currentMemoCell || !memoText.trim() || !onEdit) return;
+    
+    const { assignmentId, date, orderId } = currentMemoCell;
+    const targetAssignment = assignments.find(a => a.id === assignmentId);
+    
+    if (targetAssignment) {
+      // 深いコピーを作成
+      const updatedAssignment = JSON.parse(JSON.stringify(targetAssignment));
+      
+      // メモ情報がない場合は初期化
+      if (!updatedAssignment.memos) {
+        updatedAssignment.memos = {};
+      }
+      
+      // 特定のオーダーのメモ情報がない場合は初期化
+      if (!updatedAssignment.memos[orderId]) {
+        updatedAssignment.memos[orderId] = {};
+      }
+      
+      // 特定の日付のメモリストがない場合は初期化
+      if (!updatedAssignment.memos[orderId][date]) {
+        updatedAssignment.memos[orderId][date] = [];
+      }
+      
+      // 新しいメモを追加
+      updatedAssignment.memos[orderId][date].push({
+        id: `memo-${Date.now()}`,
+        text: memoText,
+        timestamp: new Date().toISOString(),
+        user: '現在のユーザー' // 実際のユーザー情報に置き換える
+      });
+      
+      // 更新を適用
+      onEdit(updatedAssignment);
+      
+      // 入力フィールドをクリア
+      setMemoText('');
+    }
+  };
+  
+  // セルのロック状態を切り替える
+  const handleToggleLock = (assignmentId: string, date: string, orderId: string) => {
+    // ダブルクリック処理
+    if (clickTimerRef.current) {
+      clearTimeout(clickTimerRef.current);
+      clickTimerRef.current = null;
+      
+      if (!onEdit) return;
+      
+      const targetAssignment = assignments.find(a => a.id === assignmentId);
+      
+      if (targetAssignment) {
+        // 深いコピーを作成
+        const updatedAssignment = JSON.parse(JSON.stringify(targetAssignment));
+        
+        // ロック情報がない場合は初期化
+        if (!updatedAssignment.locks) {
+          updatedAssignment.locks = {};
+        }
+        
+        // 特定のオーダーのロック情報がない場合は初期化
+        if (!updatedAssignment.locks[orderId]) {
+          updatedAssignment.locks[orderId] = {};
+        }
+        
+        // ロック状態を切り替え
+        updatedAssignment.locks[orderId][date] = !updatedAssignment.locks[orderId][date];
+        
+        // 更新を適用
+        onEdit(updatedAssignment);
+      }
+    }
+  };
+  
+  // コンポーネントのアンマウント時にタイマーをクリア
+  useEffect(() => {
+    return () => {
+      if (clickTimerRef.current) {
+        clearTimeout(clickTimerRef.current);
+      }
+    };
+  }, []);
 
   // 編集ダイアログを開く
   const handleOpenEditDialog = (assignment: AssignmentItem) => {
@@ -398,11 +563,17 @@ export default function AssignmentTable({ assignments, dates, onEdit }: Assignme
                       // セルのユニークID
                       const cellId = `cell-${assignment.id}-${date.date}-${order.id}`;
                       
+                      // セルのロック状態を取得
+                      const isLocked = assignment.locks?.[order.id]?.[date.date] || false;
+                      
+                      // セルのメモリストを取得
+                      const memos = assignment.memos?.[order.id]?.[date.date] || [];
+                      
                       return (
                         <Droppable
                           key={`drop-${assignment.id}-${date.date}-${order.id}`}
                           droppableId={getDroppableId(assignment.id, date.date, order.id)}
-                          isDropDisabled={!isAvailable}
+                          isDropDisabled={!isAvailable || isLocked}
                         >
                           {(provided, snapshot) => (
                             <DroppableCell
@@ -413,11 +584,24 @@ export default function AssignmentTable({ assignments, dates, onEdit }: Assignme
                               className={snapshot.isDraggingOver ? 'dragOver' : ''}
                               sx={{ 
                                 backgroundColor: bgColor,
-                                cursor: isAvailable ? 'default' : 'not-allowed'
+                                cursor: isAvailable && !isLocked ? 'default' : 'not-allowed'
                               }}
                               onMouseEnter={() => setHoveredCell(cellId)}
                               onMouseLeave={() => setHoveredCell(null)}
+                              onClick={(e) => handleOpenMemoPopup(e, assignment.id, date.date, order.id)}
+                              onDoubleClick={() => handleToggleLock(assignment.id, date.date, order.id)}
                             >
+                              {isLocked && (
+                                <LockIconWrapper>
+                                  <Tooltip title="このセルはロックされています">
+                                    <LockIcon 
+                                      color="primary" 
+                                      fontSize="small" 
+                                      sx={{ opacity: 0.7 }} 
+                                    />
+                                  </Tooltip>
+                                </LockIconWrapper>
+                              )}
                               <CellContent>
                                 {status && (
                                   <Box sx={{ position: 'relative', width: '100%' }}>
@@ -438,6 +622,20 @@ export default function AssignmentTable({ assignments, dates, onEdit }: Assignme
                                     </StatusChip>
                                   </Box>
                                 )}
+                                {memos.length > 0 && (
+                                  <Box 
+                                    sx={{ 
+                                      position: 'absolute', 
+                                      bottom: '2px', 
+                                      right: '2px',
+                                      width: '8px',
+                                      height: '8px',
+                                      borderRadius: '50%',
+                                      backgroundColor: 'primary.main',
+                                      opacity: 0.7
+                                    }} 
+                                  />
+                                )}
                               </CellContent>
                               <div style={{ display: 'none' }}>{provided.placeholder}</div>
                             </DroppableCell>
@@ -452,6 +650,92 @@ export default function AssignmentTable({ assignments, dates, onEdit }: Assignme
           </Table>
         </StyledTableContainer>
       </Paper>
+
+      {/* メモポップアップ */}
+      <Popover
+        open={isMemoOpen}
+        anchorEl={memoAnchorEl}
+        onClose={handleCloseMemoPopup}
+        anchorOrigin={{
+          vertical: 'bottom',
+          horizontal: 'center',
+        }}
+        transformOrigin={{
+          vertical: 'top',
+          horizontal: 'center',
+        }}
+        sx={{ mt: 1 }}
+      >
+        <Box sx={{ width: 320, p: 2 }}>
+          <Typography variant="subtitle1" sx={{ mb: 1, fontWeight: 'bold' }}>
+            メモ
+          </Typography>
+          
+          {/* メモリスト */}
+          {currentMemoCell && assignments.find(a => a.id === currentMemoCell.assignmentId)?.memos?.[currentMemoCell.orderId]?.[currentMemoCell.date]?.length > 0 ? (
+            <List sx={{ mb: 2, maxHeight: 200, overflow: 'auto' }}>
+              {assignments.find(a => a.id === currentMemoCell.assignmentId)?.memos?.[currentMemoCell.orderId]?.[currentMemoCell.date]?.map((memo) => (
+                <ListItem alignItems="flex-start" key={memo.id} sx={{ px: 0 }}>
+                  <ListItemAvatar sx={{ minWidth: 40 }}>
+                    <Avatar sx={{ width: 32, height: 32 }}>
+                      <AccountCircleIcon />
+                    </Avatar>
+                  </ListItemAvatar>
+                  <ListItemText
+                    primary={
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+                          {memo.user}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {new Date(memo.timestamp).toLocaleString()}
+                        </Typography>
+                      </Box>
+                    }
+                    secondary={
+                      <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap', mt: 0.5 }}>
+                        {memo.text}
+                      </Typography>
+                    }
+                  />
+                </ListItem>
+              ))}
+            </List>
+          ) : (
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              このセルにはまだメモがありません。
+            </Typography>
+          )}
+          
+          <Divider sx={{ my: 1 }} />
+          
+          {/* メモ入力フォーム */}
+          <Box sx={{ display: 'flex', mt: 2 }}>
+            <TextField
+              fullWidth
+              size="small"
+              placeholder="メモを入力..."
+              multiline
+              maxRows={3}
+              value={memoText}
+              onChange={(e) => setMemoText(e.target.value)}
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton 
+                      edge="end" 
+                      onClick={handleSendMemo}
+                      disabled={!memoText.trim()}
+                    >
+                      <SendIcon fontSize="small" />
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }}
+            />
+          </Box>
+        </Box>
+      </Popover>
 
       {/* 編集ダイアログ */}
       <Dialog open={editDialogOpen} onClose={handleCloseEditDialog}>
