@@ -10,12 +10,6 @@
 - 詳細/サマリービューの切り替え
 - 帯案件の管理
 
-### シフト管理機能
-- 要員配置の管理と可視化
-- ドラッグ＆ドロップによるシフトステータス変更
-- アサインメントテーブルでの要員配置状況確認
-- 要員リストと現場リストの連携
-
 ## 技術スタック
 
 - **フロントエンド**
@@ -23,7 +17,6 @@
   - React 18.2.0
   - TypeScript
   - Material-UI (MUI)
-  - @hello-pangea/dnd (ドラッグ＆ドロップ機能)
 
 ## 開発環境のセットアップ
 
@@ -63,31 +56,11 @@ ANSTEYPE/
 │   ├── app/
 │   │   ├── layout.tsx
 │   │   ├── page.tsx
-│   │   ├── sales/
-│   │   │   └── page.tsx
-│   │   └── shifts/
-│   │       ├── assign/
-│   │       │   └── page.tsx
-│   │       ├── management/
-│   │       │   └── page.tsx
-│   │       └── venue-assign/
-│   │           └── page.tsx
-│   ├── components/
-│   │   ├── Header.tsx
-│   │   ├── SalesTable.tsx
-│   │   ├── Breadcrumb.tsx
-│   │   ├── WeekSelector.tsx
-│   │   ├── YearMonthSelector.tsx
-│   │   └── shifts/
-│   │       ├── AssignmentTable/
-│   │       │   └── index.tsx
-│   │       ├── SpreadsheetGrid/
-│   │       │   └── index.tsx
-│   │       └── StaffList/
-│   │           └── index.tsx
-│   └── utils/
-│       ├── dateUtils.ts
-│       └── assignmentUtils.ts
+│   │   └── sales/
+│   │       └── page.tsx
+│   └── components/
+│       ├── Header.tsx
+│       └── SalesTable.tsx
 ├── public/
 ├── package.json
 └── tsconfig.json
@@ -108,21 +81,6 @@ ANSTEYPE/
 - **帯案件管理**
   - 帯案件の登録と管理
   - ステータス管理と進捗追跡
-
-### シフト管理機能
-- **アサイン管理**
-  - ドラッグ＆ドロップによる要員配置
-  - 「欠勤」「TM」「選択中」ステータスの設定
-  - セル単位での要員ステータス管理
-
-- **スプレッドシート形式の要員管理**
-  - 日付ごとの要員配置状況の可視化
-  - 集計機能（出勤日数、合計金額など）
-  - フィルタリングと検索機能
-
-- **現場×アサイン確認**
-  - 現場ごとのアサイン状況確認
-  - 出張や外現場の管理
 
 ## ライセンス
 

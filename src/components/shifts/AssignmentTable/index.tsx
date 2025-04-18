@@ -60,26 +60,20 @@ interface OrderCellProps {
   isGirl: boolean;
 }
 
-const DroppableCell = styled(TableCell, {
+const DroppableCell = styled(StyledTableCell, {
   shouldForwardProp: (prop) => prop !== 'isAvailable' && prop !== 'isGirl'
 })<{ isAvailable?: boolean; isGirl?: boolean }>(({ theme, isAvailable, isGirl }) => ({
   width: '100px',
   height: '50px',
-  border: isAvailable ? `1px solid rgba(224, 224, 224, 0.3)` : 'none',
   backgroundColor: isAvailable ? '#fff' : '#f5f5f5',
   position: 'relative',
   textAlign: 'center',
   padding: '8px',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  transition: 'all 0.2s ease-in-out',
   '&.dragOver': {
     backgroundColor: theme.palette.primary.light,
     opacity: 0.8,
     borderColor: theme.palette.primary.main,
     boxShadow: `0 0 5px ${theme.palette.primary.main}`,
-    transform: 'scale(1.05)',
   }
 }));
 
@@ -183,7 +177,8 @@ const StatusChip = styled('div')<{ status: string }>(({ theme, status }) => {
     borderRadius: '4px',
     fontSize: '0.8rem',
     fontWeight: 'bold',
-    display: 'inline-block',
+    display: 'block',
+    margin: '0 auto',
     textAlign: 'center',
     width: '90%',
     boxShadow: '0 1px 2px rgba(0, 0, 0, 0.1)',
