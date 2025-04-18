@@ -23,6 +23,7 @@ import {
 import EditIcon from '@mui/icons-material/Edit';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import FlightIcon from '@mui/icons-material/Flight';
+import CancelIcon from '@mui/icons-material/Cancel';
 import { Droppable } from '@hello-pangea/dnd';
 
 // スタイル付きコンポーネント
@@ -182,8 +183,27 @@ const StatusChip = styled('div')<{ status: string }>(({ theme, status }) => {
     textAlign: 'center',
     width: '90%',
     boxShadow: '0 1px 2px rgba(0, 0, 0, 0.1)',
+    position: 'relative',
   };
 });
+
+// 削除ボタン用のスタイル
+const DeleteButton = styled(IconButton)(({ theme }) => ({
+  position: 'absolute',
+  top: '-8px',
+  right: '-8px',
+  padding: '2px',
+  backgroundColor: '#fff',
+  border: '1px solid #ddd',
+  '&:hover': {
+    backgroundColor: '#f5f5f5',
+  },
+  '& .MuiSvgIcon-root': {
+    fontSize: '16px',
+  },
+  zIndex: 10,
+  display: 'none',
+}));
 
 // セル内に表示するステータスを取得する関数
 const getStatusDisplay = (status: string) => {
@@ -205,6 +225,7 @@ export default function AssignmentTable({ assignments, dates, onEdit }: Assignme
   const [currentAssignment, setCurrentAssignment] = useState<AssignmentItem | null>(null);
   const [editedVenue, setEditedVenue] = useState<string>('');
   const [editedVenueDetail, setEditedVenueDetail] = useState<string>('');
+  const [hoveredCell, setHoveredCell] = useState<string | null>(null);
 
   // 編集ダイアログを開く
   const handleOpenEditDialog = (assignment: AssignmentItem) => {
@@ -236,6 +257,24 @@ export default function AssignmentTable({ assignments, dates, onEdit }: Assignme
   // 利用可能日のドロップ領域IDを生成
   const getDroppableId = (assignmentId: string, date: string, orderId: string) => {
     return `assignment-${assignmentId}-date-${date}-order-${orderId}`;
+  };
+
+  // セルからステータスを削除する関数
+  const handleRemoveStatus = (assignmentId: string, date: string, orderId: string) => {
+    // ステータスの削除処理を実装
+    if (onEdit) {
+      const targetAssignment = assignments.find(a => a.id === assignmentId);
+      if (targetAssignment && targetAssignment.statuses?.[orderId]?.[date]) {
+        // 深いコピーを作成
+        const updatedAssignment = JSON.parse(JSON.stringify(targetAssignment));
+        
+        // 該当するステータスを削除
+        delete updatedAssignment.statuses[orderId][date];
+        
+        // 更新を適用
+        onEdit(updatedAssignment);
+      }
+    }
   };
 
   return (
@@ -326,6 +365,9 @@ export default function AssignmentTable({ assignments, dates, onEdit }: Assignme
                       // セルのステータスを取得
                       const status = assignment.statuses?.[order.id]?.[date.date] || '';
                       
+                      // セルのユニークID
+                      const cellId = `cell-${assignment.id}-${date.date}-${order.id}`;
+                      
                       return (
                         <Droppable
                           key={`drop-${assignment.id}-${date.date}-${order.id}`}
@@ -340,11 +382,27 @@ export default function AssignmentTable({ assignments, dates, onEdit }: Assignme
                               isGirl={order.isGirl}
                               className={snapshot.isDraggingOver ? 'dragOver' : ''}
                               sx={{ backgroundColor: bgColor }}
+                              onMouseEnter={() => setHoveredCell(cellId)}
+                              onMouseLeave={() => setHoveredCell(null)}
                             >
                               {status && (
-                                <StatusChip status={status}>
-                                  {getStatusDisplay(status)}
-                                </StatusChip>
+                                <Box sx={{ position: 'relative' }}>
+                                  <StatusChip status={status}>
+                                    {getStatusDisplay(status)}
+                                    <DeleteButton
+                                      size="small"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleRemoveStatus(assignment.id, date.date, order.id);
+                                      }}
+                                      sx={{
+                                        display: hoveredCell === cellId ? 'flex' : 'none'
+                                      }}
+                                    >
+                                      <CancelIcon color="error" />
+                                    </DeleteButton>
+                                  </StatusChip>
+                                </Box>
                               )}
                               {provided.placeholder}
                             </DroppableCell>
