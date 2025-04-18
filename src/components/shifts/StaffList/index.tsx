@@ -51,16 +51,18 @@ const StatusTile = styled(Paper)<StatusTileProps>(({ theme, color }) => ({
   display: 'flex',
   justifyContent: 'center',
   alignItems: 'center',
-  width: '70px',
-  height: '35px',
+  width: '80px',
+  height: '32px',
   margin: theme.spacing(0.75),
   backgroundColor: color,
-  borderRadius: '6px',
+  borderRadius: '4px',
   cursor: 'grab',
   userSelect: 'none',
   textAlign: 'center',
-  boxShadow: theme.shadows[1],
-  fontSize: '0.9rem',
+  boxShadow: '0 1px 2px rgba(0, 0, 0, 0.1)',
+  fontSize: '0.8rem',
+  padding: '4px 8px',
+  fontWeight: 'bold',
 }));
 
 const LevelButton = styled(ToggleButton)(({ theme }) => ({

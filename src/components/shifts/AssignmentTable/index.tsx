@@ -66,15 +66,16 @@ const DroppableCell = styled(StyledTableCell, {
 })<{ isAvailable?: boolean; isGirl?: boolean }>(({ theme, isAvailable, isGirl }) => ({
   width: '100px',
   height: '50px',
+  minHeight: '50px',
+  maxHeight: '50px',
   backgroundColor: isAvailable ? '#fff' : '#f5f5f5',
   position: 'relative',
   textAlign: 'center',
   padding: '8px',
+  boxSizing: 'border-box',
+  transition: 'background-color 0.2s ease',
   '&.dragOver': {
-    backgroundColor: theme.palette.primary.light,
-    opacity: 0.8,
-    borderColor: theme.palette.primary.main,
-    boxShadow: `0 0 5px ${theme.palette.primary.main}`,
+    backgroundColor: 'rgba(33, 150, 243, 0.08)',
   }
 }));
 
@@ -194,6 +195,8 @@ const StatusChip = styled('div')<{ status: string }>(({ theme, status }) => {
     width: '90%',
     boxShadow: '0 1px 2px rgba(0, 0, 0, 0.1)',
     position: 'relative',
+    height: '24px',
+    lineHeight: '16px',
   };
 });
 
@@ -228,6 +231,20 @@ const getStatusDisplay = (status: string) => {
       return '';
   }
 };
+
+// セル内のコンテンツ用のスタイル
+const CellContent = styled(Box)({
+  position: 'absolute',
+  top: 0,
+  left: 0,
+  right: 0,
+  bottom: 0,
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  width: '100%',
+  height: '100%',
+});
 
 export default function AssignmentTable({ assignments, dates, onEdit }: AssignmentTableProps) {
   // 状態管理
@@ -401,26 +418,28 @@ export default function AssignmentTable({ assignments, dates, onEdit }: Assignme
                               onMouseEnter={() => setHoveredCell(cellId)}
                               onMouseLeave={() => setHoveredCell(null)}
                             >
-                              {status && (
-                                <Box sx={{ position: 'relative' }}>
-                                  <StatusChip status={status}>
-                                    {getStatusDisplay(status)}
-                                    <DeleteButton
-                                      size="small"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleRemoveStatus(assignment.id, date.date, order.id);
-                                      }}
-                                      sx={{
-                                        display: hoveredCell === cellId ? 'flex' : 'none'
-                                      }}
-                                    >
-                                      <CancelIcon color="error" />
-                                    </DeleteButton>
-                                  </StatusChip>
-                                </Box>
-                              )}
-                              {provided.placeholder}
+                              <CellContent>
+                                {status && (
+                                  <Box sx={{ position: 'relative', width: '100%' }}>
+                                    <StatusChip status={status}>
+                                      {getStatusDisplay(status)}
+                                      <DeleteButton
+                                        size="small"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleRemoveStatus(assignment.id, date.date, order.id);
+                                        }}
+                                        sx={{
+                                          display: hoveredCell === cellId ? 'flex' : 'none'
+                                        }}
+                                      >
+                                        <CancelIcon color="error" />
+                                      </DeleteButton>
+                                    </StatusChip>
+                                  </Box>
+                                )}
+                              </CellContent>
+                              <div style={{ display: 'none' }}>{provided.placeholder}</div>
                             </DroppableCell>
                           )}
                         </Droppable>

@@ -6,8 +6,13 @@ export const generateDates = (startDate: Date, days: number = 7) => {
   const dates = [];
   const dayOfWeekMap = ['日', '月', '火', '水', '木', '金', '土'];
 
+  // 現在の日付から最も近い火曜日を見つける
+  const currentDay = startDate.getDay(); // 0=日, 1=月, 2=火, ...
+  const daysUntilTuesday = (currentDay <= 2) ? (2 - currentDay) : (9 - currentDay);
+  const tuesdayDate = addDays(startDate, daysUntilTuesday);
+  
   for (let i = 0; i < days; i++) {
-    const date = addDays(startDate, i);
+    const date = addDays(tuesdayDate, i);
     const dateStr = format(date, 'yyyy-MM-dd');
     const dayOfWeek = dayOfWeekMap[date.getDay()];
     const display = format(date, 'M/d');

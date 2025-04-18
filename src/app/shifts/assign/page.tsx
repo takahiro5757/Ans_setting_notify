@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { Box, Container, Typography, Grid, SelectChangeEvent } from '@mui/material';
+import { Box, Container, Typography, Grid, SelectChangeEvent, ToggleButtonGroup, ToggleButton } from '@mui/material';
 import Breadcrumb from '@/components/Breadcrumb';
 import YearMonthSelector from '@/components/YearMonthSelector';
 import WeekSelector from '@/components/WeekSelector';
@@ -42,6 +42,8 @@ export default function AssignPage() {
   const [month, setMonth] = useState<string>('4');
   const [selectedWeek, setSelectedWeek] = useState<number>(0);
   const [assignments, setAssignments] = useState<AssignmentItem[]>(generateDummyAssignments());
+  // 表示モードの状態追加
+  const [displayMode, setDisplayMode] = useState<string>('normal');
   
   // 週情報を取得
   const weeks = getWeeks(year, month);
@@ -121,6 +123,16 @@ export default function AssignPage() {
     }
   }, []);
 
+  // 表示モード変更ハンドラ
+  const handleDisplayModeChange = (
+    event: React.MouseEvent<HTMLElement>,
+    newMode: string,
+  ) => {
+    if (newMode !== null) {
+      setDisplayMode(newMode);
+    }
+  };
+
   return (
     <DragDropContext onDragEnd={handleDragEnd}>
       <Container 
@@ -150,7 +162,7 @@ export default function AssignPage() {
           </Box>
 
           {/* 年月・週選択 */}
-          <Box sx={{ mb: 3 }}>
+          <Box sx={{ mb: 2 }}>
             <YearMonthSelector
               year={year}
               month={month}
@@ -165,12 +177,70 @@ export default function AssignPage() {
               onChange={(week) => setSelectedWeek(week)}
             />
           </Box>
+          
+          {/* 表示切替ボタン */}
+          <Box sx={{ 
+            mb: 3, 
+            justifyContent: 'flex-start',
+            borderRadius: 1,
+            border: '1px solid rgba(0, 0, 0, 0.12)',
+            display: 'inline-block'
+          }}>
+            <ToggleButtonGroup
+              value={displayMode}
+              exclusive
+              onChange={handleDisplayModeChange}
+              aria-label="表示切替"
+              size="small"
+            >
+              <ToggleButton 
+                value="normal" 
+                aria-label="通常" 
+                sx={{ 
+                  px: 3,
+                  width: '100px',
+                  '&.Mui-selected': {
+                    bgcolor: 'primary.main',
+                    color: 'white',
+                    '&:hover': {
+                      bgcolor: 'primary.dark',
+                      color: 'white',
+                    }
+                  }
+                }}
+              >
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%' }}>
+                  通常
+                </Box>
+              </ToggleButton>
+              <ToggleButton 
+                value="series" 
+                aria-label="帯案件" 
+                sx={{ 
+                  px: 3,
+                  width: '100px',
+                  '&.Mui-selected': {
+                    bgcolor: 'primary.main',
+                    color: 'white',
+                    '&:hover': {
+                      bgcolor: 'primary.dark',
+                      color: 'white',
+                    }
+                  }
+                }}
+              >
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%' }}>
+                  帯案件
+                </Box>
+              </ToggleButton>
+            </ToggleButtonGroup>
+          </Box>
 
           {/* メインコンテンツ - グリッドレイアウト */}
           <Grid container spacing={2}>
             {/* 左側のコンテンツ - AssignmentTable */}
             <Grid item xs={12} md={8}>
-              <Box sx={{ mt: 8, mb: 2 }}>
+              <Box sx={{ mb: 2 }}>
                 <AssignmentTable 
                   assignments={assignments}
                   dates={dates}
@@ -180,7 +250,7 @@ export default function AssignPage() {
             </Grid>
             
             {/* 右側のコンテンツ - StaffList */}
-            <Grid item xs={12} md={4} sx={{ mt: 16 }}>
+            <Grid item xs={12} md={4}>
               <Box sx={{ display: 'flex', justifyContent: 'center' }}>
                 <StaffList year={parseInt(year)} month={parseInt(month)} />
               </Box>
