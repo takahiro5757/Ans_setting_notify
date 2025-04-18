@@ -45,7 +45,7 @@ import { Droppable } from '@hello-pangea/dnd';
 
 // スタイル付きコンポーネント
 const StyledTableContainer = styled('div')(({ theme }) => ({
-  maxHeight: 'calc(100vh - 250px)',
+  maxHeight: 'calc(720px)',
   overflowY: 'auto',
   '& .MuiTableCell-root': {
     padding: '8px',
@@ -161,6 +161,7 @@ interface AssignmentTableProps {
     date: string;
     dayOfWeek: string;
     display: string;
+    isOtherMonth?: boolean;
   }[];
   onEdit?: (assignment: AssignmentItem) => void;
 }
@@ -180,13 +181,27 @@ function getBackgroundColor(isAvailable: boolean, assignmentId: string, date: st
     return hash;
   };
   
+  // 日付から曜日を取得（0=日曜日, 6=土曜日）
+  const dateObj = new Date(date);
+  const dayOfWeek = dateObj.getDay();
+  
+  // 土日の場合は薄い黄色に
+  if (dayOfWeek === 0 || dayOfWeek === 6) {
+    return '#fffde7'; // 薄い黄色
+  }
+  
   const hash = hashCode(`${assignmentId}-${date}-${orderId}`);
   // 70%の確率で白、30%の確率で灰色
-  return (hash % 10 < 7) ? '#fff' : '#f9f9f9';
+  return (hash % 10 < 7) ? '#fff' : '#f5f5f5';
 }
 
-// セルが利用可能かどうかを判断する関数を追加
-function isCellAvailable(baseAvailability: boolean, assignmentId: string, date: string, orderId: string): boolean {
+// セルが利用可能かどうかを判断する関数を拡張
+function isCellAvailable(baseAvailability: boolean, assignmentId: string, date: string, orderId: string, isOtherMonth: boolean): boolean {
+  // 他の月の日付セルは常に利用不可に
+  if (isOtherMonth) {
+    return false;
+  }
+  
   // 基本的な利用可能性が false なら利用不可
   if (!baseAvailability) return false;
   
@@ -664,7 +679,12 @@ export default function AssignmentTable({ assignments, dates, onEdit }: Assignme
   };
   
   // セルの背景色を取得（カスタム色があればそれを優先）
-  const getCellBackgroundColor = (assignmentId: string, date: string, orderId: string, isAvailable: boolean) => {
+  const getCellBackgroundColor = (assignmentId: string, date: string, orderId: string, isAvailable: boolean, isOtherMonth: boolean) => {
+    // 他の月の日付セルは常に灰色に
+    if (isOtherMonth) {
+      return '#f5f5f5';
+    }
+
     const cellId = `${assignmentId}-${date}-${orderId}`;
     if (customCellColors[cellId]) {
       return customCellColors[cellId];
@@ -758,11 +778,14 @@ export default function AssignmentTable({ assignments, dates, onEdit }: Assignme
                       // 基本的な利用可能性を確認
                       const baseAvailable = assignment.availability[date.date] === true;
                       
+                      // 他の月のフラグを取得
+                      const isOtherMonth = date.isOtherMonth === true;
+                      
                       // 背景色を決定
-                      const bgColor = getCellBackgroundColor(assignment.id, date.date, order.id, baseAvailable);
+                      const bgColor = getCellBackgroundColor(assignment.id, date.date, order.id, baseAvailable, isOtherMonth);
                       
                       // セルが実際に利用可能かどうかを判断
-                      const isAvailable = isCellAvailable(baseAvailable, assignment.id, date.date, order.id);
+                      const isAvailable = isCellAvailable(baseAvailable, assignment.id, date.date, order.id, isOtherMonth);
                       
                       // デバッグ用ログを追加（開発時のみ表示）
                       if (process.env.NODE_ENV !== 'production' && orderIndex === 0) {
@@ -785,13 +808,13 @@ export default function AssignmentTable({ assignments, dates, onEdit }: Assignme
                         <Droppable
                           key={`drop-${assignment.id}-${date.date}-${order.id}`}
                           droppableId={getDroppableId(assignment.id, date.date, order.id)}
-                          isDropDisabled={!isAvailable || isLocked}
+                          isDropDisabled={!isAvailable || isLocked || isOtherMonth}
                         >
                           {(provided, snapshot) => (
                             <DroppableCell
                               ref={provided.innerRef}
                               {...provided.droppableProps}
-                              isAvailable={baseAvailable}
+                              isAvailable={baseAvailable && !isOtherMonth}
                               isGirl={order.isGirl}
                               className={snapshot.isDraggingOver ? 'dragOver' : ''}
                               sx={{ 

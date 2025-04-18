@@ -1,4 +1,4 @@
-import { format, addDays, isWeekend } from 'date-fns';
+import { format, addDays, isWeekend, setDate, getDate, getMonth, getYear, addMonths, subMonths } from 'date-fns';
 import { ja } from 'date-fns/locale';
 
 // 日付データを生成する関数
@@ -27,9 +27,94 @@ export const generateDates = (startDate: Date, days: number = 7) => {
   return dates;
 };
 
+/**
+ * 指定した年月の特定の週の日付データを生成する関数
+ * @param year 年
+ * @param month 月（1-12）
+ * @param weekIndex 週番号（0-5）
+ * @returns 7日分の日付データ
+ */
+export const generateWeekDates = (year: string | number, month: string | number, weekIndex: number) => {
+  const numYear = typeof year === 'string' ? parseInt(year) : year;
+  const numMonth = typeof month === 'string' ? parseInt(month) : month;
+  
+  // 月の最初の日を取得
+  const firstDayOfMonth = new Date(numYear, numMonth - 1, 1);
+  
+  // 月の最初の火曜日を見つける
+  const firstTuesday = new Date(firstDayOfMonth);
+  while (firstTuesday.getDay() !== 2) { // 2は火曜日
+    firstTuesday.setDate(firstTuesday.getDate() + 1);
+  }
+  
+  // 週インデックスに基づいて、その週の火曜日を計算
+  let startDate: Date;
+  
+  if (weekIndex === 0) {
+    // 0Wの場合、月初から最初の火曜日の前日までなので、前月の日付を含む
+    startDate = new Date(firstDayOfMonth);
+    // 前月の最後の火曜日を見つける
+    const lastDayOfPrevMonth = new Date(numYear, numMonth - 1, 0);
+    const prevMonthTuesday = new Date(lastDayOfPrevMonth);
+    while (prevMonthTuesday.getDay() !== 2) {
+      prevMonthTuesday.setDate(prevMonthTuesday.getDate() - 1);
+    }
+    startDate = prevMonthTuesday;
+  } else {
+    // それ以外の週は、最初の火曜日から (weekIndex - 1) * 7 日後
+    startDate = new Date(firstTuesday);
+    startDate.setDate(firstTuesday.getDate() + (weekIndex - 1) * 7);
+  }
+  
+  const dayOfWeekMap = ['日', '月', '火', '水', '木', '金', '土'];
+  const dates = [];
+  
+  // 7日分の日付データを生成
+  for (let i = 0; i < 7; i++) {
+    const date = addDays(startDate, i);
+    const dateStr = format(date, 'yyyy-MM-dd');
+    const dayOfWeek = dayOfWeekMap[date.getDay()];
+    const display = format(date, 'M/d');
+    const month = date.getMonth() + 1; // 月は0始まり
+    
+    // 指定した月と異なる月かどうかをチェック
+    const isOtherMonth = month !== numMonth;
+    
+    dates.push({
+      date: dateStr,
+      dayOfWeek,
+      display,
+      isOtherMonth, // 他の月の日付かどうか
+    });
+  }
+  
+  return dates;
+};
+
 // 利用可能状態の型定義
 interface Availability {
   [key: string]: boolean;
+}
+
+// アサインメントの型定義
+interface AssignmentItem {
+  id: string;
+  agency: string;
+  venue: string;
+  venueDetail: string;
+  hasTrip: boolean;
+  isOutdoor: boolean;
+  orders: {
+    id: string;
+    name: string;
+    isGirl: boolean;
+  }[];
+  availability: Availability;
+  statuses?: {
+    [orderId: string]: {
+      [date: string]: string;
+    };
+  };
 }
 
 // ダミーのアサインメントデータを生成する関数
@@ -133,4 +218,80 @@ export const generateDummyAssignments = () => {
       availability: generateAvailability(),
     },
   ];
+};
+
+/**
+ * 特定の年月に対応した利用可能性データを生成する
+ * 平日のみか週末のみで枠が利用可能になるように設定
+ * @param year 年
+ * @param month 月
+ * @param isWeekdayAvailable 平日に利用可能かどうか
+ * @returns 日付ごとの利用可能状態
+ */
+export const generateAvailabilityByMonth = (
+  year: number,
+  month: number,
+  isWeekdayAvailable: boolean
+): Availability => {
+  // 指定した月の日数を取得
+  const lastDay = new Date(year, month, 0).getDate();
+  const availability: Availability = {};
+  
+  // 月の各日について処理
+  for (let day = 1; day <= lastDay; day++) {
+    const date = new Date(year, month - 1, day);
+    const dateStr = format(date, 'yyyy-MM-dd');
+    const dayOfWeek = date.getDay(); // 0=日曜日, 6=土曜日
+    
+    // 平日: 月～金（1-5）、週末: 土日（0,6）
+    const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+    
+    // 平日モードなら平日のみ利用可能、週末モードなら週末のみ利用可能
+    availability[dateStr] = isWeekdayAvailable ? !isWeekend : isWeekend;
+  }
+  
+  return availability;
+};
+
+/**
+ * 2025年4月と5月に特化したアサインメントデータを生成
+ * 各現場で平日のみか週末のみで枠が利用可能
+ */
+export const generate2025AprilMayAssignments = (): AssignmentItem[] => {
+  // ベースとなるアサインメントデータを取得
+  const baseAssignments = generateDummyAssignments();
+  
+  // 2025年4月の利用可能性データ（奇数ID=平日利用可、偶数ID=週末利用可）
+  const april2025Availability = (id: string): Availability => {
+    // IDの末尾の数字を取得して奇数か偶数かを判定
+    const lastChar = id.charAt(id.length - 1);
+    const lastDigit = parseInt(lastChar);
+    const isWeekdayAvailable = isNaN(lastDigit) || lastDigit % 2 === 1;
+    
+    return generateAvailabilityByMonth(2025, 4, isWeekdayAvailable);
+  };
+  
+  // 2025年5月の利用可能性データ（4月と逆にする）
+  const may2025Availability = (id: string): Availability => {
+    // IDの末尾の数字を取得して奇数か偶数かを判定
+    const lastChar = id.charAt(id.length - 1);
+    const lastDigit = parseInt(lastChar);
+    const isWeekdayAvailable = isNaN(lastDigit) || lastDigit % 2 === 0; // 4月と逆
+    
+    return generateAvailabilityByMonth(2025, 5, isWeekdayAvailable);
+  };
+  
+  // 新しい利用可能性データを設定
+  return baseAssignments.map(assignment => {
+    // 4月と5月の利用可能性データを結合
+    const combinedAvailability = {
+      ...april2025Availability(assignment.id),
+      ...may2025Availability(assignment.id)
+    };
+    
+    return {
+      ...assignment,
+      availability: combinedAvailability
+    };
+  });
 }; 

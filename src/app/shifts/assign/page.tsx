@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { Box, Container, Typography, Grid, SelectChangeEvent, ToggleButtonGroup, ToggleButton } from '@mui/material';
 import Breadcrumb from '@/components/Breadcrumb';
 import YearMonthSelector from '@/components/YearMonthSelector';
@@ -8,8 +8,8 @@ import WeekSelector from '@/components/WeekSelector';
 import WeeklySummary from '@/components/WeeklySummary';
 import StaffList from '@/components/shifts/StaffList';
 import AssignmentTable from '@/components/shifts/AssignmentTable';
-import { getWeeks, generateDummySummary } from '@/utils/dateUtils';
-import { generateDates, generateDummyAssignments } from '@/utils/assignmentUtils';
+import { getWeeks, generateDummySummary, getAvailableWeeks } from '@/utils/dateUtils';
+import { generateDates, generateDummyAssignments, generateWeekDates, generate2025AprilMayAssignments } from '@/utils/assignmentUtils';
 import { DragDropContext, DropResult } from '@hello-pangea/dnd';
 
 // AssignmentItemインターフェース
@@ -38,12 +38,19 @@ interface AssignmentItem {
 
 export default function AssignPage() {
   // 状態管理
-  const [year, setYear] = useState<string>('2024');
+  const [year, setYear] = useState<string>('2025');
   const [month, setMonth] = useState<string>('4');
   const [selectedWeek, setSelectedWeek] = useState<number>(0);
-  const [assignments, setAssignments] = useState<AssignmentItem[]>(generateDummyAssignments());
+  const [assignments, setAssignments] = useState<AssignmentItem[]>(generate2025AprilMayAssignments());
   // 表示モードの状態追加
   const [displayMode, setDisplayMode] = useState<string>('normal');
+  // 日付データを状態として管理
+  const [dates, setDates] = useState<{
+    date: string;
+    dayOfWeek: string;
+    display: string;
+    isOtherMonth?: boolean;
+  }[]>([]);
   
   // 週情報を取得
   const weeks = getWeeks(year, month);
@@ -51,11 +58,21 @@ export default function AssignPage() {
   // ダミーのサマリーデータ
   const summary = generateDummySummary();
 
-  // 日付データを生成
-  const dates = generateDates(new Date());
-
-  // コンソールで日付データを確認
-  console.log('Generated dates:', dates);
+  // 年月週が変更されたら日付データを更新
+  useEffect(() => {
+    // 利用可能な週を取得
+    const availableWeeks = getAvailableWeeks(year, month);
+    
+    // 選択された週が利用可能でない場合、最初の利用可能な週を選択
+    if (!availableWeeks.includes(selectedWeek)) {
+      setSelectedWeek(availableWeeks[0]);
+      return;
+    }
+    
+    // 選択された週に基づいて日付データを生成
+    const weekDates = generateWeekDates(year, month, selectedWeek);
+    setDates(weekDates);
+  }, [year, month, selectedWeek]);
 
   // 年の変更ハンドラ
   const handleYearChange = (year: string) => {
@@ -158,7 +175,12 @@ export default function AssignPage() {
             zIndex: 1,
             backgroundColor: '#f5f5f5'
           }}>
-            <WeeklySummary weeks={weeks} summary={summary} />
+            <WeeklySummary 
+              weeks={weeks} 
+              summary={summary}
+              year={year}
+              month={month}
+            />
           </Box>
 
           {/* 年月・週選択 */}
@@ -168,13 +190,14 @@ export default function AssignPage() {
               month={month}
               onYearChange={handleYearChange}
               onMonthChange={handleMonthChange}
-              years={['2024']}
               months={Array.from({ length: 12 }, (_, i) => String(i + 1))}
             />
 
             <WeekSelector 
               selectedWeek={selectedWeek}
               onChange={(week) => setSelectedWeek(week)}
+              year={year}
+              month={month}
             />
           </Box>
           
@@ -252,7 +275,11 @@ export default function AssignPage() {
             {/* 右側のコンテンツ - StaffList */}
             <Grid item xs={12} md={4}>
               <Box sx={{ display: 'flex', justifyContent: 'center' }}>
-                <StaffList year={parseInt(year)} month={parseInt(month)} />
+                <StaffList 
+                  year={parseInt(year)} 
+                  month={parseInt(month)} 
+                  selectedWeek={selectedWeek}
+                />
               </Box>
             </Grid>
           </Grid>
