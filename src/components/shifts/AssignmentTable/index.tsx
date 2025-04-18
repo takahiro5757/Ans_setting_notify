@@ -27,7 +27,10 @@ import {
   Avatar,
   InputAdornment,
   Divider,
-  Tooltip
+  Tooltip,
+  Menu,
+  MenuItem,
+  ListItemIcon
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
@@ -36,6 +39,8 @@ import CancelIcon from '@mui/icons-material/Cancel';
 import LockIcon from '@mui/icons-material/Lock';
 import SendIcon from '@mui/icons-material/Send';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
+import HistoryIcon from '@mui/icons-material/History';
+import ColorLensIcon from '@mui/icons-material/ColorLens';
 import { Droppable } from '@hello-pangea/dnd';
 
 // スタイル付きコンポーネント
@@ -331,6 +336,36 @@ export default function AssignmentTable({ assignments, dates, onEdit }: Assignme
   // メモポップアップの開閉状態
   const isMemoOpen = Boolean(memoPopupPosition);
   
+  // 右クリックメニュー用の状態
+  const [contextMenu, setContextMenu] = useState<{
+    mouseX: number;
+    mouseY: number;
+    assignmentId: string;
+    date: string;
+    orderId: string;
+  } | null>(null);
+  
+  // カラーピッカーダイアログの状態
+  const [colorDialog, setColorDialog] = useState(false);
+  const [selectedCellForColor, setSelectedCellForColor] = useState<{
+    assignmentId: string;
+    date: string;
+    orderId: string;
+  } | null>(null);
+  
+  // 編集履歴ダイアログの状態
+  const [historyDialog, setHistoryDialog] = useState(false);
+  const [selectedCellForHistory, setSelectedCellForHistory] = useState<{
+    assignmentId: string;
+    date: string;
+    orderId: string;
+  } | null>(null);
+  
+  // カスタムセル色の状態
+  const [customCellColors, setCustomCellColors] = useState<{
+    [key: string]: string;
+  }>({});
+  
   // メモポップアップを開く - クリックイベントハンドラ
   const handleCellClick = (
     event: React.MouseEvent<HTMLElement>,
@@ -556,6 +591,87 @@ export default function AssignmentTable({ assignments, dates, onEdit }: Assignme
     }
   };
 
+  // 右クリックハンドラー
+  const handleContextMenu = (
+    event: React.MouseEvent,
+    assignmentId: string,
+    date: string,
+    orderId: string
+  ) => {
+    event.preventDefault();
+    setContextMenu({
+      mouseX: event.clientX - 2,
+      mouseY: event.clientY - 4,
+      assignmentId,
+      date,
+      orderId
+    });
+  };
+  
+  // 右クリックメニューを閉じる
+  const handleCloseContextMenu = () => {
+    setContextMenu(null);
+  };
+  
+  // 編集履歴を表示
+  const handleOpenHistory = () => {
+    if (contextMenu) {
+      setSelectedCellForHistory({
+        assignmentId: contextMenu.assignmentId,
+        date: contextMenu.date,
+        orderId: contextMenu.orderId
+      });
+      setHistoryDialog(true);
+      handleCloseContextMenu();
+    }
+  };
+  
+  // 編集履歴ダイアログを閉じる
+  const handleCloseHistoryDialog = () => {
+    setHistoryDialog(false);
+    setSelectedCellForHistory(null);
+  };
+  
+  // セル色変更ダイアログを開く
+  const handleOpenColorDialog = () => {
+    if (contextMenu) {
+      setSelectedCellForColor({
+        assignmentId: contextMenu.assignmentId,
+        date: contextMenu.date,
+        orderId: contextMenu.orderId
+      });
+      setColorDialog(true);
+      handleCloseContextMenu();
+    }
+  };
+  
+  // セル色変更ダイアログを閉じる
+  const handleCloseColorDialog = () => {
+    setColorDialog(false);
+    setSelectedCellForColor(null);
+  };
+  
+  // セルの色を変更する
+  const handleChangeColor = (color: string) => {
+    if (selectedCellForColor) {
+      const cellId = `${selectedCellForColor.assignmentId}-${selectedCellForColor.date}-${selectedCellForColor.orderId}`;
+      setCustomCellColors({
+        ...customCellColors,
+        [cellId]: color
+      });
+      handleCloseColorDialog();
+    }
+  };
+  
+  // セルの背景色を取得（カスタム色があればそれを優先）
+  const getCellBackgroundColor = (assignmentId: string, date: string, orderId: string, isAvailable: boolean) => {
+    const cellId = `${assignmentId}-${date}-${orderId}`;
+    if (customCellColors[cellId]) {
+      return customCellColors[cellId];
+    }
+    return getBackgroundColor(isAvailable, assignmentId, date, orderId);
+  };
+
   return (
     <>
       <Paper>
@@ -634,7 +750,7 @@ export default function AssignmentTable({ assignments, dates, onEdit }: Assignme
                       const baseAvailable = assignment.availability[date.date] === true;
                       
                       // 背景色を決定
-                      const bgColor = getBackgroundColor(baseAvailable, assignment.id, date.date, order.id);
+                      const bgColor = getCellBackgroundColor(assignment.id, date.date, order.id, baseAvailable);
                       
                       // セルが実際に利用可能かどうかを判断
                       const isAvailable = isCellAvailable(baseAvailable, assignment.id, date.date, order.id);
@@ -677,6 +793,7 @@ export default function AssignmentTable({ assignments, dates, onEdit }: Assignme
                               onMouseLeave={() => setHoveredCell(null)}
                               onClick={(e) => handleCellClick(e, assignment.id, date.date, order.id)}
                               onDoubleClick={(e) => handleCellDoubleClick(e, assignment.id, date.date, order.id)}
+                              onContextMenu={(e) => handleContextMenu(e, assignment.id, date.date, order.id)}
                             >
                               {isLocked && (
                                 <LockIconWrapper>
@@ -898,6 +1015,133 @@ export default function AssignmentTable({ assignments, dates, onEdit }: Assignme
           <Button onClick={handleSaveEdit} variant="contained" color="primary">
             保存
           </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* 右クリックメニュー */}
+      <Menu
+        open={contextMenu !== null}
+        onClose={handleCloseContextMenu}
+        anchorReference="anchorPosition"
+        anchorPosition={
+          contextMenu !== null
+            ? { top: contextMenu.mouseY, left: contextMenu.mouseX }
+            : undefined
+        }
+      >
+        <MenuItem onClick={handleOpenHistory}>
+          <ListItemIcon>
+            <HistoryIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText>編集履歴</ListItemText>
+        </MenuItem>
+        <MenuItem onClick={handleOpenColorDialog}>
+          <ListItemIcon>
+            <ColorLensIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText>セル色変更</ListItemText>
+        </MenuItem>
+      </Menu>
+      
+      {/* 編集履歴ダイアログ */}
+      <Dialog
+        open={historyDialog}
+        onClose={handleCloseHistoryDialog}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>編集履歴</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            {selectedCellForHistory && 
+              `${dates.find(d => d.date === selectedCellForHistory.date)?.display || selectedCellForHistory.date} / 
+              ${assignments.find(a => a.id === selectedCellForHistory.assignmentId)?.orders.find(o => o.id === selectedCellForHistory.orderId)?.name || '不明'}`
+            }
+          </Typography>
+          <List>
+            <ListItem>
+              <ListItemAvatar>
+                <Avatar>
+                  <AccountCircleIcon />
+                </Avatar>
+              </ListItemAvatar>
+              <ListItemText 
+                primary="田中 太郎" 
+                secondary="2023/11/01 14:30 - ステータスを「不在」に変更" 
+              />
+            </ListItem>
+            <Divider variant="inset" component="li" />
+            <ListItem>
+              <ListItemAvatar>
+                <Avatar>
+                  <AccountCircleIcon />
+                </Avatar>
+              </ListItemAvatar>
+              <ListItemText 
+                primary="山田 花子" 
+                secondary="2023/11/01 10:15 - メモを追加: 「当日までに調整」" 
+              />
+            </ListItem>
+          </List>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseHistoryDialog}>閉じる</Button>
+        </DialogActions>
+      </Dialog>
+      
+      {/* セル色変更ダイアログ */}
+      <Dialog
+        open={colorDialog}
+        onClose={handleCloseColorDialog}
+        maxWidth="xs"
+        fullWidth
+      >
+        <DialogTitle>セル色変更</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            {selectedCellForColor && 
+              `${dates.find(d => d.date === selectedCellForColor.date)?.display || selectedCellForColor.date} / 
+              ${assignments.find(a => a.id === selectedCellForColor.assignmentId)?.orders.find(o => o.id === selectedCellForColor.orderId)?.name || '不明'}`
+            }
+          </Typography>
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mt: 2 }}>
+            {['#ffffff', '#f5f5f5', '#e3f2fd', '#e8f5e9', '#fff3e0', '#ffebee', '#f3e5f5'].map((color) => (
+              <Box
+                key={color}
+                sx={{
+                  width: 40,
+                  height: 40,
+                  backgroundColor: color,
+                  border: '1px solid #ccc',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  '&:hover': {
+                    boxShadow: '0 0 0 2px rgba(25, 118, 210, 0.5)',
+                  },
+                }}
+                onClick={() => handleChangeColor(color)}
+              />
+            ))}
+          </Box>
+          <Button 
+            variant="outlined" 
+            fullWidth 
+            sx={{ mt: 2 }}
+            onClick={() => {
+              if (selectedCellForColor) {
+                const cellId = `${selectedCellForColor.assignmentId}-${selectedCellForColor.date}-${selectedCellForColor.orderId}`;
+                const newColors = {...customCellColors};
+                delete newColors[cellId];
+                setCustomCellColors(newColors);
+                handleCloseColorDialog();
+              }
+            }}
+          >
+            デフォルトに戻す
+          </Button>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseColorDialog}>キャンセル</Button>
         </DialogActions>
       </Dialog>
     </>
