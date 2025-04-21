@@ -239,43 +239,31 @@ function isCellAvailable(baseAvailability: boolean, assignmentId: string, date: 
 }
 
 // ステータス表示用のスタイル付きコンポーネント
-const StatusChip = styled('div')<{ status: string }>(({ theme, status }) => {
-  // ステータスに応じた色を設定
-  let bgColor = '';
-  let textColor = '#fff';
-  
-  switch (status) {
-    case 'absent':
-      bgColor = '#ff8a80'; // 欠勤用の赤
-      break;
-    case 'tm':
-      bgColor = '#90caf9'; // TM用の青
-      break;
-    case 'selected':
-      bgColor = '#dce775'; // 選択中用の黄緑
-      textColor = '#000';
-      break;
-    default:
-      bgColor = 'transparent';
-  }
-  
-  return {
-    backgroundColor: bgColor,
-    color: textColor,
-    padding: '4px 8px',
-    borderRadius: '4px',
-    fontSize: '0.8rem',
-    fontWeight: 'bold',
-    display: 'block',
-    margin: '0 auto',
-    textAlign: 'center',
-    width: '90%',
-    boxShadow: '0 1px 2px rgba(0, 0, 0, 0.1)',
-    position: 'relative',
-    height: '24px',
-    lineHeight: '16px',
-  };
-});
+const StatusChip = styled(Box)<{ status: string }>(({ theme, status }) => ({
+  backgroundColor: 
+    status === 'absent' ? 'rgba(244, 67, 54, 0.1)' : // 欠勤は薄い赤
+    status === 'tm' ? 'rgba(33, 150, 243, 0.1)' : // TMは薄い青
+    'rgba(139, 195, 74, 0.1)', // 選択中は薄い黄緑
+  color: 
+    status === 'absent' ? '#f44336' : // 欠勤は赤
+    status === 'tm' ? '#2196f3' : // TMは青
+    '#8bc34a', // 選択中は黄緑
+  borderRadius: '4px',
+  padding: '4px 8px',
+  margin: '2px auto',
+  width: '90%',
+  textAlign: 'center',
+  position: 'relative',
+  '&:hover': {
+    backgroundColor: 
+      status === 'absent' ? 'rgba(244, 67, 54, 0.2)' : 
+      status === 'tm' ? 'rgba(33, 150, 243, 0.2)' : 
+      'rgba(139, 195, 74, 0.2)',
+    '& .delete-button': {
+      display: 'block'
+    }
+  },
+}));
 
 // 削除ボタン用のスタイル
 const DeleteButton = styled(IconButton)(({ theme }) => ({
@@ -857,17 +845,16 @@ export default function AssignmentTable({ assignments, dates, onEdit }: Assignme
           <Box position="relative" width="100%" height="100%" display="flex" alignItems="center" justifyContent="center">
             <StatusChip status={status}>
               {getStatusDisplay(status)}
-              {hoveredCell === `${assignment.id}-${date}-${orderId}` && (
-                <DeleteButton
-                  size="small"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleRemoveStatus(assignment.id, date, orderId);
-                  }}
-                >
-                  <ClearIcon />
-                </DeleteButton>
-              )}
+              <DeleteButton
+                className="delete-button"
+                size="small"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleRemoveStatus(assignment.id, date, orderId);
+                }}
+              >
+                <ClearIcon />
+              </DeleteButton>
             </StatusChip>
           </Box>
         )}
