@@ -1,7 +1,8 @@
 'use client';
 
 import { Box, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, useTheme, ToggleButtonGroup, ToggleButton } from '@mui/material';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
+import { getAvailableWeeks } from '@/utils/dateUtils';
 
 // 週情報の型
 interface WeeklySummaryProps {
@@ -11,23 +12,25 @@ interface WeeklySummaryProps {
     girlCapacity: number[];
     totalCapacity: number[];
   };
+  year?: string | number;
+  month?: string | number;
 }
 
 // フィルタータイプの定義
 type FilterType = 'all' | 'weekday' | 'weekend';
 
-const WeeklySummary = ({ weeks, summary }: WeeklySummaryProps) => {
+const WeeklySummary = ({ weeks, summary, year = new Date().getFullYear(), month = new Date().getMonth() + 1 }: WeeklySummaryProps) => {
   const theme = useTheme();
   const [filter, setFilter] = useState<FilterType>('all');
+  
+  // 利用可能な週を取得
+  const availableWeeks = useMemo(() => getAvailableWeeks(year, month), [year, month]);
   
   // 月間合計を計算
   const monthlyTotal = {
     closer: summary.closerCapacity.reduce((acc, curr) => acc + curr, 0),
     girl: summary.girlCapacity.reduce((acc, curr) => acc + curr, 0)
   };
-
-  // 週ラベルを明示的に作成
-  const weekLabels = ['0W', '1W', '2W', '3W', '4W', '5W'];
 
   // フィルター変更ハンドラー
   const handleFilterChange = (
@@ -99,9 +102,9 @@ const WeeklySummary = ({ weeks, summary }: WeeklySummaryProps) => {
                   }}
                 >
                 </TableCell>
-                {weekLabels.map((label, idx) => (
+                {availableWeeks.map((weekIndex) => (
                   <TableCell 
-                    key={idx} 
+                    key={weekIndex} 
                     sx={{ 
                       textAlign: 'center', 
                       p: 0.75, 
@@ -110,7 +113,7 @@ const WeeklySummary = ({ weeks, summary }: WeeklySummaryProps) => {
                       width: '70px'
                     }}
                   >
-                    {label}
+                    {weekIndex}W
                   </TableCell>
                 ))}
                 <TableCell 
@@ -141,9 +144,9 @@ const WeeklySummary = ({ weeks, summary }: WeeklySummaryProps) => {
                     クローザー枠数
                   </Box>
                 </TableCell>
-                {weekLabels.map((_, idx) => (
+                {availableWeeks.map((weekIndex) => (
                   <TableCell 
-                    key={idx} 
+                    key={weekIndex} 
                     sx={{ 
                       textAlign: 'center', 
                       p: 0.75, 
@@ -160,7 +163,7 @@ const WeeklySummary = ({ weeks, summary }: WeeklySummaryProps) => {
                       minWidth: '45px',
                       whiteSpace: 'nowrap'
                     }}>
-                      {summary.closerCapacity[idx] || 0}枠
+                      {summary.closerCapacity[weekIndex] || 0}枠
                     </Box>
                   </TableCell>
                 ))}
@@ -201,9 +204,9 @@ const WeeklySummary = ({ weeks, summary }: WeeklySummaryProps) => {
                     ガール枠数
                   </Box>
                 </TableCell>
-                {weekLabels.map((_, idx) => (
+                {availableWeeks.map((weekIndex) => (
                   <TableCell 
-                    key={idx} 
+                    key={weekIndex} 
                     sx={{ 
                       textAlign: 'center', 
                       p: 0.75, 
@@ -220,7 +223,7 @@ const WeeklySummary = ({ weeks, summary }: WeeklySummaryProps) => {
                       minWidth: '45px',
                       whiteSpace: 'nowrap'
                     }}>
-                      {summary.girlCapacity[idx] || 0}枠
+                      {summary.girlCapacity[weekIndex] || 0}枠
                     </Box>
                   </TableCell>
                 ))}

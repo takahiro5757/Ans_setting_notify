@@ -3,14 +3,21 @@
 import { Box, ToggleButtonGroup, ToggleButton, Typography } from '@mui/material';
 import { SxProps } from '@mui/system';
 import { Theme } from '@mui/material/styles';
+import { getAvailableWeeks } from '@/utils/dateUtils';
 
 interface WeekSelectorProps {
   selectedWeek: number;
   onChange: (week: number) => void;
-  weekCount?: number; // デフォルトは6週（0-5）
+  year?: string | number;
+  month?: string | number;
 }
 
-const WeekSelector = ({ selectedWeek, onChange, weekCount = 6 }: WeekSelectorProps) => {
+const WeekSelector = ({ 
+  selectedWeek, 
+  onChange, 
+  year = new Date().getFullYear(), 
+  month = new Date().getMonth() + 1 
+}: WeekSelectorProps) => {
   // 週選択用のToggleButtonスタイル
   const weekToggleButtonStyle: SxProps<Theme> = {
     px: 3,
@@ -47,8 +54,8 @@ const WeekSelector = ({ selectedWeek, onChange, weekCount = 6 }: WeekSelectorPro
     }
   };
 
-  // 0Wから5Wまでの週を生成
-  const weeks = Array.from({ length: weekCount }, (_, i) => i);
+  // 指定された年月に基づいて利用可能な週を取得
+  const availableWeeks = getAvailableWeeks(year, month);
 
   return (
     <Box sx={{ mb: 3 }}>
@@ -60,7 +67,7 @@ const WeekSelector = ({ selectedWeek, onChange, weekCount = 6 }: WeekSelectorPro
         size="small"
         sx={toggleButtonGroupStyle}
       >
-        {weeks.map((week) => (
+        {availableWeeks.map((week) => (
           <ToggleButton 
             key={week}
             value={week}

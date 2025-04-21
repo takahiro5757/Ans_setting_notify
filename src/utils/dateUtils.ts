@@ -77,4 +77,51 @@ export const generateDummySummary = () => {
     girlCapacity: [20, 20, 20, 20, 20, 20],
     totalCapacity: [50, 50, 50, 50, 50, 50]
   };
+};
+
+/**
+ * 指定した年月の火曜日を基準とした週情報を計算します
+ * 0W: 月初から最初の火曜日の前日まで
+ * 1W: 最初の火曜日から始まる週
+ * 5W: 5回目の火曜日から月末まで（5回目の火曜日が存在する場合）
+ * 
+ * @param year 年（文字列または数値）
+ * @param month 月（文字列または数値）
+ * @returns 利用可能な週番号の配列（0～5）
+ */
+export const getAvailableWeeks = (year: string | number, month: string | number): number[] => {
+  const numYear = typeof year === 'string' ? parseInt(year) : year;
+  const numMonth = typeof month === 'string' ? parseInt(month) : month;
+  
+  // 月の最初の日と最後の日
+  const firstDay = new Date(numYear, numMonth - 1, 1);
+  const lastDay = new Date(numYear, numMonth, 0);
+  
+  // 利用可能な週番号
+  const availableWeeks: number[] = [];
+  
+  // 月の最初の火曜日を見つける
+  const firstTuesday = new Date(firstDay);
+  while (firstTuesday.getDay() !== 2) { // 2は火曜日
+    firstTuesday.setDate(firstTuesday.getDate() + 1);
+  }
+  
+  // 0Wの判定: 月初日が火曜日でなければ0Wが存在する
+  if (firstDay.getDay() !== 2) {
+    availableWeeks.push(0);
+  }
+  
+  // 1W～4Wは常に存在
+  availableWeeks.push(1, 2, 3, 4);
+  
+  // 5Wの判定: 5回目の火曜日が存在するかチェック
+  const fifthTuesday = new Date(firstTuesday);
+  fifthTuesday.setDate(firstTuesday.getDate() + 28); // 4週間（28日）後
+  
+  // 5回目の火曜日が同じ月内にあれば5Wが存在
+  if (fifthTuesday.getMonth() === numMonth - 1) {
+    availableWeeks.push(5);
+  }
+  
+  return availableWeeks;
 }; 
