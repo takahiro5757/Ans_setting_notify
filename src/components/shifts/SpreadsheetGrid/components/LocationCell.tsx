@@ -1,0 +1,206 @@
+'use client';
+
+import React, { memo, useRef, useEffect } from 'react';
+import { Box, TableCell, styled, Tooltip } from '@mui/material';
+import { useShiftContext } from '../context/ShiftContext';
+
+const Cell = styled(TableCell)(({ theme }) => ({
+  padding: theme.spacing(0.5),
+  textAlign: 'center',
+  fontSize: 12,
+  fontWeight: 600,
+  whiteSpace: 'normal',
+  height: 'auto',
+  minHeight: 30,
+  lineHeight: 1.2,
+  borderRight: '1px solid #000000',
+  '&.staff-section': { borderRight: '2px solid #000000' },
+  width: 225,
+  maxWidth: 225,
+}));
+
+interface LocationCellProps {
+  staffId: string;
+  date: Date;
+  isWeekend: boolean;
+  isHighlighted: boolean;
+  hasConfirmedLocation: boolean;
+  isUnassigned: boolean;
+  location?: string;
+  cellId?: string;
+  onCommentClick: (staffId: string, date: Date) => void;
+}
+
+const LocationCell: React.FC<LocationCellProps> = ({ 
+  staffId,
+  date,
+  isWeekend,
+  isHighlighted,
+  hasConfirmedLocation,
+  isUnassigned,
+  location,
+  cellId,
+  onCommentClick
+}) => {
+  const { 
+    isLocationLocked, 
+    toggleLocationLock, 
+    getComment 
+  } = useShiftContext();
+  
+  const [clickCount, setClickCount] = React.useState(0);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const lastClickTime = useRef<number>(0);
+  
+  const locationLocked = hasConfirmedLocation && isLocationLocked(staffId, date);
+  const comment = getComment(staffId, date);
+  const hasComment = !!comment;
+  
+  const handleClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    
+    const now = Date.now();
+    const timeSinceLastClick = now - lastClickTime.current;
+    
+    // ダブルクリック検出を改善（300ms以内のクリックをダブルクリックとして扱う）
+    if (timeSinceLastClick < 300) {
+      // これはダブルクリック
+      console.log(`ダブルクリック検出: staffId=${staffId}, date=${date instanceof Date ? date.toISOString() : 'Invalid Date'}`);
+      console.log(`hasConfirmedLocation=${hasConfirmedLocation}, locationLocked=${locationLocked}`);
+      
+      // タイマーをクリア
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+        timerRef.current = null;
+      }
+      
+      // ロックをトグル（確認済みの場所のみ）
+      if (hasConfirmedLocation) {
+        toggleLocationLock(staffId, date);
+        console.log(`ロック切替: staffId=${staffId}, date=${date instanceof Date ? date.toISOString() : 'Invalid Date'}, locked=${!locationLocked}`);
+      } else {
+        console.log(`ロック不可: 確認済み場所ではありません。staffId=${staffId}, date=${date instanceof Date ? date.toISOString() : 'Invalid Date'}`);
+      }
+      
+      setClickCount(0);
+      lastClickTime.current = 0; // リセット
+      return;
+    }
+    
+    // シングルクリックの処理
+    lastClickTime.current = now;
+    
+    const newClickCount = clickCount + 1;
+    setClickCount(newClickCount);
+    
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+    
+    // シングルクリックの処理を遅延実行
+    timerRef.current = setTimeout(() => {
+      if (newClickCount === 1) {
+        console.log(`シングルクリック検出: staffId=${staffId}, date=${date instanceof Date ? date.toISOString() : 'Invalid Date'}`);
+        onCommentClick(staffId, date);
+      }
+      setClickCount(0);
+    }, 250);
+  };
+  
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+      }
+    };
+  }, []);
+  
+  return (
+    <Cell 
+      id={cellId}
+      className="staff-section"
+      onClick={handleClick}
+      sx={{ 
+        border: isUnassigned 
+          ? (isHighlighted ? '2px solid #000000' : '1px dashed #000000')
+          : undefined,
+        backgroundColor: isHighlighted && isUnassigned 
+          ? '#ffe0b2'
+          : isWeekend 
+            ? '#ffdbac'
+            : isUnassigned 
+              ? 'transparent'
+              : undefined,
+        boxShadow: isHighlighted ? '0 0 8px #000000' : undefined,
+        cursor: 'pointer',
+        position: 'relative',
+        '&:hover': { 
+          backgroundColor: isWeekend ? '#ffccaa' : '#f0f0f0'
+        },
+        width: 225,
+        maxWidth: 225,
+        fontSize: 12,
+        height: 'auto',
+        minHeight: 30,
+        lineHeight: 1.2,
+      }}
+    >
+      <Tooltip 
+        title={comment || ''}
+        arrow
+        placement="top"
+        enterDelay={500}
+        enterNextDelay={500}
+        disableHoverListener={!hasComment}
+      >
+        <Box sx={{ 
+          width: '100%', 
+          height: '100%', 
+          position: 'relative',
+          overflow: 'visible',
+          whiteSpace: 'normal',
+          wordBreak: 'break-word',
+          fontSize: 12,
+          padding: '2px 0',
+        }}>
+          {location || ''}
+          {locationLocked && (
+            <Box 
+              sx={{
+                position: 'absolute',
+                top: '1px',
+                right: '1px',
+                fontSize: 10,
+                color: '#9e9e9e',
+                opacity: 0.7,
+                pointerEvents: 'none',
+                zIndex: 10
+              }}
+            >
+              🔒
+            </Box>
+          )}
+          {hasComment && (
+            <Box 
+              sx={{
+                position: 'absolute',
+                bottom: '1px',
+                left: '1px',
+                fontSize: 10,
+                color: '#f44336',
+                opacity: 0.7,
+                pointerEvents: 'none',
+                zIndex: 10
+              }}
+            >
+              💬
+            </Box>
+          )}
+        </Box>
+      </Tooltip>
+    </Cell>
+  );
+};
+
+export default memo(LocationCell); 
