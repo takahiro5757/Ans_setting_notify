@@ -30,7 +30,9 @@ import {
   Tooltip,
   Menu,
   MenuItem,
-  ListItemIcon
+  ListItemIcon,
+  FormControlLabel,
+  Checkbox
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
@@ -42,6 +44,9 @@ import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import HistoryIcon from '@mui/icons-material/History';
 import ColorLensIcon from '@mui/icons-material/ColorLens';
 import { Droppable } from '@hello-pangea/dnd';
+import ClearIcon from '@mui/icons-material/Clear';
+import SettingsIcon from '@mui/icons-material/Settings';
+import OrderFrameDialog from '../OrderFrameDialog';
 
 // スタイル付きコンポーネント
 const StyledTableContainer = styled('div')(({ theme }) => ({
@@ -82,17 +87,20 @@ const DroppableCell = styled(StyledTableCell, {
   shouldForwardProp: (prop) => prop !== 'isAvailable' && prop !== 'isGirl'
 })<{ isAvailable?: boolean; isGirl?: boolean }>(({ theme, isAvailable, isGirl }) => ({
   width: '100px',
-  height: '50px',
-  minHeight: '50px',
-  maxHeight: '50px',
+  height: '60px',
+  minHeight: '60px',
+  maxHeight: '60px',
   backgroundColor: isAvailable ? '#fff' : '#f5f5f5',
   position: 'relative',
   textAlign: 'center',
-  padding: '8px',
+  padding: '4px',
   boxSizing: 'border-box',
   transition: 'background-color 0.2s ease',
   '&.dragOver': {
     backgroundColor: 'rgba(33, 150, 243, 0.08)',
+    opacity: 0.9,
+    border: '1px dashed #1976d2',
+    boxShadow: '0 0 5px rgba(25, 118, 210, 0.3)'
   }
 }));
 
@@ -136,6 +144,16 @@ interface AssignmentItem {
       [date: string]: string;
     };
   };
+  staff?: {
+    [orderId: string]: {
+      [date: string]: {
+        id: string;
+        name: string;
+        isGirl: boolean;
+        isFemale: boolean;
+      };
+    };
+  };
   // メモ情報を追加
   memos?: {
     [orderId: string]: {
@@ -152,6 +170,16 @@ interface AssignmentItem {
     [orderId: string]: {
       [date: string]: boolean;
     };
+  };
+  // オーダー枠数と単価情報を追加
+  orderFrames?: {
+    [orderId: string]: {
+      [dayOfWeek: string]: { // '0'=日曜, '1'=月曜, ..., '6'=土曜
+        frames: number;
+        priceType: string; // '平日' or '週末'
+        priceAmount: number;
+      }
+    }
   };
 }
 
@@ -265,6 +293,7 @@ const DeleteButton = styled(IconButton)(({ theme }) => ({
   },
   zIndex: 10,
   display: 'none',
+  className: 'delete-button',
 }));
 
 // セル内に表示するステータスを取得する関数
@@ -281,18 +310,41 @@ const getStatusDisplay = (status: string) => {
   }
 };
 
-// セル内のコンテンツ用のスタイル
+// 要員情報表示用のスタイル付きコンポーネント
+const StaffItem = styled(Box)<{ isGirl: boolean }>(({ theme, isGirl }) => ({
+  backgroundColor: isGirl 
+    ? 'rgba(233, 30, 99, 0.1)' // ガール用の薄いピンク
+    : 'rgba(25, 118, 210, 0.1)', // クローザー用の薄い青
+  color: isGirl ? '#e91e63' : '#2196f3', // フォントカラーを明示的に設定
+  borderRadius: '4px',
+  padding: '4px 8px',
+  margin: '2px auto',
+  width: '90%',
+  textAlign: 'center',
+  position: 'relative',
+  whiteSpace: 'nowrap',
+  overflow: 'hidden',
+  textOverflow: 'ellipsis',
+  '&:hover': {
+    backgroundColor: isGirl 
+      ? 'rgba(233, 30, 99, 0.2)' 
+      : 'rgba(25, 118, 210, 0.2)',
+    '& .delete-button': {
+      display: 'block'
+    }
+  },
+}));
+
+// CellContentを調整して、複数の要素を配置できるようにする
 const CellContent = styled(Box)({
-  position: 'absolute',
-  top: 0,
-  left: 0,
-  right: 0,
-  bottom: 0,
+  position: 'relative',
   display: 'flex',
+  flexDirection: 'column',
   alignItems: 'center',
   justifyContent: 'center',
   width: '100%',
   height: '100%',
+  padding: '2px',
 });
 
 // メモ内のテキストをフォーマットする関数
@@ -312,26 +364,55 @@ const formatMemoText = (memos: any[]): string => {
   ).join('\n\n');
 };
 
-// セル内にロックアイコンを表示するためのスタイル
-const LockIconWrapper = styled(Box)(({ theme }) => ({
+// メモ通知インジケーター用のスタイル
+const MemoIndicator = styled('div')({
   position: 'absolute',
-  top: '0',
-  left: '0',
-  right: '0',
-  bottom: '0',
+  top: '2px',
+  right: '2px',
+  width: '16px',
+  height: '16px',
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
-  zIndex: 5,
-  backgroundColor: 'rgba(255, 255, 255, 0.7)',
-}));
+  borderRadius: '50%',
+  backgroundColor: '#ffb74d',
+  color: '#fff',
+  fontSize: '10px',
+  fontWeight: 'bold',
+});
+
+// セルの背景色を取得
+const getCellBackgroundColor = (assignmentId: string, date: string, orderId: string, isAvailable: boolean, isOtherMonth: boolean, customColors: {[key: string]: string}) => {
+  // 他の月の日付セルは常に灰色に
+  if (isOtherMonth) {
+    return '#f5f5f5';
+  }
+
+  const cellId = `${assignmentId}-${date}-${orderId}`;
+  if (customColors[cellId]) {
+    return customColors[cellId];
+  }
+  return getBackgroundColor(isAvailable, assignmentId, date, orderId);
+};
+
+// メモ入力フィールドのキーダウンイベントハンドラ
+const handleMemoKeyDown = (event: React.KeyboardEvent, onSend: () => void) => {
+  // Shift + Enterが押された場合
+  if (event.key === 'Enter' && event.shiftKey) {
+    event.preventDefault(); // デフォルトの改行を防止
+    onSend(); // メモを送信
+  }
+};
 
 export default function AssignmentTable({ assignments, dates, onEdit }: AssignmentTableProps) {
   // 状態管理
   const [editDialogOpen, setEditDialogOpen] = useState<boolean>(false);
   const [currentAssignment, setCurrentAssignment] = useState<AssignmentItem | null>(null);
+  const [editedAgency, setEditedAgency] = useState<string>('');
   const [editedVenue, setEditedVenue] = useState<string>('');
   const [editedVenueDetail, setEditedVenueDetail] = useState<string>('');
+  const [editedHasTrip, setEditedHasTrip] = useState<boolean>(false);
+  const [editedIsOutdoor, setEditedIsOutdoor] = useState<boolean>(false);
   const [hoveredCell, setHoveredCell] = useState<string | null>(null);
   
   // メモポップアップ用の状態
@@ -380,6 +461,9 @@ export default function AssignmentTable({ assignments, dates, onEdit }: Assignme
   const [customCellColors, setCustomCellColors] = useState<{
     [key: string]: string;
   }>({});
+  
+  // オーダー枠設定ダイアログ用の状態
+  const [orderFrameDialogOpen, setOrderFrameDialogOpen] = useState<boolean>(false);
   
   // メモポップアップを開く - クリックイベントハンドラ
   const handleCellClick = (
@@ -496,47 +580,53 @@ export default function AssignmentTable({ assignments, dates, onEdit }: Assignme
     setCurrentMemoCell(null);
   };
   
-  // メモを送信
+  // メモ送信ハンドラ
   const handleSendMemo = () => {
-    if (!currentMemoCell || !memoText.trim() || !onEdit) return;
+    if (!currentMemoCell || !memoText.trim()) return;
     
     const { assignmentId, date, orderId } = currentMemoCell;
-    const targetAssignment = assignments.find(a => a.id === assignmentId);
+    console.log('Sending memo:', memoText);
+    console.log('For cell:', assignmentId, date, orderId);
     
-    if (targetAssignment) {
-      // 深いコピーを作成
-      const updatedAssignment = JSON.parse(JSON.stringify(targetAssignment));
-      
-      // メモ情報がない場合は初期化
-      if (!updatedAssignment.memos) {
-        updatedAssignment.memos = {};
+    // 新しいメモオブジェクトを作成
+    const newMemo = {
+      id: `memo-${Date.now()}`,
+      text: memoText.trim(),
+      timestamp: new Date().toISOString(),
+      user: 'Current User' // 実際のシステムではログインユーザー名を使用
+    };
+    
+    // 新しい配列を作成してステート更新
+    const updatedAssignments = assignments.map(assignment => {
+      if (assignment.id === assignmentId) {
+        // メモオブジェクトが存在しない場合は初期化
+        const updatedMemos = { ...(assignment.memos || {}) };
+        if (!updatedMemos[orderId]) {
+          updatedMemos[orderId] = {};
+        }
+        if (!updatedMemos[orderId][date]) {
+          updatedMemos[orderId][date] = [];
+        }
+        
+        // 新しいメモを追加
+        updatedMemos[orderId][date] = [
+          ...updatedMemos[orderId][date],
+          newMemo
+        ];
+        
+        return {
+          ...assignment,
+          memos: updatedMemos
+        };
       }
-      
-      // 特定のオーダーのメモ情報がない場合は初期化
-      if (!updatedAssignment.memos[orderId]) {
-        updatedAssignment.memos[orderId] = {};
-      }
-      
-      // 特定の日付のメモリストがない場合は初期化
-      if (!updatedAssignment.memos[orderId][date]) {
-        updatedAssignment.memos[orderId][date] = [];
-      }
-      
-      // 新しいメモを追加
-      const memos = updatedAssignment.memos[orderId][date];
-      memos.push({
-        id: `memo-${Date.now()}`,
-        text: memoText,
-        timestamp: new Date().toISOString(),
-        user: '現在のユーザー' // 実際のユーザー情報に置き換える
-      });
-      
-      // 更新を適用
-      onEdit(updatedAssignment);
-      
-      // 入力フィールドをクリア
-      setMemoText('');
-    }
+      return assignment;
+    });
+    
+    // メモポップアップを閉じて状態をリセット
+    handleCloseMemoPopup();
+    
+    // コンソールで確認（実際のシステムではAPIに送信など）
+    console.log('Updated assignments with new memo:', updatedAssignments);
   };
   
   // コンポーネントのアンマウント時にタイマーをクリア
@@ -559,8 +649,11 @@ export default function AssignmentTable({ assignments, dates, onEdit }: Assignme
   // 編集ダイアログを開く
   const handleOpenEditDialog = (assignment: AssignmentItem) => {
     setCurrentAssignment(assignment);
+    setEditedAgency(assignment.agency);
     setEditedVenue(assignment.venue);
     setEditedVenueDetail(assignment.venueDetail);
+    setEditedHasTrip(assignment.hasTrip);
+    setEditedIsOutdoor(assignment.isOutdoor);
     setEditDialogOpen(true);
   };
 
@@ -575,8 +668,11 @@ export default function AssignmentTable({ assignments, dates, onEdit }: Assignme
     if (currentAssignment && onEdit) {
       const updatedAssignment = {
         ...currentAssignment,
+        agency: editedAgency,
         venue: editedVenue,
         venueDetail: editedVenueDetail,
+        hasTrip: editedHasTrip,
+        isOutdoor: editedIsOutdoor
       };
       onEdit(updatedAssignment);
     }
@@ -678,27 +774,134 @@ export default function AssignmentTable({ assignments, dates, onEdit }: Assignme
     }
   };
   
-  // セルの背景色を取得（カスタム色があればそれを優先）
-  const getCellBackgroundColor = (assignmentId: string, date: string, orderId: string, isAvailable: boolean, isOtherMonth: boolean) => {
-    // 他の月の日付セルは常に灰色に
-    if (isOtherMonth) {
-      return '#f5f5f5';
-    }
-
-    const cellId = `${assignmentId}-${date}-${orderId}`;
-    if (customCellColors[cellId]) {
-      return customCellColors[cellId];
-    }
-    return getBackgroundColor(isAvailable, assignmentId, date, orderId);
+  // オーダー枠設定ダイアログを開く
+  const handleOpenOrderFrameDialog = (assignment: AssignmentItem) => {
+    setCurrentAssignment(assignment);
+    setOrderFrameDialogOpen(true);
   };
 
-  // メモ入力フィールドのキーダウンイベントハンドラ
-  const handleMemoKeyDown = (event: React.KeyboardEvent) => {
-    // Shift + Enterが押された場合
-    if (event.key === 'Enter' && event.shiftKey) {
-      event.preventDefault(); // デフォルトの改行を防止
-      handleSendMemo(); // メモを送信
+  // オーダー枠設定ダイアログを閉じる
+  const handleCloseOrderFrameDialog = () => {
+    setOrderFrameDialogOpen(false);
+  };
+
+  // オーダー枠設定を保存
+  const handleSaveOrderFrames = (updatedAssignment: AssignmentItem) => {
+    if (onEdit) {
+      onEdit(updatedAssignment);
     }
+    handleCloseOrderFrameDialog();
+  };
+  
+  const renderCellContent = (assignment: AssignmentItem, date: string, orderId: string, isAvailable: boolean, isOtherMonth: boolean) => {
+    const dateObj = new Date(date);
+    const isLocked = assignment.locks?.[orderId]?.[date] || false;
+    
+    // セルが利用可能かどうかを判断
+    const cellAvailable = isCellAvailable(isAvailable, assignment.id, date, orderId, isOtherMonth);
+    
+    // 割り当てられているスタッフを取得
+    const staff = assignment.staff?.[orderId]?.[date];
+    
+    // ステータスを取得
+    const status = assignment.statuses?.[orderId]?.[date];
+    
+    // メモを取得
+    const memos = assignment.memos?.[orderId]?.[date];
+    const hasMemos = memos && memos.length > 0;
+    const memoCount = hasMemos ? memos.length : 0;
+    
+    const renderMemoIndicator = () => {
+      if (!hasMemos) return null;
+      
+      const memoTooltipText = formatMemoText(memos);
+      
+      return (
+        <Tooltip title={memoTooltipText} arrow placement="top">
+          <MemoIndicator>
+            {memoCount > 9 ? '9+' : memoCount}
+          </MemoIndicator>
+        </Tooltip>
+      );
+    };
+    
+    // 苗字のみを取得する関数
+    const getLastName = (fullName: string) => {
+      return fullName.split(' ')[0]; // 空白で分割して最初の部分（苗字）を返す
+    };
+    
+    return (
+      <CellContent>
+        {isLocked && (
+          <Box 
+            sx={{ 
+              position: 'absolute',
+              top: '0',
+              left: '0',
+              right: '0',
+              bottom: '0',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              zIndex: 5,
+              backgroundColor: 'rgba(255, 255, 255, 0.7)',
+            }}
+          >
+            <LockIcon sx={{ fontSize: 20, color: 'rgba(0, 0, 0, 0.5)' }} />
+          </Box>
+        )}
+        
+        {renderMemoIndicator()}
+        
+        {status && (
+          <Box position="relative" width="100%" height="100%" display="flex" alignItems="center" justifyContent="center">
+            <StatusChip status={status}>
+              {getStatusDisplay(status)}
+              {hoveredCell === `${assignment.id}-${date}-${orderId}` && (
+                <DeleteButton
+                  size="small"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleRemoveStatus(assignment.id, date, orderId);
+                  }}
+                >
+                  <ClearIcon />
+                </DeleteButton>
+              )}
+            </StatusChip>
+          </Box>
+        )}
+        
+        {staff && !status && (
+          <StaffItem isGirl={staff.isGirl}>
+            {getLastName(staff.name)}
+            <DeleteButton
+              className="delete-button"
+              size="small"
+              onClick={(e) => {
+                e.stopPropagation();
+                // スタッフ削除のロジックを実装
+                if (onEdit) {
+                  const targetAssignment = assignments.find(a => a.id === assignment.id);
+                  if (targetAssignment && targetAssignment.staff?.[orderId]?.[date]) {
+                    // 深いコピーを作成
+                    const updatedAssignment = JSON.parse(JSON.stringify(targetAssignment));
+                    
+                    // 該当するスタッフを削除
+                    delete updatedAssignment.staff[orderId][date];
+                    
+                    // 更新を適用
+                    onEdit(updatedAssignment);
+                  }
+                }
+              }}
+            >
+              <ClearIcon />
+            </DeleteButton>
+          </StaffItem>
+        )}
+      </CellContent>
+    );
   };
 
   return (
@@ -734,12 +937,17 @@ export default function AssignmentTable({ assignments, dates, onEdit }: Assignme
                           rowSpan={assignment.orders.length} 
                           align="center"
                         >
-                          <IconButton
-                            size="small"
-                            onClick={() => handleOpenEditDialog(assignment)}
-                          >
-                            <EditIcon fontSize="small" />
-                          </IconButton>
+                          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                            <IconButton
+                              size="small"
+                              onClick={() => {
+                                handleOpenOrderFrameDialog(assignment);
+                              }}
+                              title="曜日別オーダー枠設定"
+                            >
+                              <EditIcon fontSize="small" />
+                            </IconButton>
+                          </Box>
                         </StyledTableCell>
                         <AgencyCell rowSpan={assignment.orders.length}>
                           {assignment.agency}
@@ -782,7 +990,7 @@ export default function AssignmentTable({ assignments, dates, onEdit }: Assignme
                       const isOtherMonth = date.isOtherMonth === true;
                       
                       // 背景色を決定
-                      const bgColor = getCellBackgroundColor(assignment.id, date.date, order.id, baseAvailable, isOtherMonth);
+                      const bgColor = getCellBackgroundColor(assignment.id, date.date, order.id, baseAvailable, isOtherMonth, customCellColors);
                       
                       // セルが実際に利用可能かどうかを判断
                       const isAvailable = isCellAvailable(baseAvailable, assignment.id, date.date, order.id, isOtherMonth);
@@ -827,89 +1035,7 @@ export default function AssignmentTable({ assignments, dates, onEdit }: Assignme
                               onDoubleClick={(e) => handleCellDoubleClick(e, assignment.id, date.date, order.id)}
                               onContextMenu={(e) => handleContextMenu(e, assignment.id, date.date, order.id)}
                             >
-                              {isLocked && (
-                                <LockIconWrapper>
-                                  <Tooltip title="このセルはロックされています">
-                                    <LockIcon 
-                                      color="primary" 
-                                      fontSize="medium" 
-                                      sx={{ opacity: 0.85 }} 
-                                    />
-                                  </Tooltip>
-                                </LockIconWrapper>
-                              )}
-                              <CellContent>
-                                {status && (
-                                  <Box sx={{ position: 'relative', width: '100%' }}>
-                                    <Tooltip
-                                      title={`ステータス: ${getStatusDisplay(status)}`}
-                                      arrow
-                                      placement="top"
-                                    >
-                                      <StatusChip status={status}>
-                                        {getStatusDisplay(status)}
-                                        <DeleteButton
-                                          size="small"
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            handleRemoveStatus(assignment.id, date.date, order.id);
-                                          }}
-                                          sx={{
-                                            display: hoveredCell === cellId ? 'flex' : 'none'
-                                          }}
-                                        >
-                                          <CancelIcon color="error" />
-                                        </DeleteButton>
-                                      </StatusChip>
-                                    </Tooltip>
-                                  </Box>
-                                )}
-                                {memos.length > 0 && (
-                                  <Tooltip 
-                                    title={
-                                      <div style={{ whiteSpace: 'pre-wrap', maxWidth: '300px' }}>
-                                        <Typography variant="body2" fontWeight="bold">
-                                          {memos.length > 1 ? `${memos.length}件のメモ` : 'メモ'}
-                                        </Typography>
-                                        <Typography variant="body2">
-                                          {formatMemoText(memos)}
-                                        </Typography>
-                                        {memos.length > 3 && (
-                                          <Typography variant="caption" color="text.secondary">
-                                            他 {memos.length - 3} 件のメモがあります
-                                          </Typography>
-                                        )}
-                                      </div>
-                                    }
-                                    arrow
-                                    placement="top"
-                                    PopperProps={{
-                                      modifiers: [
-                                        {
-                                          name: 'preventOverflow',
-                                          options: {
-                                            boundary: 'window',
-                                          },
-                                        },
-                                      ],
-                                    }}
-                                  >
-                                    <Box 
-                                      sx={{ 
-                                        position: 'absolute', 
-                                        top: '2px', 
-                                        right: '2px',
-                                        width: '8px',
-                                        height: '8px',
-                                        borderRadius: '50%',
-                                        backgroundColor: 'primary.main',
-                                        opacity: 0.7,
-                                        cursor: 'pointer'
-                                      }} 
-                                    />
-                                  </Tooltip>
-                                )}
-                              </CellContent>
+                              {renderCellContent(assignment, date.date, order.id, baseAvailable, isOtherMonth)}
                               <div style={{ display: 'none' }}>{provided.placeholder}</div>
                             </DroppableCell>
                           )}
@@ -987,7 +1113,7 @@ export default function AssignmentTable({ assignments, dates, onEdit }: Assignme
           fullWidth
           value={memoText}
           onChange={(e) => setMemoText(e.target.value)}
-          onKeyDown={handleMemoKeyDown}
+          onKeyDown={(e) => handleMemoKeyDown(e, handleSendMemo)}
           InputProps={{
             endAdornment: (
               <InputAdornment position="end">
@@ -1005,28 +1131,84 @@ export default function AssignmentTable({ assignments, dates, onEdit }: Assignme
       </Popover>
 
       {/* 編集ダイアログ */}
-      <Dialog open={editDialogOpen} onClose={handleCloseEditDialog}>
+      <Dialog 
+        open={editDialogOpen} 
+        onClose={handleCloseEditDialog}
+        maxWidth="sm"
+        fullWidth
+      >
         <DialogTitle>イベント情報編集</DialogTitle>
-        <DialogContent>
-          <TextField
-            autoFocus
-            margin="dense"
-            label="イベント実施場所"
-            type="text"
-            fullWidth
-            variant="outlined"
-            value={editedVenue}
-            onChange={(e) => setEditedVenue(e.target.value)}
-          />
-          <TextField
-            margin="dense"
-            label="詳細情報"
-            type="text"
-            fullWidth
-            variant="outlined"
-            value={editedVenueDetail}
-            onChange={(e) => setEditedVenueDetail(e.target.value)}
-          />
+        <DialogContent sx={{ pt: 1 }}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
+            <TextField
+              autoFocus
+              label="代理店"
+              type="text"
+              fullWidth
+              variant="outlined"
+              value={editedAgency}
+              onChange={(e) => setEditedAgency(e.target.value)}
+              size="small"
+            />
+            <TextField
+              label="イベント実施場所"
+              type="text"
+              fullWidth
+              variant="outlined"
+              value={editedVenue}
+              onChange={(e) => setEditedVenue(e.target.value)}
+              size="small"
+            />
+            <TextField
+              label="詳細情報"
+              type="text"
+              fullWidth
+              variant="outlined"
+              value={editedVenueDetail}
+              onChange={(e) => setEditedVenueDetail(e.target.value)}
+              size="small"
+            />
+            <Box sx={{ display: 'flex', gap: 3, mt: 1 }}>
+              <FormControlLabel 
+                control={
+                  <Checkbox 
+                    checked={editedHasTrip} 
+                    onChange={(e) => setEditedHasTrip(e.target.checked)} 
+                    color="primary"
+                  />
+                } 
+                label={
+                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                    <FlightIcon 
+                      color="primary" 
+                      fontSize="small" 
+                      sx={{ mr: 0.5 }}
+                    />
+                    <Typography variant="body2">出張あり</Typography>
+                  </Box>
+                }
+              />
+              <FormControlLabel 
+                control={
+                  <Checkbox 
+                    checked={editedIsOutdoor} 
+                    onChange={(e) => setEditedIsOutdoor(e.target.checked)} 
+                    color="error"
+                  />
+                } 
+                label={
+                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                    <LocationOnIcon 
+                      color="error" 
+                      fontSize="small" 
+                      sx={{ mr: 0.5 }}
+                    />
+                    <Typography variant="body2">外現場</Typography>
+                  </Box>
+                }
+              />
+            </Box>
+          </Box>
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCloseEditDialog}>キャンセル</Button>
@@ -1047,6 +1229,20 @@ export default function AssignmentTable({ assignments, dates, onEdit }: Assignme
             : undefined
         }
       >
+        <MenuItem onClick={() => {
+          if (contextMenu) {
+            const assignment = assignments.find(a => a.id === contextMenu.assignmentId);
+            if (assignment) {
+              handleOpenEditDialog(assignment);
+              handleCloseContextMenu();
+            }
+          }
+        }}>
+          <ListItemIcon>
+            <EditIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText>イベント情報編集</ListItemText>
+        </MenuItem>
         <MenuItem onClick={handleOpenHistory}>
           <ListItemIcon>
             <HistoryIcon fontSize="small" />
@@ -1162,6 +1358,14 @@ export default function AssignmentTable({ assignments, dates, onEdit }: Assignme
           <Button onClick={handleCloseColorDialog}>キャンセル</Button>
         </DialogActions>
       </Dialog>
+
+      {/* オーダー枠設定ダイアログ */}
+      <OrderFrameDialog
+        open={orderFrameDialogOpen}
+        assignment={currentAssignment}
+        onClose={handleCloseOrderFrameDialog}
+        onSave={handleSaveOrderFrames}
+      />
     </>
   );
 } 

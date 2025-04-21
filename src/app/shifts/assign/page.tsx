@@ -34,6 +34,44 @@ interface AssignmentItem {
       [date: string]: string; // 'absent', 'tm', 'selected'のいずれか
     };
   };
+  // 要員アサイン情報を追加
+  staff?: {
+    [orderId: string]: {
+      [date: string]: {
+        id: string;
+        name: string;
+        isGirl: boolean;
+        isFemale: boolean;
+      };
+    };
+  };
+  // メモ情報を追加
+  memos?: {
+    [orderId: string]: {
+      [date: string]: {
+        id: string;
+        text: string;
+        timestamp: string;
+        user: string;
+      }[];
+    };
+  };
+  // ロック情報を追加
+  locks?: {
+    [orderId: string]: {
+      [date: string]: boolean;
+    };
+  };
+  // オーダー枠数と単価情報を追加
+  orderFrames?: {
+    [orderId: string]: {
+      [dayOfWeek: string]: { // '0'=日曜, '1'=月曜, ..., '6'=土曜
+        frames: number;
+        priceType: string; // '平日' or '週末'
+        priceAmount: number;
+      }
+    }
+  };
 }
 
 export default function AssignPage() {
@@ -138,7 +176,118 @@ export default function AssignPage() {
         });
       }
     }
+    // 要員のドロップ処理
+    else if (draggableId.startsWith('staff-')) {
+      // ドロップ先のIDを解析
+      const destinationId = destination.droppableId;
+      const match = destinationId.match(/assignment-(.*)-date-(.*)-order-(.*)/);
+      
+      if (match) {
+        const [, assignmentId, date, orderId] = match;
+        
+        // draggableIdから要員IDを抽出
+        // 形式: 'staff-{id}' または 'staff-{id}-{dateValue}'
+        const staffIdMatch = draggableId.match(/staff-(\d+)(?:-(.*))?/);
+        
+        if (staffIdMatch) {
+          const staffId = staffIdMatch[1];
+          const staffDateValue = staffIdMatch[2]; // 日付ごとのリストからドラッグした場合に使用
+          
+          console.log(`要員 ID:${staffId} を ${assignmentId} の ${date} のオーダー ${orderId} にアサインしました`);
+          console.log('日付情報:', staffDateValue ? `日付ごとのリストから (${staffDateValue})` : '連日稼働可能なリストから');
+          
+          // 要員情報を取得（実際のアプリケーションではAPIからデータを取得する）
+          const staffInfo = getStaffById(parseInt(staffId, 10));
+          
+          if (staffInfo) {
+            // アサインメントの状態を更新
+            setAssignments(prevAssignments => {
+              return prevAssignments.map(assignment => {
+                if (assignment.id === assignmentId) {
+                  // 要員情報がない場合は初期化
+                  const staff = assignment.staff || {};
+                  
+                  // 特定のオーダーの要員情報がない場合は初期化
+                  if (!staff[orderId]) {
+                    staff[orderId] = {};
+                  }
+                  
+                  // 要員情報を設定
+                  staff[orderId][date] = {
+                    id: staffId,
+                    name: staffInfo.name,
+                    isGirl: staffInfo.isGirl,
+                    isFemale: staffInfo.isFemale
+                  };
+                  
+                  return {
+                    ...assignment,
+                    staff
+                  };
+                }
+                return assignment;
+              });
+            });
+          }
+        }
+      }
+    }
   }, []);
+
+  // ダミーの要員データを取得する関数（実際のアプリケーションではAPIからデータを取得する）
+  const getStaffById = (id: number) => {
+    // StaffListコンポーネントで使用されているスタッフデータと同じものを取得
+    // このデータは通常はAPIから取得するが、今回はダミーデータを使用
+    const staffData = [
+      // クローザー
+      { id: 1, name: '荒川拓実', isGirl: false, isFemale: false },
+      { id: 2, name: '山中翔', isGirl: false, isFemale: false },
+      { id: 3, name: '猪本留渚', isGirl: false, isFemale: true },
+      { id: 4, name: '吉岡海', isGirl: false, isFemale: false },
+      { id: 5, name: '岩田咲海', isGirl: false, isFemale: true },
+      { id: 6, name: '林宏樹', isGirl: false, isFemale: false },
+      { id: 7, name: '齋藤涼花', isGirl: false, isFemale: true },
+      { id: 8, name: '水谷亮介', isGirl: false, isFemale: false },
+      { id: 9, name: '大久保卓哉', isGirl: false, isFemale: false },
+      { id: 10, name: '佐藤孝郁', isGirl: false, isFemale: false },
+      { id: 11, name: '富岡勇太', isGirl: false, isFemale: false },
+      { id: 12, name: '髙橋愛結奈', isGirl: false, isFemale: true },
+      { id: 13, name: '和田美優', isGirl: false, isFemale: false },
+      { id: 14, name: '中島悠喜', isGirl: false, isFemale: false },
+      { id: 15, name: '石谷直斗', isGirl: false, isFemale: false },
+      
+      // ガール
+      { id: 16, name: '柴李佐紅', isGirl: true, isFemale: true },
+      { id: 17, name: '佐藤祐未', isGirl: true, isFemale: true },
+      { id: 18, name: '石嶋瑠花', isGirl: true, isFemale: true },
+      { id: 19, name: '岸川明日菜', isGirl: true, isFemale: true },
+      { id: 20, name: '山岸莉子', isGirl: true, isFemale: true },
+      
+      // 追加データ
+      { id: 21, name: '森田来美', isGirl: false, isFemale: false },
+      { id: 22, name: '須郷瑠斗', isGirl: false, isFemale: false },
+      { id: 23, name: '大滝晴香', isGirl: true, isFemale: true },
+      { id: 24, name: '山下千尋', isGirl: true, isFemale: true },
+      { id: 25, name: '小林希歩', isGirl: true, isFemale: true },
+      { id: 26, name: '飯塚ひかり', isGirl: true, isFemale: true },
+      { id: 27, name: '森保勇生', isGirl: false, isFemale: false },
+      { id: 28, name: '須貝真奈美', isGirl: true, isFemale: true },
+      { id: 29, name: '森保大地', isGirl: false, isFemale: false },
+      { id: 30, name: '宮日向', isGirl: false, isFemale: true },
+      { id: 31, name: '中川ひかる', isGirl: true, isFemale: true },
+      { id: 32, name: '美濃部椋太', isGirl: false, isFemale: false },
+      { id: 33, name: '白畑龍弥', isGirl: false, isFemale: false },
+      { id: 34, name: '長崎敬太', isGirl: false, isFemale: false },
+      { id: 35, name: '安面遥夏', isGirl: true, isFemale: true },
+      { id: 36, name: '加瀬悠貴', isGirl: false, isFemale: false },
+      { id: 37, name: '篠知隆', isGirl: false, isFemale: false },
+      { id: 38, name: '小林天音', isGirl: true, isFemale: true },
+      { id: 39, name: '安藤心優', isGirl: true, isFemale: true },
+      { id: 40, name: '水谷新菜', isGirl: true, isFemale: true }
+    ];
+    
+    return staffData.find(staff => staff.id === id);
+  };
 
   // 表示モード変更ハンドラ
   const handleDisplayModeChange = (

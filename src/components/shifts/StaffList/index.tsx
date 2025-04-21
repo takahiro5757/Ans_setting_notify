@@ -702,17 +702,35 @@ export default function StaffList({ year, month, selectedWeek }: StaffListProps)
                     連日稼働可能
                   </Typography>
                 </StaffSectionTitle>
-                <Box sx={{ display: 'flex', flexWrap: 'wrap', pt: 1 }}>
-                  {availableForAllDates.map(staff => (
-                    <StaffItem 
-                      key={staff.id} 
-                      isGirl={staff.isGirl} 
-                      isFemale={staff.isFemale}
+                <Droppable droppableId="staff-all-dates" direction="horizontal" isDropDisabled={true}>
+                  {(provided) => (
+                    <Box 
+                      ref={provided.innerRef}
+                      {...provided.droppableProps}
+                      sx={{ display: 'flex', flexWrap: 'wrap', pt: 1 }}
                     >
-                      {staff.name}
-                    </StaffItem>
-                  ))}
-                </Box>
+                      {availableForAllDates.map((staff, index) => (
+                        <Draggable key={`staff-${staff.id}`} draggableId={`staff-${staff.id.toString()}`} index={index}>
+                          {(provided) => (
+                            <Box
+                              ref={provided.innerRef}
+                              {...provided.draggableProps}
+                              {...provided.dragHandleProps}
+                            >
+                              <StaffItem 
+                                isGirl={staff.isGirl} 
+                                isFemale={staff.isFemale}
+                              >
+                                {staff.name}
+                              </StaffItem>
+                            </Box>
+                          )}
+                        </Draggable>
+                      ))}
+                      {provided.placeholder}
+                    </Box>
+                  )}
+                </Droppable>
               </>
             )}
             
@@ -724,23 +742,41 @@ export default function StaffList({ year, month, selectedWeek }: StaffListProps)
                     {display}
                   </Typography>
                 </StaffSectionTitle>
-                <Box sx={{ display: 'flex', flexWrap: 'wrap', pt: 1 }}>
-                  {staff.length > 0 ? (
-                    staff.map(s => (
-                      <StaffItem 
-                        key={s.id} 
-                        isGirl={s.isGirl} 
-                        isFemale={s.isFemale}
-                      >
-                        {s.name}
-                      </StaffItem>
-                    ))
-                  ) : (
-                    <Typography variant="body2" color="text.secondary" sx={{ pl: 1 }}>
-                      稼働可能な要員はいません
-                    </Typography>
+                <Droppable droppableId={`staff-date-${dateValue}`} direction="horizontal" isDropDisabled={true}>
+                  {(provided) => (
+                    <Box 
+                      ref={provided.innerRef}
+                      {...provided.droppableProps}
+                      sx={{ display: 'flex', flexWrap: 'wrap', pt: 1 }}
+                    >
+                      {staff.length > 0 ? (
+                        staff.map((s, index) => (
+                          <Draggable key={`staff-${s.id}-${dateValue}`} draggableId={`staff-${s.id.toString()}-${dateValue}`} index={index}>
+                            {(provided) => (
+                              <Box
+                                ref={provided.innerRef}
+                                {...provided.draggableProps}
+                                {...provided.dragHandleProps}
+                              >
+                                <StaffItem 
+                                  isGirl={s.isGirl} 
+                                  isFemale={s.isFemale}
+                                >
+                                  {s.name}
+                                </StaffItem>
+                              </Box>
+                            )}
+                          </Draggable>
+                        ))
+                      ) : (
+                        <Typography variant="body2" color="text.secondary" sx={{ pl: 1 }}>
+                          稼働可能な要員はいません
+                        </Typography>
+                      )}
+                      {provided.placeholder}
+                    </Box>
                   )}
-                </Box>
+                </Droppable>
               </Box>
             ))}
           </Box>
