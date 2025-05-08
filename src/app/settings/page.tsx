@@ -10,11 +10,6 @@ export default function Page() {
   return (
     <Box sx={{ bgcolor: '#f5f5f5', minHeight: 'calc(100vh - 64px)', py: 3 }}>
       <Container maxWidth={false}>
-        <Box sx={{ mb: 3 }}>
-          <Typography variant="body2" sx={{ color: '#666' }}>
-            ホーム / 設定
-          </Typography>
-        </Box>
         <Box>
           <Typography variant="h6">設定</Typography>
         </Box>

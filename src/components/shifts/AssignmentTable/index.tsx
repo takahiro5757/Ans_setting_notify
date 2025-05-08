@@ -43,18 +43,18 @@ import SendIcon from '@mui/icons-material/Send';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import HistoryIcon from '@mui/icons-material/History';
 import ColorLensIcon from '@mui/icons-material/ColorLens';
-import { Droppable } from '@hello-pangea/dnd';
+import { Droppable, Draggable } from '@hello-pangea/dnd';
 import ClearIcon from '@mui/icons-material/Clear';
 import SettingsIcon from '@mui/icons-material/Settings';
 import OrderFrameDialog from '../OrderFrameDialog';
 
 // スタイル付きコンポーネント
 const StyledTableContainer = styled('div')(({ theme }) => ({
-  maxHeight: 'calc(720px)',
+  maxHeight: 'calc(100vh - 180px)',
   overflowY: 'auto',
   '& .MuiTableCell-root': {
-    padding: '8px',
-    fontSize: '0.875rem',
+    padding: '4px',
+    fontSize: '0.8rem',
   },
 }));
 
@@ -87,13 +87,13 @@ const DroppableCell = styled(StyledTableCell, {
   shouldForwardProp: (prop) => prop !== 'isAvailable' && prop !== 'isGirl'
 })<{ isAvailable?: boolean; isGirl?: boolean }>(({ theme, isAvailable, isGirl }) => ({
   width: '100px',
-  height: '60px',
-  minHeight: '60px',
-  maxHeight: '60px',
+  height: '30px',
+  minHeight: '30px',
+  maxHeight: '30px',
   backgroundColor: isAvailable ? '#fff' : '#f5f5f5',
   position: 'relative',
   textAlign: 'center',
-  padding: '4px',
+  padding: '2px',
   boxSizing: 'border-box',
   transition: 'background-color 0.2s ease',
   '&.dragOver': {
@@ -239,31 +239,43 @@ function isCellAvailable(baseAvailability: boolean, assignmentId: string, date: 
 }
 
 // ステータス表示用のスタイル付きコンポーネント
-const StatusChip = styled(Box)<{ status: string }>(({ theme, status }) => ({
-  backgroundColor: 
-    status === 'absent' ? 'rgba(244, 67, 54, 0.1)' : // 欠勤は薄い赤
-    status === 'tm' ? 'rgba(33, 150, 243, 0.1)' : // TMは薄い青
-    'rgba(139, 195, 74, 0.1)', // 選択中は薄い黄緑
-  color: 
-    status === 'absent' ? '#f44336' : // 欠勤は赤
-    status === 'tm' ? '#2196f3' : // TMは青
-    '#8bc34a', // 選択中は黄緑
-  borderRadius: '4px',
-  padding: '4px 8px',
-  margin: '2px auto',
-  width: '90%',
-  textAlign: 'center',
-  position: 'relative',
-  '&:hover': {
-    backgroundColor: 
-      status === 'absent' ? 'rgba(244, 67, 54, 0.2)' : 
-      status === 'tm' ? 'rgba(33, 150, 243, 0.2)' : 
-      'rgba(139, 195, 74, 0.2)',
-    '& .delete-button': {
-      display: 'block'
-    }
-  },
-}));
+const StatusChip = styled('div')<{ status: string }>(({ theme, status }) => {
+  // ステータスに応じた色を設定
+  let bgColor = '';
+  let textColor = '#fff';
+  
+  switch (status) {
+    case 'absent':
+      bgColor = '#ff8a80'; // 欠勤用の赤
+      break;
+    case 'tm':
+      bgColor = '#90caf9'; // TM用の青
+      break;
+    case 'selected':
+      bgColor = '#dce775'; // 選択中用の黄緑
+      textColor = '#000';
+      break;
+    default:
+      bgColor = 'transparent';
+  }
+  
+  return {
+    backgroundColor: bgColor,
+    color: textColor,
+    padding: '2px 4px',
+    borderRadius: '4px',
+    fontSize: '0.7rem',
+    fontWeight: 'bold',
+    display: 'block',
+    margin: '0 auto',
+    textAlign: 'center',
+    width: '90%',
+    boxShadow: '0 1px 2px rgba(0, 0, 0, 0.1)',
+    position: 'relative',
+    height: '18px',
+    lineHeight: '14px',
+  };
+});
 
 // 削除ボタン用のスタイル
 const DeleteButton = styled(IconButton)(({ theme }) => ({
@@ -305,14 +317,16 @@ const StaffItem = styled(Box)<{ isGirl: boolean }>(({ theme, isGirl }) => ({
     : 'rgba(25, 118, 210, 0.1)', // クローザー用の薄い青
   color: isGirl ? '#e91e63' : '#2196f3', // フォントカラーを明示的に設定
   borderRadius: '4px',
-  padding: '4px 8px',
-  margin: '2px auto',
-  width: '90%',
+  padding: '1px',
+  margin: '1px auto',
+  width: '98%',
   textAlign: 'center',
   position: 'relative',
   whiteSpace: 'nowrap',
   overflow: 'hidden',
   textOverflow: 'ellipsis',
+  fontSize: '0.6rem',
+  lineHeight: '1.1',
   '&:hover': {
     backgroundColor: isGirl 
       ? 'rgba(233, 30, 99, 0.2)' 
@@ -781,6 +795,7 @@ export default function AssignmentTable({ assignments, dates, onEdit }: Assignme
     handleCloseOrderFrameDialog();
   };
   
+  // セル内の内容をレンダリングする関数
   const renderCellContent = (assignment: AssignmentItem, date: string, orderId: string, isAvailable: boolean, isOtherMonth: boolean) => {
     const dateObj = new Date(date);
     const isLocked = assignment.locks?.[orderId]?.[date] || false;
@@ -813,11 +828,6 @@ export default function AssignmentTable({ assignments, dates, onEdit }: Assignme
       );
     };
     
-    // 苗字のみを取得する関数
-    const getLastName = (fullName: string) => {
-      return fullName.split(' ')[0]; // 空白で分割して最初の部分（苗字）を返す
-    };
-    
     return (
       <CellContent>
         {isLocked && (
@@ -845,47 +855,78 @@ export default function AssignmentTable({ assignments, dates, onEdit }: Assignme
           <Box position="relative" width="100%" height="100%" display="flex" alignItems="center" justifyContent="center">
             <StatusChip status={status}>
               {getStatusDisplay(status)}
-              <DeleteButton
-                className="delete-button"
-                size="small"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleRemoveStatus(assignment.id, date, orderId);
-                }}
-              >
-                <ClearIcon />
-              </DeleteButton>
+              {hoveredCell === `${assignment.id}-${date}-${orderId}` && (
+                <DeleteButton
+                  size="small"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleRemoveStatus(assignment.id, date, orderId);
+                  }}
+                >
+                  <ClearIcon />
+                </DeleteButton>
+              )}
             </StatusChip>
           </Box>
         )}
         
         {staff && !status && (
-          <StaffItem isGirl={staff.isGirl}>
-            {getLastName(staff.name)}
-            <DeleteButton
-              className="delete-button"
-              size="small"
-              onClick={(e) => {
-                e.stopPropagation();
-                // スタッフ削除のロジックを実装
-                if (onEdit) {
-                  const targetAssignment = assignments.find(a => a.id === assignment.id);
-                  if (targetAssignment && targetAssignment.staff?.[orderId]?.[date]) {
-                    // 深いコピーを作成
-                    const updatedAssignment = JSON.parse(JSON.stringify(targetAssignment));
-                    
-                    // 該当するスタッフを削除
-                    delete updatedAssignment.staff[orderId][date];
-                    
-                    // 更新を適用
-                    onEdit(updatedAssignment);
-                  }
-                }
-              }}
-            >
-              <ClearIcon />
-            </DeleteButton>
-          </StaffItem>
+          <Draggable
+            draggableId={`assigned-staff-${assignment.id}-${date}-${orderId}`}
+            index={0}
+            isDragDisabled={isLocked}
+          >
+            {(provided, snapshot) => (
+              <div
+                ref={provided.innerRef}
+                {...provided.draggableProps}
+                {...provided.dragHandleProps}
+                onClick={(e) => e.stopPropagation()} // セルのクリックイベントが発火しないようにする
+                style={{
+                  ...provided.draggableProps.style,
+                  width: snapshot.isDragging ? '100px' : '100%', // ドラッグ中は横幅を100pxに制限
+                  height: '100%',
+                  maxWidth: snapshot.isDragging ? '100px' : 'none', // ドラッグ中は最大幅も制限
+                  zIndex: snapshot.isDragging ? 9999 : 'auto' // ドラッグ中は最前面に表示
+                }}
+              >
+                <StaffItem 
+                  isGirl={staff.isGirl}
+                  title={staff.name} // ツールチップ用
+                  sx={{
+                    ...(snapshot.isDragging && { 
+                      width: '96px', // ドラッグ中は固定幅
+                    })
+                  }}
+                >
+                  {staff.name}
+                  <DeleteButton
+                    className="delete-button"
+                    size="small"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      // スタッフ削除のロジックを実装
+                      if (onEdit) {
+                        const targetAssignment = assignments.find(a => a.id === assignment.id);
+                        if (targetAssignment && targetAssignment.staff?.[orderId]?.[date]) {
+                          // 深いコピーを作成
+                          const updatedAssignment = JSON.parse(JSON.stringify(targetAssignment));
+                          
+                          // 該当するスタッフを削除
+                          delete updatedAssignment.staff[orderId][date];
+                          
+                          // 更新を適用
+                          onEdit(updatedAssignment);
+                        }
+                      }
+                    }}
+                  >
+                    <ClearIcon />
+                  </DeleteButton>
+                </StaffItem>
+              </div>
+            )}
+          </Draggable>
         )}
       </CellContent>
     );

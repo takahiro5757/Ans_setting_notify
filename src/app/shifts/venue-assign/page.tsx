@@ -454,10 +454,6 @@ export default function VenueAssignPage() {
         flexShrink: 0,
         height: '40px' // 高さを固定して小さく
       }}>
-        <Box>
-          {/* ズームコントロールのみにフォーカス */}
-        </Box>
-        
         {/* ズームコントロール - コンパクトに */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, bgcolor: 'white', p: 0.5, borderRadius: 1 }}>
           <IconButton size="small" onClick={handleZoomOut} title="縮小" sx={{ p: 0.5 }}>
@@ -781,7 +777,7 @@ export default function VenueAssignPage() {
                           <Box sx={{ display: 'flex', alignItems: 'center' }}>
                             <Typography variant="caption" sx={{ mr: 0.5, fontWeight: 'bold' }}>
                               {dateInfo.displayDate}
-        </Typography>
+                            </Typography>
                             <Chip 
                               label={dateInfo.dayOfWeek} 
                               size="small" 
@@ -947,7 +943,7 @@ export default function VenueAssignPage() {
                                                 pb: 0.5
                                               }}>
                                                 残りのスタッフ ({assignment.staff.length - 2}名)
-        </Typography>
+                                              </Typography>
                                               <Box sx={{ maxHeight: '200px', overflowY: 'auto' }}>
                                                 {assignment.staff.slice(2).map(staff => {
                                                   const shouldHighlight = searchTerm.trim() !== '' && 
@@ -983,7 +979,7 @@ export default function VenueAssignPage() {
                                                         }}
                                                       >
                                                         {staff.name}
-        </Typography>
+                                                      </Typography>
                                                     </Box>
                                                   );
                                                 })}
@@ -1007,7 +1003,7 @@ export default function VenueAssignPage() {
                                           }}
                                         >
                                           <Box 
-          sx={{ 
+                                            sx={{ 
                                               color: '#757575',
                                               fontStyle: 'italic',
                                               bgcolor: 'rgba(0, 0, 0, 0.04)',

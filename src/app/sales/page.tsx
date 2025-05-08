@@ -87,13 +87,6 @@ export default function Sales() {
 
   return (
     <Container maxWidth={false} sx={{ bgcolor: '#f5f5f5', minHeight: '100vh', py: 3 }}>
-      {/* パンくずリスト */}
-      <Box sx={{ mb: 3 }}>
-        <Typography variant="body2" sx={{ color: '#666' }}>
-          ホーム / 営業案件管理
-        </Typography>
-      </Box>
-
       {/* メインコンテンツエリア */}
       <Box sx={{ position: 'relative' }}>
         {/* 週別サマリー（右上に固定） */}

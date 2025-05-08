@@ -2,7 +2,6 @@
 
 import { useState, useCallback, useEffect } from 'react';
 import { Box, Container, Typography, Grid, SelectChangeEvent, ToggleButtonGroup, ToggleButton } from '@mui/material';
-import Breadcrumb from '@/components/Breadcrumb';
 import YearMonthSelector from '@/components/YearMonthSelector';
 import WeekSelector from '@/components/WeekSelector';
 import WeeklySummary from '@/components/WeeklySummary';
@@ -232,7 +231,134 @@ export default function AssignPage() {
         }
       }
     }
-  }, []);
+    // 配置済み要員のドラッグ＆ドロップ処理
+    else if (draggableId.startsWith('assigned-staff-')) {
+      console.log("配置済み要員のドラッグ&ドロップを検出:", draggableId);
+      
+      // ドラッグ元とドロップ先のIDを解析
+      const sourceId = source.droppableId;
+      const destinationId = destination.droppableId;
+      
+      console.log("ドラッグ元:", sourceId);
+      console.log("ドロップ先:", destinationId);
+      
+      const sourceMatch = sourceId.match(/assignment-(.*)-date-(.*)-order-(.*)/);
+      const destMatch = destinationId.match(/assignment-(.*)-date-(.*)-order-(.*)/);
+      
+      if (sourceMatch && destMatch) {
+        const [, sourceAssignmentId, sourceDate, sourceOrderId] = sourceMatch;
+        const [, destAssignmentId, destDate, destOrderId] = destMatch;
+        
+        console.log("ドラッグ元情報:", {sourceAssignmentId, sourceDate, sourceOrderId});
+        console.log("ドロップ先情報:", {destAssignmentId, destDate, destOrderId});
+        
+        // draggableIdから配置済み要員の元情報を取得
+        // 形式: 'assigned-staff-{assignmentId}-{date}-{orderId}'
+        const assignedStaffMatch = draggableId.match(/assigned-staff-(.*)-(.*)-(.*)/);
+        
+        if (assignedStaffMatch) {
+          console.log("assignedStaffMatch:", assignedStaffMatch);
+          
+          // ドラッグ元のアサインメントとスタッフ情報を取得
+          const sourceAssignment = assignments.find(a => a.id === sourceAssignmentId);
+          const sourceStaff = sourceAssignment?.staff?.[sourceOrderId]?.[sourceDate];
+          
+          console.log("ドラッグ元アサインメント:", sourceAssignment?.id);
+          console.log("ドラッグ元スタッフ:", sourceStaff);
+          
+          if (sourceStaff) {
+            console.log('移動元スタッフ情報:', sourceStaff);
+            
+            // 更新用にアサインメントの深いコピーを作成
+            const updatedAssignments = JSON.parse(JSON.stringify(assignments));
+            
+            // ドラッグ元とドロップ先が異なる場合（同じセル内でのドラッグは無視）
+            if (sourceAssignmentId !== destAssignmentId || sourceDate !== destDate || sourceOrderId !== destOrderId) {
+              // ドラッグ元の情報を取得
+              const sourceAssignmentIdx = updatedAssignments.findIndex((a: AssignmentItem) => a.id === sourceAssignmentId);
+              
+              // ドロップ先の情報を取得
+              const destAssignmentIdx = updatedAssignments.findIndex((a: AssignmentItem) => a.id === destAssignmentId);
+              
+              console.log("ソースインデックス:", sourceAssignmentIdx);
+              console.log("目的地インデックス:", destAssignmentIdx);
+              
+              if (sourceAssignmentIdx !== -1 && destAssignmentIdx !== -1) {
+                // ドロップ先のスタッフの初期化（必要な場合）
+                if (!updatedAssignments[destAssignmentIdx].staff) {
+                  updatedAssignments[destAssignmentIdx].staff = {};
+                }
+                if (!updatedAssignments[destAssignmentIdx].staff[destOrderId]) {
+                  updatedAssignments[destAssignmentIdx].staff[destOrderId] = {};
+                }
+                
+                // ドロップ先にすでに配置されているスタッフを取得（入れ替え用）
+                const destStaff = updatedAssignments[destAssignmentIdx].staff?.[destOrderId]?.[destDate];
+                console.log("ドロップ先スタッフ:", destStaff);
+                
+                // ドラッグ元からスタッフを削除する前に、まずドロップ先のスタッフを保存（入れ替え用）
+                const tempDestStaff = destStaff ? { ...destStaff } : null;
+                
+                // ドラッグ元のスタッフをドロップ先に設定（完全なコピーを確保）
+                updatedAssignments[destAssignmentIdx].staff[destOrderId][destDate] = {
+                  id: sourceStaff.id,
+                  name: sourceStaff.name,
+                  isGirl: sourceStaff.isGirl,
+                  isFemale: sourceStaff.isFemale
+                };
+                
+                // ドラッグ元のスタッフ情報を削除
+                if (updatedAssignments[sourceAssignmentIdx].staff && 
+                    updatedAssignments[sourceAssignmentIdx].staff[sourceOrderId]) {
+                  delete updatedAssignments[sourceAssignmentIdx].staff[sourceOrderId][sourceDate];
+                }
+                
+                // 入れ替え: 保存しておいたドロップ先のスタッフをドラッグ元に設定（存在する場合のみ）
+                if (tempDestStaff) {
+                  // ドラッグ元のスタッフの初期化（必要な場合）
+                  if (!updatedAssignments[sourceAssignmentIdx].staff) {
+                    updatedAssignments[sourceAssignmentIdx].staff = {};
+                  }
+                  if (!updatedAssignments[sourceAssignmentIdx].staff[sourceOrderId]) {
+                    updatedAssignments[sourceAssignmentIdx].staff[sourceOrderId] = {};
+                  }
+                  
+                  // 完全なコピーを確保
+                  updatedAssignments[sourceAssignmentIdx].staff[sourceOrderId][sourceDate] = {
+                    id: tempDestStaff.id,
+                    name: tempDestStaff.name,
+                    isGirl: tempDestStaff.isGirl,
+                    isFemale: tempDestStaff.isFemale
+                  };
+                  
+                  console.log(`要員 "${sourceStaff.name}" を移動しました: ${sourceAssignmentId}/${sourceDate}/${sourceOrderId} -> ${destAssignmentId}/${destDate}/${destOrderId}`);
+                  console.log(`要員 "${tempDestStaff.name}" を入れ替えました: ${destAssignmentId}/${destDate}/${destOrderId} -> ${sourceAssignmentId}/${sourceDate}/${sourceOrderId}`);
+                } else {
+                  // 移動のみ（入れ替えなし）の場合
+                  console.log(`要員 "${sourceStaff.name}" を移動しました: ${sourceAssignmentId}/${sourceDate}/${sourceOrderId} -> ${destAssignmentId}/${destDate}/${destOrderId}`);
+                }
+                
+                // 状態を更新
+                setAssignments(updatedAssignments);
+              } else {
+                console.error("ソースまたは目的地のインデックスが見つかりません");
+              }
+            } else {
+              console.log("同じセル内でのドラッグなので無視します");
+            }
+          } else {
+            console.error("ドラッグ元のスタッフ情報が見つかりません");
+          }
+        } else {
+          console.error("assigned-staff- IDのパターンマッチに失敗しました");
+        }
+      } else {
+        console.error("ソースまたは目的地IDのパターンマッチに失敗しました");
+      }
+    } else {
+      console.log("未知のドラッグ&ドロップタイプ:", draggableId);
+    }
+  }, [assignments]);
 
   // ダミーの要員データを取得する関数（実際のアプリケーションではAPIからデータを取得する）
   const getStaffById = (id: number) => {
@@ -309,15 +435,12 @@ export default function AssignPage() {
           py: 3
         }}
       >
-        {/* パンくずリスト */}
-        <Breadcrumb items={['ホーム', 'シフト管理', 'アサイン']} />
-
         {/* メインコンテンツエリア */}
         <Box sx={{ position: 'relative' }}>
-          {/* 週別サマリー（右上に固定） */}
+          {/* 週別サマリー（右上に固定） - 上に移動 */}
           <Box sx={{ 
             position: 'absolute', 
-            top: -20,
+            top: -40, // -20から-40に変更してより上に配置
             right: 0, 
             width: 'auto', 
             minWidth: '650px', 
@@ -332,8 +455,16 @@ export default function AssignPage() {
             />
           </Box>
 
-          {/* 年月・週選択 */}
-          <Box sx={{ mb: 2 }}>
+          {/* 年月・週選択・表示切替ボタンを同じY軸上に横一列で配置 */}
+          <Box sx={{ 
+            mb: 4, // マージンボトムを維持
+            display: 'flex', 
+            alignItems: 'flex-end', // 下端揃えに変更して年月の「対象年」「対象月」ラベルの分のずれを調整
+            flexWrap: 'nowrap',
+            gap: 2, // 均等な間隔を設定
+            height: '58px' // コンポーネントの共通の高さを設定
+          }}>
+            {/* 年月選択 */}
             <YearMonthSelector
               year={year}
               month={month}
@@ -342,70 +473,71 @@ export default function AssignPage() {
               months={Array.from({ length: 12 }, (_, i) => String(i + 1))}
             />
 
-            <WeekSelector 
-              selectedWeek={selectedWeek}
-              onChange={(week) => setSelectedWeek(week)}
-              year={year}
-              month={month}
-            />
-          </Box>
-          
-          {/* 表示切替ボタン */}
-          <Box sx={{ 
-            mb: 3, 
-            justifyContent: 'flex-start',
-            borderRadius: 1,
-            border: '1px solid rgba(0, 0, 0, 0.12)',
-            display: 'inline-block'
-          }}>
-            <ToggleButtonGroup
-              value={displayMode}
-              exclusive
-              onChange={handleDisplayModeChange}
-              aria-label="表示切替"
-              size="small"
-            >
-              <ToggleButton 
-                value="normal" 
-                aria-label="通常" 
-                sx={{ 
-                  px: 3,
-                  width: '100px',
-                  '&.Mui-selected': {
-                    bgcolor: 'primary.main',
-                    color: 'white',
-                    '&:hover': {
-                      bgcolor: 'primary.dark',
-                      color: 'white',
-                    }
-                  }
-                }}
+            {/* 週選択 */}
+            <Box sx={{ mx: 1 }}> {/* 左右に少し余白を追加 */}
+              <WeekSelector 
+                selectedWeek={selectedWeek}
+                onChange={(week) => setSelectedWeek(week)}
+                year={year}
+                month={month}
+              />
+            </Box>
+            
+            {/* 表示切替ボタン - 週選択の右側に配置 */}
+            <Box sx={{ 
+              borderRadius: 1,
+              border: '1px solid rgba(0, 0, 0, 0.12)',
+              display: 'inline-block',
+              height: '36px', // 高さを他のコンポーネントに合わせる
+              alignSelf: 'center' // 中央揃え
+            }}>
+              <ToggleButtonGroup
+                value={displayMode}
+                exclusive
+                onChange={handleDisplayModeChange}
+                aria-label="表示切替"
+                size="small"
               >
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%' }}>
+                <ToggleButton 
+                  value="normal" 
+                  aria-label="通常" 
+                  sx={{ 
+                    px: 2,
+                    width: '80px',
+                    height: '36px', // 高さを他の要素に合わせる
+                    '&.Mui-selected': {
+                      bgcolor: 'primary.main',
+                      color: 'white',
+                      '&:hover': {
+                        bgcolor: 'primary.dark',
+                        color: 'white',
+                      }
+                    }
+                  }}
+                >
                   通常
-                </Box>
-              </ToggleButton>
-              <ToggleButton 
-                value="series" 
-                aria-label="帯案件" 
-                sx={{ 
-                  px: 3,
-                  width: '100px',
-                  '&.Mui-selected': {
-                    bgcolor: 'primary.main',
-                    color: 'white',
-                    '&:hover': {
-                      bgcolor: 'primary.dark',
+                </ToggleButton>
+                <ToggleButton 
+                  value="series" 
+                  aria-label="帯案件" 
+                  sx={{ 
+                    px: 2,
+                    width: '80px',
+                    height: '36px', // 高さを他の要素に合わせる
+                    '&.Mui-selected': {
+                      bgcolor: 'primary.main',
                       color: 'white',
+                      '&:hover': {
+                        bgcolor: 'primary.dark',
+                        color: 'white',
+                      }
                     }
-                  }
-                }}
-              >
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%' }}>
+                  }}
+                >
                   帯案件
-                </Box>
-              </ToggleButton>
-            </ToggleButtonGroup>
+                </ToggleButton>
+              </ToggleButtonGroup>
+            </Box>
           </Box>
 
           {/* メインコンテンツ - グリッドレイアウト */}

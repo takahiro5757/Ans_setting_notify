@@ -21,7 +21,7 @@ const Cell = styled(TableCell)(({ theme }) => ({
   fontSize: 14,
   fontWeight: 600,
   whiteSpace: 'nowrap',
-  height: 30,
+  height: 36,
   lineHeight: 1,
   borderRight: '1px solid #000000',
 }));

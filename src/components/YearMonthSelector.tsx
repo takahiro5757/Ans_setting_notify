@@ -1,6 +1,6 @@
 'use client';
 
-import { Box, FormControl, InputLabel, Select, MenuItem, SelectChangeEvent } from '@mui/material';
+import { Box, FormControl, InputLabel, Select, MenuItem, SelectChangeEvent, Typography } from '@mui/material';
 import { useMemo } from 'react';
 
 interface YearMonthSelectorProps {
@@ -45,33 +45,39 @@ const YearMonthSelector = ({
   };
 
   return (
-    <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
-      <FormControl size="small">
-        <InputLabel>対象年</InputLabel>
+    <Box sx={{ display: 'flex', gap: 2 }}>
+      <Box>
+        <Typography variant="caption" sx={{ mb: 0.5, display: 'block', color: 'rgba(0, 0, 0, 0.6)' }}>
+          対象年
+        </Typography>
         <Select
           value={year}
-          label="対象年"
           onChange={handleYearChange}
-          sx={{ width: 120 }}
+          size="small"
+          sx={{ width: 150 }}
+          displayEmpty
         >
           {yearOptions.map((yearValue) => (
             <MenuItem key={yearValue} value={yearValue}>{yearValue}年</MenuItem>
           ))}
         </Select>
-      </FormControl>
-      <FormControl size="small">
-        <InputLabel>対象月</InputLabel>
+      </Box>
+      <Box>
+        <Typography variant="caption" sx={{ mb: 0.5, display: 'block', color: 'rgba(0, 0, 0, 0.6)' }}>
+          対象月
+        </Typography>
         <Select
           value={month}
-          label="対象月"
           onChange={handleMonthChange}
+          size="small"
           sx={{ width: 120 }}
+          displayEmpty
         >
           {months.map((monthValue) => (
             <MenuItem key={monthValue} value={monthValue}>{monthValue}月</MenuItem>
           ))}
         </Select>
-      </FormControl>
+      </Box>
     </Box>
   );
 };

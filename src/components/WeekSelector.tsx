@@ -58,7 +58,7 @@ const WeekSelector = ({
   const availableWeeks = getAvailableWeeks(year, month);
 
   return (
-    <Box sx={{ mb: 3 }}>
+    <Box>
       <ToggleButtonGroup
         value={selectedWeek}
         exclusive

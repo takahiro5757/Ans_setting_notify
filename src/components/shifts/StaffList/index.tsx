@@ -471,7 +471,7 @@ export default function StaffList({ year, month, selectedWeek }: StaffListProps)
   return (
     <StaffListContainer>
       {/* 上部のボタンとステータスタイル - 横並びに配置 */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3, alignItems: 'center' }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 4, alignItems: 'center', mt: 3 }}>
         {/* ステータスタイル */}
         <Box sx={{ display: 'flex', justifyContent: 'flex-start' }}>
           <Droppable droppableId="status-tiles" direction="horizontal">
@@ -542,7 +542,7 @@ export default function StaffList({ year, month, selectedWeek }: StaffListProps)
       </Box>
       
       {/* 要員リストと日付選択 */}
-      <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
         <Typography variant="h6" sx={{ mr: 2, fontWeight: 'bold' }}>
           要員リスト
         </Typography>
@@ -571,7 +571,7 @@ export default function StaffList({ year, month, selectedWeek }: StaffListProps)
       </Box>
       
       {/* 組織選択ボタン */}
-      <Box sx={{ mt: 3, position: 'relative' }}>
+      <Box sx={{ mt: 4, mb: 3, position: 'relative' }}>
         <Box sx={{ position: 'relative', width: '100%' }}>
           {/* 左スクロールボタン */}
           <ScrollIconButton
@@ -626,7 +626,7 @@ export default function StaffList({ year, month, selectedWeek }: StaffListProps)
       </Box>
       
       {/* フィルターラジオボタンと検索ボックス */}
-      <Box sx={{ mt: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <Box sx={{ mt: 3, mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <FormControl component="fieldset">
           <RadioGroup 
             row 
@@ -636,19 +636,19 @@ export default function StaffList({ year, month, selectedWeek }: StaffListProps)
             <FormControlLabel
               value="remote"
               control={<Radio size="small" />}
-              label={<Typography variant="body2">遠方</Typography>}
+              label={<Typography variant="body2" sx={{ color: '#000' }}>遠方</Typography>}
               sx={{ mr: 4 }}
             />
             <FormControlLabel
               value="no-trip"
               control={<Radio size="small" />}
-              label={<Typography variant="body2">出張NG</Typography>}
+              label={<Typography variant="body2" sx={{ color: '#000' }}>出張NG</Typography>}
             />
             {locationFilter && (
               <FormControlLabel
                 value=""
                 control={<Radio size="small" />}
-                label={<Typography variant="body2">指定なし</Typography>}
+                label={<Typography variant="body2" sx={{ color: '#000' }}>指定なし</Typography>}
                 sx={{ ml: 2 }}
               />
             )}
@@ -674,7 +674,7 @@ export default function StaffList({ year, month, selectedWeek }: StaffListProps)
       
       {/* 要員リスト */}
       {selectedDates.length > 0 && (
-        <Box sx={{ mt: 3 }}>
+        <Box sx={{ mt: 4 }}>
           {/* スクロール可能な要員リストコンテナ - 連日稼働可能と日付ごとの要員リストを含む */}
           <Box
             sx={{

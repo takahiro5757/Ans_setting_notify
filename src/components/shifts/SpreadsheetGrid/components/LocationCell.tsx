@@ -10,13 +10,15 @@ const Cell = styled(TableCell)(({ theme }) => ({
   fontSize: 12,
   fontWeight: 600,
   whiteSpace: 'normal',
-  height: 'auto',
-  minHeight: 30,
+  height: 36,
+  minHeight: 36,
+  maxHeight: 36,
   lineHeight: 1.2,
   borderRight: '1px solid #000000',
   '&.staff-section': { borderRight: '2px solid #000000' },
-  width: 225,
-  maxWidth: 225,
+  width: 112.5,
+  maxWidth: 112.5,
+  overflow: 'hidden',
 }));
 
 interface LocationCellProps {
@@ -138,12 +140,14 @@ const LocationCell: React.FC<LocationCellProps> = ({
         '&:hover': { 
           backgroundColor: isWeekend ? '#ffccaa' : '#f0f0f0'
         },
-        width: 225,
-        maxWidth: 225,
+        width: 112.5,
+        maxWidth: 112.5,
         fontSize: 12,
-        height: 'auto',
-        minHeight: 30,
+        height: 36,
+        minHeight: 36,
+        maxHeight: 36,
         lineHeight: 1.2,
+        overflow: 'hidden',
       }}
     >
       <Tooltip 
@@ -158,22 +162,27 @@ const LocationCell: React.FC<LocationCellProps> = ({
           width: '100%', 
           height: '100%', 
           position: 'relative',
-          overflow: 'visible',
+          overflow: 'hidden',
           whiteSpace: 'normal',
           wordBreak: 'break-word',
           fontSize: 12,
           padding: '2px 0',
+          textOverflow: 'ellipsis',
+          display: '-webkit-box',
+          WebkitLineClamp: 2,
+          WebkitBoxOrient: 'vertical',
         }}>
           {location || ''}
           {locationLocked && (
             <Box 
               sx={{
                 position: 'absolute',
-                top: '1px',
-                right: '1px',
-                fontSize: 10,
+                top: '50%',
+                left: '50%',
+                transform: 'translate(-50%, -50%)',
+                fontSize: 12,
                 color: '#9e9e9e',
-                opacity: 0.7,
+                opacity: 0.8,
                 pointerEvents: 'none',
                 zIndex: 10
               }}
@@ -185,17 +194,18 @@ const LocationCell: React.FC<LocationCellProps> = ({
             <Box 
               sx={{
                 position: 'absolute',
-                bottom: '1px',
-                left: '1px',
-                fontSize: 10,
-                color: '#f44336',
-                opacity: 0.7,
+                top: '0',
+                left: '0',
+                width: 0,
+                height: 0,
+                borderStyle: 'solid',
+                borderWidth: '10px 10px 0 0',
+                borderColor: '#f44336 transparent transparent transparent',
+                opacity: 0.8,
                 pointerEvents: 'none',
                 zIndex: 10
               }}
-            >
-              💬
-            </Box>
+            />
           )}
         </Box>
       </Tooltip>
