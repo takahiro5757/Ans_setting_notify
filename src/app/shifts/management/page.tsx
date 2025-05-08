@@ -6,7 +6,6 @@ import {
   FormControl, InputLabel, Select, MenuItem, TextField,
   Grid, Chip, Stack
 } from '@mui/material';
-import Breadcrumb from '@/components/Breadcrumb';
 import YearMonthSelector from '@/components/YearMonthSelector';
 import WeeklySummary from '@/components/WeeklySummary';
 import { SpreadsheetGrid } from '@/components/shifts/SpreadsheetGrid';
@@ -634,9 +633,6 @@ export default function ManagementPage() {
         py: 3
       }}
     >
-      {/* パンくずリスト */}
-      <Breadcrumb items={['ホーム', 'シフト調整', 'シフト管理']} />
-
       {/* メインコンテンツエリア */}
       <Box sx={{ position: 'relative' }}>
         {/* 週別サマリー（右上に固定） */}
