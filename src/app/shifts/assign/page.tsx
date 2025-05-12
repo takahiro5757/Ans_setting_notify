@@ -68,9 +68,16 @@ interface AssignmentItem {
         frames: number;
         priceType: string; // '平日' or '週末'
         priceAmount: number;
-      }
-    }
+      };
+    };
   };
+  // 帯案件情報を追加
+  seriesFrames?: {
+    totalFrames: number;
+    confirmedFrames: number;
+  };
+  // 帯案件モードでは現場名をSB○○店形式に変更
+  seriesVenue?: string;
 }
 
 export default function AssignPage() {
@@ -110,6 +117,34 @@ export default function AssignPage() {
     const weekDates = generateWeekDates(year, month, selectedWeek);
     setDates(weekDates);
   }, [year, month, selectedWeek]);
+
+  // 帯案件モード用のダミーデータを追加
+  useEffect(() => {
+    if (assignments.length > 0) {
+      const updatedAssignments = [...assignments];
+      
+      // 店舗名のリスト（SB+地名+店）
+      const sbStoreNames = [
+        'SB大宮店', 'SB春日部店', 'SB浦和店', 'SB川口店', 'SB所沢店', 
+        'SB越谷店', 'SB川越店', 'SB草加店', 'SB新座店', 'SB熊谷店'
+      ];
+      
+      // 最初の5件に帯案件残数情報を追加（ダミーデータ）
+      for (let i = 0; i < 5 && i < updatedAssignments.length; i++) {
+        updatedAssignments[i] = {
+          ...updatedAssignments[i],
+          // 帯案件モードでは現場名をSB○○店形式に変更
+          seriesVenue: sbStoreNames[i], // 帯案件用の現場名を追加
+          seriesFrames: {
+            totalFrames: 20,
+            confirmedFrames: Math.floor(Math.random() * 20) // 0-19のランダムな数
+          }
+        };
+      }
+      
+      setAssignments(updatedAssignments);
+    }
+  }, []); // マウント時のみ実行
 
   // 年の変更ハンドラ
   const handleYearChange = (year: string) => {
@@ -432,7 +467,7 @@ export default function AssignPage() {
         sx={{ 
           bgcolor: '#f5f5f5', 
           minHeight: '100vh', 
-          py: 3
+          py: 1
         }}
       >
         {/* メインコンテンツエリア */}
@@ -440,7 +475,7 @@ export default function AssignPage() {
           {/* 週別サマリー（右上に固定） - 上に移動 */}
           <Box sx={{ 
             position: 'absolute', 
-            top: -40, // -20から-40に変更してより上に配置
+            top: 5, // ヘッダーにかぶらないように正の値に変更
             right: 0, 
             width: 'auto', 
             minWidth: '650px', 
@@ -455,93 +490,87 @@ export default function AssignPage() {
             />
           </Box>
 
-          {/* 年月・週選択・表示切替ボタンを同じY軸上に横一列で配置 */}
-          <Box sx={{ 
-            mb: 4, // マージンボトムを維持
-            display: 'flex', 
-            alignItems: 'flex-end', // 下端揃えに変更して年月の「対象年」「対象月」ラベルの分のずれを調整
-            flexWrap: 'nowrap',
-            gap: 2, // 均等な間隔を設定
-            height: '58px' // コンポーネントの共通の高さを設定
-          }}>
-            {/* 年月選択 */}
-            <YearMonthSelector
-              year={year}
-              month={month}
-              onYearChange={handleYearChange}
-              onMonthChange={handleMonthChange}
-              months={Array.from({ length: 12 }, (_, i) => String(i + 1))}
-            />
-
-            {/* 週選択 */}
-            <Box sx={{ mx: 1 }}> {/* 左右に少し余白を追加 */}
-              <WeekSelector 
-                selectedWeek={selectedWeek}
-                onChange={(week) => setSelectedWeek(week)}
+          {/* 年月・週選択＋表示切替ボタンをまとめてラップ */}
+          <Box sx={{ display: 'inline-block' }}>
+            {/* 年月・週選択を横並びで配置 */}
+            <Box sx={{ display: 'flex', gap: 2, mb: 1, alignItems: 'flex-end', flexWrap: 'nowrap', height: '58px' }}>
+              <YearMonthSelector
                 year={year}
                 month={month}
+                onYearChange={handleYearChange}
+                onMonthChange={handleMonthChange}
+                months={Array.from({ length: 12 }, (_, i) => String(i + 1))}
               />
+              <Box sx={{ mx: 1 }}>
+                <WeekSelector 
+                  selectedWeek={selectedWeek}
+                  onChange={(week) => setSelectedWeek(week)}
+                  year={year}
+                  month={month}
+                />
+              </Box>
             </Box>
-            
-            {/* 表示切替ボタン - 週選択の右側に配置 */}
-            <Box sx={{ 
-              borderRadius: 1,
-              border: '1px solid rgba(0, 0, 0, 0.12)',
-              display: 'inline-block',
-              height: '36px', // 高さを他のコンポーネントに合わせる
-              alignSelf: 'center' // 中央揃え
-            }}>
-              <ToggleButtonGroup
-                value={displayMode}
-                exclusive
-                onChange={handleDisplayModeChange}
-                aria-label="表示切替"
-                size="small"
-              >
-                <ToggleButton 
-                  value="normal" 
-                  aria-label="通常" 
-                  sx={{ 
-                    px: 2,
-                    width: '80px',
-                    height: '36px', // 高さを他の要素に合わせる
-                    '&.Mui-selected': {
-                      bgcolor: 'primary.main',
-                      color: 'white',
-                      '&:hover': {
-                        bgcolor: 'primary.dark',
-                        color: 'white',
-                      }
-                    }
-                  }}
+            {/* 表示切替ボタンを下に左寄せで配置 */}
+            <Box sx={{ display: 'flex', justifyContent: 'flex-start', mb: 2, mt: 5 }}>
+              <Box sx={{
+                borderRadius: 1,
+                border: '1px solid rgba(0, 0, 0, 0.12)',
+                display: 'inline-block',
+                height: '36px',
+                alignSelf: 'center'
+              }}>
+                <ToggleButtonGroup
+                  value={displayMode}
+                  exclusive
+                  onChange={handleDisplayModeChange}
+                  aria-label="表示切替"
+                  size="small"
                 >
-                  通常
-                </ToggleButton>
-                <ToggleButton 
-                  value="series" 
-                  aria-label="帯案件" 
-                  sx={{ 
-                    px: 2,
-                    width: '80px',
-                    height: '36px', // 高さを他の要素に合わせる
-                    '&.Mui-selected': {
-                      bgcolor: 'primary.main',
-                      color: 'white',
-                      '&:hover': {
-                        bgcolor: 'primary.dark',
+                  <ToggleButton 
+                    value="normal" 
+                    aria-label="通常" 
+                    sx={{ 
+                      px: 2,
+                      width: '80px',
+                      height: '36px',
+                      '&.Mui-selected': {
+                        bgcolor: 'primary.main',
                         color: 'white',
+                        '&:hover': {
+                          bgcolor: 'primary.dark',
+                          color: 'white',
+                        }
                       }
-                    }
-                  }}
-                >
-                  帯案件
-                </ToggleButton>
-              </ToggleButtonGroup>
+                    }}
+                  >
+                    通常
+                  </ToggleButton>
+                  <ToggleButton 
+                    value="series" 
+                    aria-label="帯案件" 
+                    sx={{ 
+                      px: 2,
+                      width: '80px',
+                      height: '36px',
+                      '&.Mui-selected': {
+                        bgcolor: 'primary.main',
+                        color: 'white',
+                        '&:hover': {
+                          bgcolor: 'primary.dark',
+                          color: 'white',
+                        }
+                      }
+                    }}
+                  >
+                    帯案件
+                  </ToggleButton>
+                </ToggleButtonGroup>
+              </Box>
             </Box>
           </Box>
 
           {/* メインコンテンツ - グリッドレイアウト */}
-          <Grid container spacing={2}>
+          <Grid container spacing={2} sx={{ mt: 1 }}>
             {/* 左側のコンテンツ - AssignmentTable */}
             <Grid item xs={12} md={8}>
               <Box sx={{ mb: 2 }}>
@@ -549,6 +578,7 @@ export default function AssignPage() {
                   assignments={assignments}
                   dates={dates}
                   onEdit={handleEditAssignment}
+                  displayMode={displayMode}
                 />
               </Box>
             </Grid>

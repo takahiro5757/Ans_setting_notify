@@ -47,9 +47,6 @@ const YearMonthSelector = ({
   return (
     <Box sx={{ display: 'flex', gap: 2 }}>
       <Box>
-        <Typography variant="caption" sx={{ mb: 0.5, display: 'block', color: 'rgba(0, 0, 0, 0.6)' }}>
-          対象年
-        </Typography>
         <Select
           value={year}
           onChange={handleYearChange}
@@ -63,9 +60,6 @@ const YearMonthSelector = ({
         </Select>
       </Box>
       <Box>
-        <Typography variant="caption" sx={{ mb: 0.5, display: 'block', color: 'rgba(0, 0, 0, 0.6)' }}>
-          対象月
-        </Typography>
         <Select
           value={month}
           onChange={handleMonthChange}

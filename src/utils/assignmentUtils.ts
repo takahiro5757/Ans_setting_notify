@@ -115,6 +115,13 @@ interface AssignmentItem {
       [date: string]: string;
     };
   };
+  // 帯案件情報を追加
+  seriesFrames?: {
+    totalFrames: number;
+    confirmedFrames: number;
+  };
+  // 帯案件モードでの店舗名
+  seriesVenue?: string;
 }
 
 // ダミーのアサインメントデータを生成する関数

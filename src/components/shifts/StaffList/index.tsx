@@ -21,12 +21,16 @@ import {
   ListItem,
   ListItemText,
   TextField,
-  InputAdornment
+  InputAdornment,
+  Popover,
+  Card,
+  CardContent
 } from '@mui/material';
 import SettingsIcon from '@mui/icons-material/Settings';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import SearchIcon from '@mui/icons-material/Search';
+import InfoIcon from '@mui/icons-material/Info';
 import { Draggable, Droppable } from '@hello-pangea/dnd';
 
 // スタイル付きコンポーネント
@@ -200,15 +204,23 @@ interface StaffAvailability {
   [key: string]: boolean;
 }
 
+// StaffMemberインターフェースを拡張して詳細情報を追加
 interface StaffMember {
   id: number;
   name: string;
   org: string;
   remote: boolean;
   noTrip: boolean;
-  isGirl: boolean; // ガールかどうかを示すフラグを追加
-  isFemale: boolean; // 性別（女性かどうか）を追加
+  isGirl: boolean;
+  isFemale: boolean;
   availability: StaffAvailability;
+  details?: {
+    nearestStation?: string;
+    contact?: string;
+    ngStaff?: string[];
+    ngAgencies?: string[];
+    note?: string;
+  };
 }
 
 // 2025年4月と5月の稼働可能日を生成
@@ -234,15 +246,63 @@ const createStaffAvailability = (): StaffAvailability => {
   return availability;
 };
 
-// 要員リスト.csvのデータを元にダミー要員データを作成
+// テストデータに詳細情報を追加
 const staffData: StaffMember[] = [
   // クローザー
-  { id: 1, name: '荒川拓実', org: 'ansteype-employee', remote: Math.random() > 0.8, noTrip: Math.random() > 0.8, isGirl: false, isFemale: false, availability: createStaffAvailability() },
-  { id: 2, name: '山中翔', org: 'ansteype-freelance', remote: Math.random() > 0.8, noTrip: Math.random() > 0.8, isGirl: false, isFemale: false, availability: createStaffAvailability() },
-  { id: 3, name: '猪本留渚', org: 'ansteype-employee', remote: Math.random() > 0.8, noTrip: Math.random() > 0.8, isGirl: false, isFemale: true, availability: createStaffAvailability() },
-  { id: 4, name: '吉岡海', org: 'ansteype-employee', remote: Math.random() > 0.8, noTrip: Math.random() > 0.8, isGirl: false, isFemale: false, availability: createStaffAvailability() },
-  { id: 5, name: '岩田咲海', org: 'ansteype-employee', remote: Math.random() > 0.8, noTrip: Math.random() > 0.8, isGirl: false, isFemale: true, availability: createStaffAvailability() },
-  { id: 6, name: '林宏樹', org: 'ansteype-employee', remote: Math.random() > 0.8, noTrip: Math.random() > 0.8, isGirl: false, isFemale: false, availability: createStaffAvailability() },
+  { 
+    id: 1, 
+    name: '荒川拓実', 
+    org: 'ansteype-employee', 
+    remote: Math.random() > 0.8, 
+    noTrip: Math.random() > 0.8, 
+    isGirl: false, 
+    isFemale: false, 
+    availability: createStaffAvailability(),
+    details: {
+      nearestStation: '渋谷駅',
+      contact: 'TEL: 090-1234-5678 / LINE: arakawa-t',
+      ngStaff: ['山田太郎', '佐藤健'],
+      ngAgencies: ['ABC代理店 田中マネージャー'],
+      note: '土日の勤務可能。リーダー経験あり。特定クライアントのみ担当希望。'
+    }
+  },
+  { 
+    id: 2, 
+    name: '山中翔', 
+    org: 'ansteype-freelance', 
+    remote: Math.random() > 0.8, 
+    noTrip: Math.random() > 0.8, 
+    isGirl: false, 
+    isFemale: false, 
+    availability: createStaffAvailability(),
+    details: {
+      nearestStation: '新宿駅',
+      contact: 'Email: yamanaka@example.com',
+      ngStaff: [],
+      ngAgencies: ['XYZ代理店'],
+      note: 'リモート勤務希望。平日夜間対応可能。'
+    }
+  },
+  { 
+    id: 3, 
+    name: '石谷直斗', 
+    org: 'ppp', 
+    remote: Math.random() > 0.8, 
+    noTrip: Math.random() > 0.8, 
+    isGirl: false, 
+    isFemale: false, 
+    availability: createStaffAvailability(),
+    details: {
+      nearestStation: '池袋駅',
+      contact: 'TEL: 080-9876-5432 / LINE: naoto-i',
+      ngStaff: ['鈴木一郎'],
+      ngAgencies: [],
+      note: '週3日勤務希望。交通費上限なし。早朝対応可能。'
+    }
+  },
+  { id: 4, name: '猪本留渚', org: 'ansteype-employee', remote: Math.random() > 0.8, noTrip: Math.random() > 0.8, isGirl: false, isFemale: true, availability: createStaffAvailability() },
+  { id: 5, name: '吉岡海', org: 'ansteype-employee', remote: Math.random() > 0.8, noTrip: Math.random() > 0.8, isGirl: false, isFemale: false, availability: createStaffAvailability() },
+  { id: 6, name: '岩田咲海', org: 'ansteype-employee', remote: Math.random() > 0.8, noTrip: Math.random() > 0.8, isGirl: false, isFemale: true, availability: createStaffAvailability() },
   { id: 7, name: '齋藤涼花', org: 'ansteype-employee', remote: Math.random() > 0.8, noTrip: Math.random() > 0.8, isGirl: false, isFemale: true, availability: createStaffAvailability() },
   { id: 8, name: '水谷亮介', org: 'ansteype-parttime', remote: Math.random() > 0.8, noTrip: Math.random() > 0.8, isGirl: false, isFemale: false, availability: createStaffAvailability() },
   { id: 9, name: '大久保卓哉', org: 'ansteype-employee', remote: Math.random() > 0.8, noTrip: Math.random() > 0.8, isGirl: false, isFemale: false, availability: createStaffAvailability() },
@@ -291,7 +351,7 @@ interface StaffItemProps {
 
 const StaffItem = styled(Box)<StaffItemProps>(({ theme, isGirl, isFemale }) => ({
   display: 'inline-flex',
-  justifyContent: 'center',
+  justifyContent: 'space-between',
   alignItems: 'center',
   backgroundColor: isGirl ? '#fce4ec' : '#e3f2fd', // ガールは薄いピンク、クローザーは薄い青
   padding: theme.spacing(0.5, 1),
@@ -299,7 +359,7 @@ const StaffItem = styled(Box)<StaffItemProps>(({ theme, isGirl, isFemale }) => (
   borderRadius: '4px',
   boxShadow: '0 1px 2px rgba(0, 0, 0, 0.1)',
   fontSize: '0.8rem',
-  minWidth: '100px',
+  width: '120px', // 固定幅を設定
   height: '32px',
   cursor: 'pointer',
   userSelect: 'none',
@@ -333,6 +393,10 @@ export default function StaffList({ year, month, selectedWeek }: StaffListProps)
   const [locationFilter, setLocationFilter] = useState(''); // 空文字は未選択を表す
   const [searchQuery, setSearchQuery] = useState(''); // 検索クエリの状態を追加
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  
+  // 情報ポップアップの状態管理を追加
+  const [infoAnchorEl, setInfoAnchorEl] = useState<HTMLElement | null>(null);
+  const [selectedStaff, setSelectedStaff] = useState<StaffMember | null>(null);
   
   // 日付データの生成 - 選択された週に基づいて生成
   const dates = generateDates(year, month, selectedWeek);
@@ -467,6 +531,19 @@ export default function StaffList({ year, month, selectedWeek }: StaffListProps)
   
   // デバッグ用に日付データを表示
   console.log('Generated dates for staff list:', dates.map(d => d.dateStr));
+  
+  // 情報ボタンのクリックハンドラ
+  const handleInfoClick = (event: React.MouseEvent<HTMLElement>, staff: StaffMember) => {
+    event.stopPropagation();
+    setInfoAnchorEl(event.currentTarget);
+    setSelectedStaff(staff);
+  };
+  
+  // 情報ポップアップを閉じるハンドラ
+  const handleInfoClose = () => {
+    setInfoAnchorEl(null);
+    setSelectedStaff(null);
+  };
   
   return (
     <StaffListContainer>
@@ -672,6 +749,75 @@ export default function StaffList({ year, month, selectedWeek }: StaffListProps)
         />
       </Box>
       
+      {/* 情報ポップアップ */}
+      <Popover
+        open={Boolean(infoAnchorEl)}
+        anchorEl={infoAnchorEl}
+        onClose={handleInfoClose}
+        anchorOrigin={{
+          vertical: 'bottom',
+          horizontal: 'center',
+        }}
+        transformOrigin={{
+          vertical: 'top',
+          horizontal: 'center',
+        }}
+      >
+        {selectedStaff && (
+          <Card sx={{ minWidth: 320 }}>
+            <CardContent>
+              <Typography variant="h6" component="div" gutterBottom>
+                {selectedStaff.name}
+              </Typography>
+              
+              <Typography variant="subtitle2" sx={{ mt: 1, fontWeight: 'bold', borderBottom: '1px solid #eee', pb: 0.5 }}>
+                基本情報
+              </Typography>
+              
+              <Typography variant="body2" sx={{ mt: 1 }}>
+                <strong>所属:</strong> {organizations.find(org => org.id === selectedStaff.org)?.name || selectedStaff.org}
+              </Typography>
+              
+              <Typography variant="body2">
+                <strong>最寄り駅:</strong> {selectedStaff.details?.nearestStation || '未設定'}
+              </Typography>
+              
+              <Typography variant="body2">
+                <strong>連絡先:</strong> {selectedStaff.details?.contact || '未設定'}
+              </Typography>
+              
+              <Typography variant="subtitle2" sx={{ mt: 2, fontWeight: 'bold', borderBottom: '1px solid #eee', pb: 0.5 }}>
+                NG情報
+              </Typography>
+              
+              <Typography variant="body2" sx={{ mt: 1 }}>
+                <strong>NG要員:</strong> {selectedStaff.details?.ngStaff?.length ? selectedStaff.details.ngStaff.join('、') : 'なし'}
+              </Typography>
+              
+              <Typography variant="body2">
+                <strong>代理店NG:</strong> {selectedStaff.details?.ngAgencies?.length ? selectedStaff.details.ngAgencies.join('、') : 'なし'}
+              </Typography>
+              
+              <Typography variant="subtitle2" sx={{ mt: 2, fontWeight: 'bold', borderBottom: '1px solid #eee', pb: 0.5 }}>
+                その他
+              </Typography>
+              
+              <Typography variant="body2" sx={{ mt: 1 }}>
+                <strong>特記事項:</strong> {selectedStaff.details?.note || 'なし'}
+              </Typography>
+              
+              <Typography variant="body2" sx={{ mt: 1 }}>
+                <strong>リモート勤務:</strong> {selectedStaff.remote ? '可能' : '不可'}
+              </Typography>
+              
+              <Typography variant="body2">
+                <strong>遠方移動:</strong> {selectedStaff.noTrip ? '不可' : '可能'}
+              </Typography>
+            </CardContent>
+          </Card>
+        )}
+      </Popover>
+      
       {/* 要員リスト */}
       {selectedDates.length > 0 && (
         <Box sx={{ mt: 4 }}>
@@ -721,7 +867,21 @@ export default function StaffList({ year, month, selectedWeek }: StaffListProps)
                                 isGirl={staff.isGirl} 
                                 isFemale={staff.isFemale}
                               >
-                                {staff.name}
+                                <span>{staff.name}</span>
+                                <IconButton
+                                  size="small"
+                                  onClick={(e) => handleInfoClick(e, staff)}
+                                  sx={{ 
+                                    ml: 1, 
+                                    p: 0.25,
+                                    color: 'rgba(0, 0, 0, 0.54)', // グレー系の色に変更
+                                    '&:hover': {
+                                      backgroundColor: 'rgba(0, 0, 0, 0.04)'
+                                    }
+                                  }}
+                                >
+                                  <InfoIcon fontSize="small" />
+                                </IconButton>
                               </StaffItem>
                             </Box>
                           )}
@@ -762,7 +922,21 @@ export default function StaffList({ year, month, selectedWeek }: StaffListProps)
                                   isGirl={s.isGirl} 
                                   isFemale={s.isFemale}
                                 >
-                                  {s.name}
+                                  <span>{s.name}</span>
+                                  <IconButton
+                                    size="small"
+                                    onClick={(e) => handleInfoClick(e, s)}
+                                    sx={{ 
+                                      ml: 1, 
+                                      p: 0.25,
+                                      color: 'rgba(0, 0, 0, 0.54)', // グレー系の色に変更
+                                      '&:hover': {
+                                        backgroundColor: 'rgba(0, 0, 0, 0.04)'
+                                      }
+                                    }}
+                                  >
+                                    <InfoIcon fontSize="small" />
+                                  </IconButton>
                                 </StaffItem>
                               </Box>
                             )}

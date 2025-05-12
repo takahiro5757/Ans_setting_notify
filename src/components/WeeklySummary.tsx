@@ -55,7 +55,7 @@ const WeeklySummary = ({ weeks, summary, year = new Date().getFullYear(), month 
           }
         }}
       >
-        <Box sx={{ display: 'flex', justifyContent: 'flex-end', p: 0.75, borderBottom: '1px solid rgba(224, 224, 224, 0.4)' }}>
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end', p: 0.5, borderBottom: '1px solid rgba(224, 224, 224, 0.4)' }}>
           <ToggleButtonGroup
             size="small"
             value={filter}
@@ -64,17 +64,18 @@ const WeeklySummary = ({ weeks, summary, year = new Date().getFullYear(), month 
             aria-label="シフト表示フィルター"
             sx={{ 
               '& .MuiToggleButtonGroup-root': {
-                height: '24px'
+                height: '18px'
               },
               '& .MuiToggleButton-root': {
                 px: 1,
-                py: 0.2,
-                fontSize: '0.7rem',
+                py: 0,
+                fontSize: '0.65rem',
                 textTransform: 'none',
                 borderColor: 'rgba(224, 224, 224, 0.4)',
                 color: theme.palette.text.secondary,
                 minWidth: '70px',
-                height: '24px',
+                height: '18px',
+                lineHeight: '1',
                 '&.Mui-selected': {
                   backgroundColor: 'rgba(25, 118, 210, 0.08)',
                   color: '#1976d2',
@@ -88,17 +89,18 @@ const WeeklySummary = ({ weeks, summary, year = new Date().getFullYear(), month 
             <ToggleButton value="weekend">週末のみ</ToggleButton>
           </ToggleButtonGroup>
         </Box>
-        <TableContainer sx={{ maxHeight: '110px' }}>
+        <TableContainer sx={{ maxHeight: '100px' }}>
           <Table size="small" sx={{ minWidth: 650 }}>
-            <TableHead>
-              <TableRow sx={{ backgroundColor: 'rgba(245, 245, 250, 0.5)' }}>
+            <TableHead sx={{ minHeight: '24px' }}>
+              <TableRow sx={{ backgroundColor: 'rgba(245, 245, 250, 0.5)', height: '24px' }}>
                 <TableCell 
                   sx={{ 
                     textAlign: 'center', 
-                    p: 0.75, 
+                    p: '2px 4px', 
                     fontWeight: 500,
                     color: theme.palette.text.secondary,
-                    width: '120px'
+                    width: '120px',
+                    fontSize: '0.7rem',
                   }}
                 >
                 </TableCell>
@@ -107,10 +109,11 @@ const WeeklySummary = ({ weeks, summary, year = new Date().getFullYear(), month 
                     key={weekIndex} 
                     sx={{ 
                       textAlign: 'center', 
-                      p: 0.75, 
+                      p: '2px 4px', 
                       fontWeight: 500,
                       color: theme.palette.text.secondary,
-                      width: '70px'
+                      width: '70px',
+                      fontSize: '0.7rem',
                     }}
                   >
                     {weekIndex}W
@@ -119,10 +122,11 @@ const WeeklySummary = ({ weeks, summary, year = new Date().getFullYear(), month 
                 <TableCell 
                   sx={{ 
                     textAlign: 'center', 
-                    p: 0.75, 
+                    p: '2px 4px', 
                     fontWeight: 500,
                     color: theme.palette.text.secondary,
-                    width: '70px'
+                    width: '70px',
+                    fontSize: '0.7rem',
                   }}
                 >
                   合計

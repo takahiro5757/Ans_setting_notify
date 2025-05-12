@@ -59,8 +59,8 @@ const StyledTableContainer = styled('div')(({ theme }) => ({
 }));
 
 const StyledTableCell = styled(TableCell)(({ theme }) => ({
-  borderRight: '1px solid rgba(224, 224, 224, 0.5)',
-  borderBottom: '1px solid rgba(224, 224, 224, 0.5)',
+  borderRight: '1px solid rgba(210, 210, 210, 0.8)',
+  borderBottom: '1px solid rgba(210, 210, 210, 0.8)',
   '&:last-child': {
     borderRight: 'none',
   },
@@ -109,6 +109,7 @@ const VenueCell = styled(StyledTableCell)(({ theme }) => ({
   whiteSpace: 'nowrap',
   overflow: 'hidden',
   textOverflow: 'ellipsis',
+  position: 'relative',
 }));
 
 const AgencyCell = styled(StyledTableCell)(({ theme }) => ({
@@ -120,8 +121,8 @@ const OrderCell = styled(TableCell, {
 })<{ isGirl?: boolean }>(({ theme, isGirl }) => ({
   width: '100px',
   color: isGirl ? '#e91e63' : '#2196f3',
-  borderRight: '1px solid rgba(224, 224, 224, 0.5)',
-  borderBottom: '1px solid rgba(224, 224, 224, 0.5)',
+  borderRight: '1px solid rgba(210, 210, 210, 0.8)',
+  borderBottom: '1px solid rgba(210, 210, 210, 0.8)',
 }));
 
 interface AssignmentItem {
@@ -181,6 +182,13 @@ interface AssignmentItem {
       }
     }
   };
+  // 帯案件残数情報を追加
+  seriesFrames?: {
+    totalFrames: number;    // 全体の枠数
+    confirmedFrames: number; // 確定済みの枠数
+  };
+  // 帯案件モードでの店舗名
+  seriesVenue?: string;    // SB○○店 形式の店舗名
 }
 
 interface AssignmentTableProps {
@@ -192,6 +200,7 @@ interface AssignmentTableProps {
     isOtherMonth?: boolean;
   }[];
   onEdit?: (assignment: AssignmentItem) => void;
+  displayMode?: string; // 表示モード: 'normal' または 'series'
 }
 
 // 追加
@@ -224,7 +233,17 @@ function getBackgroundColor(isAvailable: boolean, assignmentId: string, date: st
 }
 
 // セルが利用可能かどうかを判断する関数を拡張
-function isCellAvailable(baseAvailability: boolean, assignmentId: string, date: string, orderId: string, isOtherMonth: boolean): boolean {
+function isCellAvailable(baseAvailability: boolean, assignmentId: string, date: string, orderId: string, isOtherMonth: boolean, displayMode?: string): boolean {
+  // 帯案件モードの場合は常に利用可能に
+  if (displayMode === 'series') {
+    // 他の月の日付セルは常に利用不可に（帯案件モードでも他の月は利用不可）
+    if (isOtherMonth) {
+      return false;
+    }
+    return true;
+  }
+  
+  // 通常モードの処理（既存のロジック）
   // 他の月の日付セルは常に利用不可に
   if (isOtherMonth) {
     return false;
@@ -384,29 +403,84 @@ const MemoIndicator = styled('div')({
 });
 
 // セルの背景色を取得
-const getCellBackgroundColor = (assignmentId: string, date: string, orderId: string, isAvailable: boolean, isOtherMonth: boolean, customColors: {[key: string]: string}) => {
+const getCellBackgroundColor = (assignmentId: string, date: string, orderId: string, isAvailable: boolean, isOtherMonth: boolean, customColors: {[key: string]: string}, displayMode?: string) => {
   // 他の月の日付セルは常に灰色に
   if (isOtherMonth) {
     return '#f5f5f5';
   }
 
+  // カスタム色が設定されている場合はそれを使用
   const cellId = `${assignmentId}-${date}-${orderId}`;
   if (customColors[cellId]) {
     return customColors[cellId];
   }
+
+  // 日付から曜日を取得（0=日曜日, 6=土曜日）
+  const dateObj = new Date(date);
+  const dayOfWeek = dateObj.getDay();
+  
+  // 帯案件モードでも土日の場合は薄い黄色に
+  if (dayOfWeek === 0 || dayOfWeek === 6) {
+    return '#fffde7'; // 薄い黄色
+  }
+  
+  // 帯案件モードの場合は白に
+  if (displayMode === 'series') {
+    return '#fff';
+  }
+  
+  // 通常モードの場合は既存のロジック
   return getBackgroundColor(isAvailable, assignmentId, date, orderId);
 };
 
 // メモ入力フィールドのキーダウンイベントハンドラ
 const handleMemoKeyDown = (event: React.KeyboardEvent, onSend: () => void) => {
-  // Shift + Enterが押された場合
-  if (event.key === 'Enter' && event.shiftKey) {
-    event.preventDefault(); // デフォルトの改行を防止
-    onSend(); // メモを送信
+  if (event.key === 'Enter' && !event.shiftKey) {
+    event.preventDefault();
+    onSend();
   }
 };
 
-export default function AssignmentTable({ assignments, dates, onEdit }: AssignmentTableProps) {
+// 帯案件モードでの残数表示
+const renderSeriesFrames = (assignment: AssignmentItem) => {
+  if (!assignment.seriesFrames) return null;
+  
+  const { totalFrames, confirmedFrames } = assignment.seriesFrames;
+  const hasRemaining = confirmedFrames < totalFrames;
+  
+  return (
+    <Box sx={{ 
+      display: 'flex',
+      justifyContent: 'flex-end',
+      alignItems: 'center',
+      position: 'absolute',
+      right: 8,
+      top: 0,
+      bottom: 0,
+      height: '100%'
+    }}>
+      <Typography 
+        variant="body2" 
+        component="span"
+        sx={{ 
+          fontWeight: hasRemaining ? 'bold' : 'normal',
+          color: hasRemaining ? '#e91e63' : 'inherit',
+          whiteSpace: 'nowrap',
+          fontSize: '0.7rem',
+          border: hasRemaining ? '1px solid rgba(233, 30, 99, 0.3)' : 'none',
+          borderRadius: '4px',
+          px: 0.75,
+          py: 0.25,
+          backgroundColor: hasRemaining ? 'rgba(233, 30, 99, 0.05)' : 'transparent'
+        }}
+      >
+        {confirmedFrames}/{totalFrames}
+      </Typography>
+    </Box>
+  );
+};
+
+export default function AssignmentTable({ assignments, dates, onEdit, displayMode }: AssignmentTableProps) {
   // 状態管理
   const [editDialogOpen, setEditDialogOpen] = useState<boolean>(false);
   const [currentAssignment, setCurrentAssignment] = useState<AssignmentItem | null>(null);
@@ -801,7 +875,7 @@ export default function AssignmentTable({ assignments, dates, onEdit }: Assignme
     const isLocked = assignment.locks?.[orderId]?.[date] || false;
     
     // セルが利用可能かどうかを判断
-    const cellAvailable = isCellAvailable(isAvailable, assignment.id, date, orderId, isOtherMonth);
+    const cellAvailable = isCellAvailable(isAvailable, assignment.id, date, orderId, isOtherMonth, displayMode);
     
     // 割り当てられているスタッフを取得
     const staff = assignment.staff?.[orderId]?.[date];
@@ -941,11 +1015,19 @@ export default function AssignmentTable({ assignments, dates, onEdit }: Assignme
               <TableRow>
                 <HeaderCell>編集</HeaderCell>
                 <HeaderCell>代理店</HeaderCell>
-                <HeaderCell>イベント実施場所</HeaderCell>
+                <HeaderCell>{displayMode === 'series' ? '店舗名' : 'イベント実施場所'}</HeaderCell>
                 <HeaderCell>オーダー</HeaderCell>
                 {dates.map((date) => (
                   <HeaderCell key={date.date} align="center">
-                    <Typography variant="body2" fontWeight="bold">
+                    <Typography 
+                      variant="body2" 
+                      fontWeight="bold" 
+                      sx={{ 
+                        color: date.dayOfWeek === '土' ? '#1976d2' : 
+                               date.dayOfWeek === '日' ? '#e91e63' : 
+                               'inherit' 
+                      }}
+                    >
                       {date.dayOfWeek}
                     </Typography>
                     <Typography variant="body2">
@@ -956,7 +1038,7 @@ export default function AssignmentTable({ assignments, dates, onEdit }: Assignme
               </TableRow>
             </TableHead>
             <TableBody>
-              {assignments.map((assignment) => (
+              {assignments.filter(assignment => displayMode !== 'series' || assignment.seriesVenue).map((assignment) => (
                 assignment.orders.map((order, orderIndex) => (
                   <TableRow key={`${assignment.id}-${order.id}`}>
                     {orderIndex === 0 && (
@@ -981,26 +1063,28 @@ export default function AssignmentTable({ assignments, dates, onEdit }: Assignme
                           {assignment.agency}
                         </AgencyCell>
                         <VenueCell rowSpan={assignment.orders.length}>
-                          <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                            <Typography variant="body2" noWrap title={assignment.venueDetail}>
-                              {assignment.venue}
+                          <Box sx={{ 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            gap: 0.5,
+                            pr: displayMode === 'series' && assignment.seriesFrames ? 8 : 0, // 帯案件モードで残数表示がある場合に右側にスペースを確保
+                            position: 'relative',
+                            width: '100%'
+                          }}>
+                            <Typography variant="body2" sx={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                              {displayMode === 'series' && assignment.seriesVenue ? assignment.seriesVenue : assignment.venue}
                             </Typography>
                             {assignment.hasTrip && (
-                              <FlightIcon 
-                                color="primary" 
-                                fontSize="small" 
-                                sx={{ ml: 0.5 }}
-                                titleAccess="出張あり"
-                              />
+                              <Tooltip title="出張あり">
+                                <FlightIcon fontSize="small" sx={{ fontSize: '1rem', color: 'action.active' }} />
+                              </Tooltip>
                             )}
                             {assignment.isOutdoor && (
-                              <LocationOnIcon 
-                                color="error" 
-                                fontSize="small" 
-                                sx={{ ml: 0.5 }}
-                                titleAccess="外現場"
-                              />
+                              <Tooltip title="屋外">
+                                <LocationOnIcon fontSize="small" sx={{ fontSize: '1rem', color: 'action.active' }} />
+                              </Tooltip>
                             )}
+                            {displayMode === 'series' && renderSeriesFrames(assignment)}
                           </Box>
                         </VenueCell>
                       </>
@@ -1017,11 +1101,11 @@ export default function AssignmentTable({ assignments, dates, onEdit }: Assignme
                       // 他の月のフラグを取得
                       const isOtherMonth = date.isOtherMonth === true;
                       
-                      // 背景色を決定
-                      const bgColor = getCellBackgroundColor(assignment.id, date.date, order.id, baseAvailable, isOtherMonth, customCellColors);
+                      // 背景色を決定（displayModeも渡す）
+                      const bgColor = getCellBackgroundColor(assignment.id, date.date, order.id, baseAvailable, isOtherMonth, customCellColors, displayMode);
                       
-                      // セルが実際に利用可能かどうかを判断
-                      const isAvailable = isCellAvailable(baseAvailable, assignment.id, date.date, order.id, isOtherMonth);
+                      // セルが実際に利用可能かどうかを判断（displayModeを渡す）
+                      const isAvailable = isCellAvailable(baseAvailable, assignment.id, date.date, order.id, isOtherMonth, displayMode);
                       
                       // デバッグ用ログを追加（開発時のみ表示）
                       if (process.env.NODE_ENV !== 'production' && orderIndex === 0) {
@@ -1044,18 +1128,18 @@ export default function AssignmentTable({ assignments, dates, onEdit }: Assignme
                         <Droppable
                           key={`drop-${assignment.id}-${date.date}-${order.id}`}
                           droppableId={getDroppableId(assignment.id, date.date, order.id)}
-                          isDropDisabled={!isAvailable || isLocked || isOtherMonth}
+                          isDropDisabled={!(displayMode === 'series' || isAvailable) || isLocked || isOtherMonth}
                         >
                           {(provided, snapshot) => (
                             <DroppableCell
                               ref={provided.innerRef}
                               {...provided.droppableProps}
-                              isAvailable={baseAvailable && !isOtherMonth}
+                              isAvailable={(displayMode === 'series' && !isOtherMonth) || (baseAvailable && !isOtherMonth)}
                               isGirl={order.isGirl}
                               className={snapshot.isDraggingOver ? 'dragOver' : ''}
                               sx={{ 
                                 backgroundColor: bgColor,
-                                cursor: isAvailable && !isLocked ? 'default' : 'not-allowed'
+                                cursor: (displayMode === 'series' || isAvailable) && !isLocked && !isOtherMonth ? 'default' : 'not-allowed'
                               }}
                               onMouseEnter={() => setHoveredCell(cellId)}
                               onMouseLeave={() => setHoveredCell(null)}
@@ -1063,7 +1147,7 @@ export default function AssignmentTable({ assignments, dates, onEdit }: Assignme
                               onDoubleClick={(e) => handleCellDoubleClick(e, assignment.id, date.date, order.id)}
                               onContextMenu={(e) => handleContextMenu(e, assignment.id, date.date, order.id)}
                             >
-                              {renderCellContent(assignment, date.date, order.id, baseAvailable, isOtherMonth)}
+                              {renderCellContent(assignment, date.date, order.id, displayMode === 'series' ? true : baseAvailable, isOtherMonth)}
                               <div style={{ display: 'none' }}>{provided.placeholder}</div>
                             </DroppableCell>
                           )}
