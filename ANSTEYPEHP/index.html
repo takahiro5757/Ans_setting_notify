@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ANSTEYPE | 自分らしく。-Be yourself –</title>
+    <meta name="description" content="ANSTEYPEは、かけがえのない仲間との出会いが次の未来を創り出す企業です。">
+    
+    <!-- CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="assets/css/style.css" rel="stylesheet">
+</head>
+<body>
+    <div id="header-include"></div>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-video">
+            <video autoplay loop muted playsinline poster="assets/images/hero-poster.jpg">
+                <source src="assets/videos/853844-hd_1920_1080_25fps.mp4" type="video/mp4">
+            </video>
+            <div class="hero-overlay"></div>
+        </div>
+        <div class="container">
+            <div class="hero-content">
+                <h1 class="hero-title">
+                    自分らしく。<br>
+                    -Be yourself –
+                </h1>
+                <p class="hero-subtitle">
+                    かけがえのない仲間との出会いが、<br>
+                    次の未来を創り出す。
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Content After Hero -->
+    <div class="content-after-hero">
+        <!-- Concept Section -->
+        <section id="whats-ansteype" class="section">
+            <div class="container">
+                <div class="row justify-content-center">
+                    <div class="col-lg-10">
+                        <h2 class="section-title fade-in">CONCEPT</h2>
+                        <p class="section-subtitle fade-in">
+                            誰かが成功したときに、僕らは「喜びを分かち合おう」<br>
+                            誰かが躓いたそのときに、僕らは「手を差し伸べよう」
+                        </p>
+                        <div class="concept-text">
+                            <p>誰かが助けてくれたときに<br>僕らは「感謝を口にしよう」</p>
+                            <p>かけがえのない仲間との出会いが次の未来を創り出す<br>次の未来を創り出す</p>
+                            <p>さぁ、始めよう。この場所で</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Business Section -->
+        <section id="business" class="section business-section">
+            <div class="container">
+                <div class="row justify-content-center">
+                    <div class="col-lg-10">
+                        <h2 class="section-title fade-in">BUSINESS</h2>
+                        <p class="section-subtitle fade-in">
+                            私たちは、お客様のビジネスの成長を支援する<br>
+                            システム開発・DX推進のプロフェッショナル集団です
+                        </p>
+                        <div class="business-links text-center fade-in">
+                            <a href="#" class="btn btn-primary">MORE</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Join Us Section -->
+        <section id="join-us" class="section">
+            <div class="container">
+                <div class="row justify-content-center">
+                    <div class="col-lg-10">
+                        <h2 class="section-title fade-in">JOIN US</h2>
+                        <p class="section-subtitle fade-in">
+                            経験者・未経験者関係なく、『考え方』が一致した方を採用条件としています。<br>
+                            私たちと一緒に働く仲間を募集しています。
+                        </p>
+                        <div class="text-center fade-in">
+                            <a href="#" class="btn btn-primary">採用情報はこちら</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Contact Section -->
+        <section id="contact" class="section business-section">
+            <div class="container">
+                <div class="row justify-content-center">
+                    <div class="col-lg-8">
+                        <h2 class="section-title fade-in">CONTACT</h2>
+                        <p class="section-subtitle text-center fade-in">
+                            お気軽にお問い合わせください
+                        </p>
+                        <div class="contact-buttons text-center fade-in">
+                            <a href="#" class="btn btn-primary me-4">法人の方</a>
+                            <a href="#" class="btn btn-primary">個人の方</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <div class="container">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h4 class="footer-title">ANSTEYPE</h4>
+                        <p>〒344-0067<br>埼玉県春日部市中央1丁目2-2 7F</p>
+                    </div>
+                    <div class="col-md-6">
+                        <ul class="footer-links">
+                            <li><a href="#">HOME</a></li>
+                            <li><a href="#whats-ansteype">WHAT'S ANSTEYPE</a></li>
+                            <li><a href="#business">BUSINESS</a></li>
+                            <li><a href="#join-us">JOIN US</a></li>
+                            <li><a href="#contact">CONTACT</a></li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="text-center mt-5">
+                    <small>&copy; 2021.ANSTEYPE</small>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- JavaScript -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="assets/js/main.js"></script>
+    <script>
+      fetch('assets/parts/header.html')
+        .then(res => res.text())
+        .then(html => {
+          document.getElementById('header-include').innerHTML = html;
+        });
+    </script>
+</body>
+</html> 

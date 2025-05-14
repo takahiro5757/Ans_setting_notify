@@ -2,6 +2,7 @@
 /node_modules
 /.pnp
 .pnp.js
+/ANSTEYPEHP/node_modules/
 
 # testing
 /coverage
@@ -16,6 +17,8 @@
 # misc
 .DS_Store
 *.pem
+/tmp/
+/backup-*/
 
 # debug
 npm-debug.log*
