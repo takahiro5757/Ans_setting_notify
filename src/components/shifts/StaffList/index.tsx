@@ -32,6 +32,7 @@ import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import SearchIcon from '@mui/icons-material/Search';
 import InfoIcon from '@mui/icons-material/Info';
 import { Draggable, Droppable } from '@hello-pangea/dnd';
+import { StaffAvailability, StaffDetails } from '@/types/shifts';
 
 // スタイル付きコンポーネント
 const StaffListContainer = styled(Box)(({ theme }) => ({
@@ -200,9 +201,6 @@ const organizations = [
 ];
 
 // ダミー要員データ
-interface StaffAvailability {
-  [key: string]: boolean;
-}
 
 // StaffMemberインターフェースを拡張して詳細情報を追加
 interface StaffMember {
@@ -217,8 +215,11 @@ interface StaffMember {
   details?: {
     nearestStation?: string;
     contact?: string;
+    price?: number;
     ngStaff?: string[];
     ngAgencies?: string[];
+    prevMonthDays?: number;
+    prevPrevMonthDays?: number;
     note?: string;
   };
 }
@@ -545,6 +546,9 @@ export default function StaffList({ year, month, selectedWeek }: StaffListProps)
     setSelectedStaff(null);
   };
   
+  // インフォメーションポップアップが開いているかどうか
+  const isInfoPopoverOpen = Boolean(infoAnchorEl);
+  
   return (
     <StaffListContainer>
       {/* 上部のボタンとステータスタイル - 横並びに配置 */}
@@ -703,7 +707,7 @@ export default function StaffList({ year, month, selectedWeek }: StaffListProps)
       </Box>
       
       {/* フィルターラジオボタンと検索ボックス */}
-      <Box sx={{ mt: 3, mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <Box sx={{ mt: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <FormControl component="fieldset">
           <RadioGroup 
             row 
@@ -713,19 +717,19 @@ export default function StaffList({ year, month, selectedWeek }: StaffListProps)
             <FormControlLabel
               value="remote"
               control={<Radio size="small" />}
-              label={<Typography variant="body2" sx={{ color: '#000' }}>遠方</Typography>}
+              label={<Typography variant="body2">遠方</Typography>}
               sx={{ mr: 4 }}
             />
             <FormControlLabel
               value="no-trip"
               control={<Radio size="small" />}
-              label={<Typography variant="body2" sx={{ color: '#000' }}>出張NG</Typography>}
+              label={<Typography variant="body2">出張NG</Typography>}
             />
             {locationFilter && (
               <FormControlLabel
                 value=""
                 control={<Radio size="small" />}
-                label={<Typography variant="body2" sx={{ color: '#000' }}>指定なし</Typography>}
+                label={<Typography variant="body2">指定なし</Typography>}
                 sx={{ ml: 2 }}
               />
             )}

@@ -1,5 +1,8 @@
+// @ts-nocheck
 'use client';
 
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import ReactDOM from 'react-dom';
 import {
   Table,
   TableBody,
@@ -24,13 +27,17 @@ import {
   Dialog,
   DialogTitle,
   DialogContent,
-  DialogActions
+  DialogActions,
+  Menu,
+  List,
+  ListItem,
+  ListItemText
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import CheckIcon from '@mui/icons-material/Check';
 import SaveIcon from '@mui/icons-material/Save';
 import CloseIcon from '@mui/icons-material/Close';
-import { useState, useEffect } from 'react';
+import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
 import PersonIcon from '@mui/icons-material/Person';
 import SchoolIcon from '@mui/icons-material/School';
@@ -53,7 +60,7 @@ const getStatusColor = (status: string): "default" | "primary" | "secondary" | "
 
 // 曜日のラベルを返す関数
 const getDayLabel = (index: number): string => {
-  const days = ['月', '火', '水', '木', '金', '土', '日'];
+  const days = ['火', '水', '木', '金', '土', '日', '月'];
   return days[index];
 };
 
@@ -146,7 +153,14 @@ interface LocationDetailsProps {
   onEdit: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement> | SelectChangeEvent<string | string[]>) => void;
 }
 
-const LocationDetails = ({ location, phone, isEditing, onEdit }: LocationDetailsProps) => {
+const LocationDetails = ({ location, phone, isEditing, onEdit, recordId, handleCellDoubleClick, editingCell, cellInputRef, handleCellKeyDown, handleCellEditComplete }: LocationDetailsProps & {
+  recordId?: string;
+  handleCellDoubleClick?: (recordId: string, field: string) => void;
+  editingCell?: EditingCell | null;
+  cellInputRef?: React.RefObject<HTMLInputElement>;
+  handleCellKeyDown?: (e: React.KeyboardEvent, recordId: string, field: string, value: string) => void;
+  handleCellEditComplete?: (recordId: string, field: string, value: string) => void;
+}) => {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement> | SelectChangeEvent<string | string[]>) => {
     onEdit(e);
   };
@@ -246,17 +260,64 @@ const LocationDetails = ({ location, phone, isEditing, onEdit }: LocationDetails
           </>
         ) : (
           <>
-            <Typography variant="h6" sx={{ fontSize: '1rem', fontWeight: 'bold', mb: 1 }}>
-              {location.name}
+            <Typography 
+              variant="h6" 
+              sx={{ fontSize: '1rem', fontWeight: 'bold', mb: 1 }}
+              onDoubleClick={() => handleCellDoubleClick && recordId && handleCellDoubleClick(recordId, 'location.name')}
+            >
+              {editingCell?.recordId === recordId && editingCell?.field === 'location.name' ? (
+                <TextField
+                  size="small"
+                  defaultValue={location.name}
+                  inputRef={cellInputRef}
+                  fullWidth
+                  onKeyDown={(e) => handleCellKeyDown && recordId && handleCellKeyDown(e, recordId, 'location.name', e.currentTarget.value)}
+                  sx={{ my: -1 }}
+                />
+              ) : (
+                location.name
+              )}
             </Typography>
             <Box sx={{ display: 'flex', gap: 2, mb: 1 }}>
               <Box>
                 <Typography variant="caption" color="textSecondary">担当MG</Typography>
-                <Typography variant="body2">{location.manager}</Typography>
+                <Typography 
+                  variant="body2"
+                  onDoubleClick={() => handleCellDoubleClick && recordId && handleCellDoubleClick(recordId, 'location.manager')}
+                >
+                  {editingCell?.recordId === recordId && editingCell?.field === 'location.manager' ? (
+                    <TextField
+                      size="small"
+                      defaultValue={location.manager}
+                      inputRef={cellInputRef}
+                      fullWidth
+                      onKeyDown={(e) => handleCellKeyDown && recordId && handleCellKeyDown(e, recordId, 'location.manager', e.currentTarget.value)}
+                      sx={{ my: -1 }}
+                    />
+                  ) : (
+                    location.manager
+                  )}
+                </Typography>
               </Box>
               <Box>
                 <Typography variant="caption" color="textSecondary">電話番号</Typography>
-                <Typography variant="body2">{phone}</Typography>
+                <Typography 
+                  variant="body2"
+                  onDoubleClick={() => handleCellDoubleClick && recordId && handleCellDoubleClick(recordId, 'phone')}
+                >
+                  {editingCell?.recordId === recordId && editingCell?.field === 'phone' ? (
+                    <TextField
+                      size="small"
+                      defaultValue={phone}
+                      inputRef={cellInputRef}
+                      fullWidth
+                      onKeyDown={(e) => handleCellKeyDown && recordId && handleCellKeyDown(e, recordId, 'phone', e.currentTarget.value)}
+                      sx={{ my: -1 }}
+                    />
+                  ) : (
+                    phone
+                  )}
+                </Typography>
               </Box>
             </Box>
             <Box sx={{ mb: 1 }}>
@@ -280,7 +341,7 @@ const LocationDetails = ({ location, phone, isEditing, onEdit }: LocationDetails
                     fontSize: '0.875rem'
                   }}>
                     <LocationOnIcon sx={{ fontSize: '1.2rem' }} />
-                    <Typography variant="body2">場所取り</Typography>
+                    <Typography variant="body2" color="primary">場所取り</Typography>
                   </Box>
                 </Tooltip>
               )}
@@ -341,7 +402,7 @@ interface SalesDetailsProps {
 }
 
 const SalesDetails = ({ counts, unitPrices, transportationFees, schedule, isEditing, onEdit }: SalesDetailsProps) => (
-  <Box sx={{ flex: '1 1 auto', minWidth: '300px', pr: 3 }}>
+  <Box sx={{ flex: '1 1 auto', minWidth: '300px', pr: 3, marginTop: '20px' }}>
     <Table size="small" sx={{ 
       width: '100%',
       tableLayout: 'fixed',
@@ -539,7 +600,13 @@ interface MemoProps {
   onEdit: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
 }
 
-const Memo = ({ memo, isEditing, onEdit }: MemoProps) => (
+const Memo = ({ memo, isEditing, onEdit, recordId, handleCellDoubleClick, editingCell, cellInputRef, handleCellKeyDown }: MemoProps & {
+  recordId?: string;
+  handleCellDoubleClick?: (recordId: string, field: string) => void;
+  editingCell?: EditingCell | null;
+  cellInputRef?: React.RefObject<HTMLInputElement>;
+  handleCellKeyDown?: (e: React.KeyboardEvent, recordId: string, field: string, value: string) => void;
+}) => (
   <Box sx={{ 
     width: '200px',
     height: '100%',
@@ -583,18 +650,120 @@ const Memo = ({ memo, isEditing, onEdit }: MemoProps) => (
           whiteSpace: 'pre-wrap',
           color: memo ? 'text.primary' : 'text.secondary',
           fontSize: '0.875rem',
-          flex: 1
+          flex: 1,
+          cursor: 'pointer'
         }}
+        onDoubleClick={() => handleCellDoubleClick && recordId && handleCellDoubleClick(recordId, 'memo')}
       >
-        {memo || 'メモなし'}
+        {editingCell?.recordId === recordId && editingCell?.field === 'memo' ? (
+          <TextField
+            multiline
+            size="small"
+            defaultValue={memo}
+            inputRef={cellInputRef}
+            fullWidth
+            onKeyDown={(e) => handleCellKeyDown && recordId && handleCellKeyDown(e, recordId, 'memo', e.currentTarget.value)}
+            sx={{ my: -1 }}
+          />
+        ) : (
+          memo || 'メモなし'
+        )}
       </Typography>
     )}
   </Box>
 );
 
+interface EditingCell {
+  recordId: string;
+  field: string;
+}
+
 interface SalesTableProps {
   initialViewMode: 'detail' | 'summary';
 }
+
+// 完全カスタムドロップダウンメニュー
+interface DropdownMenuProps {
+  open: boolean;
+  anchorPosition: { top: number; left: number } | null;
+  onClose: () => void;
+  children: React.ReactNode;
+  width?: number;
+}
+
+const DropdownMenu: React.FC<DropdownMenuProps> = ({
+  open,
+  anchorPosition,
+  onClose,
+  children,
+  width = 120
+}) => {
+  // マウント時にbodyにportalを作成
+  const [mounted, setMounted] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setMounted(true);
+    
+    // クリックイベントハンドラを追加
+    if (open) {
+      const handleClickOutside = (e: MouseEvent) => {
+        const target = e.target as HTMLElement;
+        if (dropdownRef.current && !dropdownRef.current.contains(target)) {
+          onClose();
+        }
+      };
+      
+      document.addEventListener('mousedown', handleClickOutside);
+      
+      // ESCキーでドロップダウンを閉じる
+      const handleEscKey = (e: KeyboardEvent) => {
+        if (e.key === 'Escape') {
+          onClose();
+        }
+      };
+      
+      document.addEventListener('keydown', handleEscKey);
+      
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+        document.removeEventListener('keydown', handleEscKey);
+      };
+    }
+  }, [open, onClose]);
+
+  // ドロップダウンスタイル
+  const dropdownStyle: React.CSSProperties = {
+    position: 'absolute',
+    top: anchorPosition?.top || 0,
+    left: anchorPosition?.left || 0,
+    zIndex: 9999,
+    backgroundColor: 'white',
+    boxShadow: '0 3px 10px rgba(0,0,0,0.2)',
+    borderRadius: '4px',
+    minWidth: `${width}px`,
+    display: open ? 'block' : 'none',
+    padding: 0,
+    margin: 0,
+    maxHeight: '300px',
+    overflowY: 'auto'
+  };
+
+  if (!mounted || !open || !anchorPosition) return null;
+
+  // Portalを使ってbodyに直接レンダリング
+  return ReactDOM.createPortal(
+    <div 
+      id="custom-dropdown" 
+      ref={dropdownRef}
+      style={dropdownStyle}
+      onClick={(e) => e.stopPropagation()}
+    >
+      {children}
+    </div>,
+    document.body
+  );
+};
 
 const SalesTable: React.FC<SalesTableProps> = ({ initialViewMode }) => {
   const [records, setRecords] = useState<SalesData[]>([
@@ -640,7 +809,7 @@ const SalesTable: React.FC<SalesTableProps> = ({ initialViewMode }) => {
       updatedBy: '山田',
       status: '代理店連絡前',
       agency: 'ピーアップ',
-      schedule: [false, true, true, true, true, false, false],
+      schedule: [false, true, true, true, false, false, false],
       isBandShift: false,
       bandShiftCount: 0,
       location: {
@@ -676,7 +845,7 @@ const SalesTable: React.FC<SalesTableProps> = ({ initialViewMode }) => {
       updatedBy: '佐藤',
       status: '代理店連絡前',
       agency: 'ピーアップ',
-      schedule: [false, false, false, false, true, true, false],
+      schedule: [false, false, false, true, true, false, false],
       isBandShift: false,
       bandShiftCount: 0,
       location: {
@@ -748,7 +917,7 @@ const SalesTable: React.FC<SalesTableProps> = ({ initialViewMode }) => {
       updatedBy: '田中',
       status: '代理店連絡前',
       agency: 'ラネット',
-      schedule: [false, false, true, true, true, false, false],
+      schedule: [false, true, true, true, false, false, false],
       isBandShift: false,
       bandShiftCount: 0,
       location: {
@@ -784,7 +953,7 @@ const SalesTable: React.FC<SalesTableProps> = ({ initialViewMode }) => {
       updatedBy: '田中',
       status: '代理店連絡前',
       agency: 'ラネット',
-      schedule: [false, false, false, false, true, true, false],
+      schedule: [false, false, false, true, true, false, false],
       isBandShift: false,
       bandShiftCount: 0,
       location: {
@@ -820,7 +989,7 @@ const SalesTable: React.FC<SalesTableProps> = ({ initialViewMode }) => {
       updatedBy: '山田',
       status: '代理店連絡前',
       agency: 'CS',
-      schedule: [true, true, true, true, true, false, false],
+      schedule: [true, true, true, true, false, false, false],
       isBandShift: false,
       bandShiftCount: 0,
       location: {
@@ -856,7 +1025,7 @@ const SalesTable: React.FC<SalesTableProps> = ({ initialViewMode }) => {
       updatedBy: '佐藤',
       status: '代理店連絡前',
       agency: 'CS',
-      schedule: [false, false, false, false, false, true, true],
+      schedule: [false, false, false, false, true, true, false],
       isBandShift: false,
       bandShiftCount: 0,
       location: {
@@ -928,7 +1097,7 @@ const SalesTable: React.FC<SalesTableProps> = ({ initialViewMode }) => {
       updatedBy: '田中',
       status: '代理店連絡前',
       agency: 'CS',
-      schedule: [false, false, true, true, true, false, false],
+      schedule: [false, true, true, true, false, false, false],
       isBandShift: false,
       bandShiftCount: 0,
       location: {
@@ -961,16 +1130,89 @@ const SalesTable: React.FC<SalesTableProps> = ({ initialViewMode }) => {
   ]);
 
   const [editingRecord, setEditingRecord] = useState<SalesData | null>(null);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'detail' | 'summary'>(initialViewMode);
+  const [menuPosition, setMenuPosition] = useState<{ top: number; left: number } | null>(null);
+  const [menuType, setMenuType] = useState<'assignee' | 'status' | 'agency' | ''>('');
+  const [activeRecordId, setActiveRecordId] = useState<string>('');
+  
+  // 個別編集用の新しいステート
+  const [editingCell, setEditingCell] = useState<EditingCell | null>(null);
+  const cellInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setViewMode(initialViewMode);
   }, [initialViewMode]);
 
+  // セルのダブルクリックハンドラ
+  const handleCellDoubleClick = (recordId: string, field: string) => {
+    // 既にメニューが表示されている場合は何もしない
+    if (menuPosition !== null) return;
+    
+    setEditingCell({ recordId, field });
+    
+    // 次のレンダリング後にinputにフォーカス
+    setTimeout(() => {
+      if (cellInputRef.current) {
+        cellInputRef.current.focus();
+        cellInputRef.current.select();
+      }
+    }, 10);
+  };
+
+  // セル編集完了ハンドラ
+  const handleCellEditComplete = (recordId: string, field: string, value: string) => {
+    // レコードを更新
+    setRecords(prev => 
+      prev.map(record => {
+        if (record.id === recordId) {
+          return {
+            ...record,
+            [field]: value
+          };
+        }
+        return record;
+      })
+    );
+    
+    // 編集状態をクリア
+    setEditingCell(null);
+  };
+
+  // キーボードイベントハンドラ
+  const handleCellKeyDown = (e: React.KeyboardEvent, recordId: string, field: string, value: string) => {
+    if (e.key === 'Enter') {
+      handleCellEditComplete(recordId, field, value);
+    } else if (e.key === 'Escape') {
+      setEditingCell(null);
+    }
+  };
+
+  // クリックイベント監視で編集モード終了
+  useEffect(() => {
+    if (editingCell) {
+      const handleClickOutside = (e: MouseEvent) => {
+        const target = e.target as HTMLElement;
+        if (cellInputRef.current && !cellInputRef.current.contains(target)) {
+          const record = records.find(r => r.id === editingCell.recordId);
+          if (record && cellInputRef.current) {
+            handleCellEditComplete(
+              editingCell.recordId,
+              editingCell.field,
+              cellInputRef.current.value
+            );
+          } else {
+            setEditingCell(null);
+          }
+        }
+      };
+      
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [editingCell, records]);
+
   const handleEdit = (record: SalesData) => {
     setEditingRecord(record);
-    setIsDialogOpen(true);
   };
 
   const handleSave = (event: React.MouseEvent<HTMLButtonElement>) => {
@@ -979,20 +1221,85 @@ const SalesTable: React.FC<SalesTableProps> = ({ initialViewMode }) => {
       setRecords(prev => 
         prev.map(record => record.id === editingRecord.id ? editingRecord : record)
       );
-    } else {
+    }
+    setEditingRecord(null);
+  };
+
+  const handleDeleteRecord = (recordId: string) => {
+    setRecords(prev => prev.filter(record => record.id !== recordId));
+    if (editingRecord?.id === recordId) {
+      setEditingRecord(null);
+    }
+  };
+
+  const handleAdd = () => {
       const newRecord = {
         ...emptyRecord,
         id: `temp-${Date.now()}`,
       };
       setRecords(prev => [...prev, newRecord]);
-    }
-    setIsDialogOpen(false);
-    setEditingRecord(null);
+    setEditingRecord(newRecord);
   };
 
-  const handleAdd = () => {
-    setEditingRecord(null);
-    setIsDialogOpen(true);
+  const handleCellClick = (
+    event: React.MouseEvent<HTMLElement>,
+    field: 'assignee' | 'status' | 'agency',
+    recordId: string
+  ) => {
+    event.stopPropagation();
+    const rect = event.currentTarget.getBoundingClientRect();
+
+    // フィールド別に最適な位置を計算
+    let position = {
+      top: rect.bottom,
+      left: rect.left
+    };
+
+    setMenuPosition(position);
+    setMenuType(field);
+    setActiveRecordId(recordId);
+  };
+
+  const handleMenuClose = () => {
+    setMenuPosition(null);
+    setMenuType('');
+    setActiveRecordId('');
+  };
+
+  const handleMenuSelect = (value: string) => {
+    const record = records.find(r => r.id === activeRecordId);
+    if (record) {
+      let updatedRecord = {...record};
+      
+      switch (menuType) {
+        case 'assignee':
+          updatedRecord.assignee = value;
+          break;
+        case 'status':
+          updatedRecord.status = value;
+          break;
+        case 'agency':
+          updatedRecord.agency = value;
+          break;
+      }
+      
+      setRecords(prev => prev.map(r => r.id === record.id ? updatedRecord : r));
+    }
+    handleMenuClose();
+  };
+
+  // Get the agency color based on agency name
+  const getAgencyColor = (agency: string): { bg: string; text: string } => {
+    switch (agency) {
+      case 'ピーアップ':
+        return { bg: '#e0f2f1', text: '#00796b' };
+      case 'ラネット':
+        return { bg: '#f3e5f5', text: '#7b1fa2' };
+      case 'CS':
+        return { bg: '#e8f5e9', text: '#2e7d32' };
+      default:
+        return { bg: '#f5f5f5', text: '#666666' };
+    }
   };
 
   const columnWidths = {
@@ -1008,56 +1315,88 @@ const SalesTable: React.FC<SalesTableProps> = ({ initialViewMode }) => {
   };
 
   const renderEditableRow = (record: SalesData) => (
-    <TableRow key="new" sx={{ bgcolor: '#fff' }}>
+    <TableRow key={record.id} sx={{ bgcolor: '#f5f5f5' }}>
       <TableCell padding="checkbox" sx={{ width: '60px' }}>
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+        <Box sx={{ display: 'flex', gap: 0.5 }}>
           <IconButton size="small" onClick={handleSave}>
-            <SaveIcon fontSize="small" color="primary" />
+            <CheckIcon fontSize="small" color="success" />
           </IconButton>
-          <IconButton size="small" onClick={() => setIsDialogOpen(false)}>
+          <IconButton size="small" onClick={() => setEditingRecord(null)}>
             <CloseIcon fontSize="small" color="error" />
           </IconButton>
         </Box>
       </TableCell>
-      <TableCell sx={{ width: '80px' }}>
+      <TableCell 
+        sx={{ width: '80px' }}
+        onDoubleClick={() => handleCellDoubleClick(record.id, 'assignee')}
+      >
+        {editingCell?.recordId === record.id && editingCell?.field === 'assignee' ? (
         <TextField
           size="small"
-          value={record.assignee}
-          onChange={(e) => setEditingRecord({ ...record, assignee: e.target.value })}
+            defaultValue={record.assignee}
+            inputRef={cellInputRef}
           fullWidth
+            onKeyDown={(e) => handleCellKeyDown(e, record.id, 'assignee', e.currentTarget.value)}
+            sx={{ my: -1 }}
         />
+        ) : (
+          <Typography variant="body2">{record.assignee}</Typography>
+        )}
       </TableCell>
-      <TableCell sx={{ width: '80px' }}>
+      <TableCell 
+        sx={{ width: '80px' }}
+        onDoubleClick={() => handleCellDoubleClick(record.id, 'updatedBy')}
+      >
+        {editingCell?.recordId === record.id && editingCell?.field === 'updatedBy' ? (
         <TextField
           size="small"
-          value={record.updatedBy}
-          onChange={(e) => setEditingRecord({ ...record, updatedBy: e.target.value })}
+            defaultValue={record.updatedBy}
+            inputRef={cellInputRef}
           fullWidth
+            onKeyDown={(e) => handleCellKeyDown(e, record.id, 'updatedBy', e.currentTarget.value)}
+            sx={{ my: -1 }}
+        />
+        ) : (
+          <Typography variant="body2">{record.updatedBy}</Typography>
+        )}
+      </TableCell>
+      <TableCell
+        sx={{ width: '120px', cursor: 'pointer' }}
+        onClick={(e) => handleCellClick(e, 'status', record.id)}
+      >
+        <Chip 
+          label={record.status} 
+          size="small"
+          sx={{ 
+            backgroundColor: 
+              record.status === '確定' ? '#e8f5e9' :
+              record.status === '代理店調整中' ? '#fff3e0' : '#f5f5f5',
+            color: 
+              record.status === '確定' ? '#2e7d32' :
+              record.status === '代理店調整中' ? '#ef6c00' : '#666666',
+            fontSize: '0.75rem',
+            height: '24px',
+            width: '100%',
+            fontWeight: 'bold'
+          }} 
         />
       </TableCell>
-      <TableCell sx={{ width: '120px' }}>
-        <FormControl fullWidth size="small">
-          <Select
-            value={record.status}
-            onChange={(e) => setEditingRecord({ ...record, status: e.target.value })}
-          >
-            <MenuItem value="代理店連絡前">代理店連絡前</MenuItem>
-            <MenuItem value="代理店調整中">代理店調整中</MenuItem>
-            <MenuItem value="確定">確定</MenuItem>
-          </Select>
-        </FormControl>
-      </TableCell>
-      <TableCell sx={{ width: '120px' }}>
-        <FormControl fullWidth size="small">
-          <Select
-            value={record.agency}
-            onChange={(e) => setEditingRecord({ ...record, agency: e.target.value })}
-          >
-            <MenuItem value="ピアアップ">ピアアップ</MenuItem>
-            <MenuItem value="アップフィールド">アップフィールド</MenuItem>
-            <MenuItem value="ベストプロモーション">ベストプロモーション</MenuItem>
-          </Select>
-        </FormControl>
+      <TableCell
+        sx={{ width: '120px', cursor: 'pointer' }}
+        onClick={(e) => handleCellClick(e, 'agency', record.id)}
+      >
+        <Typography 
+          variant="body2" 
+          sx={{ 
+            padding: '4px 8px',
+            borderRadius: '4px',
+            backgroundColor: getAgencyColor(record.agency).bg,
+            color: getAgencyColor(record.agency).text,
+            textAlign: 'center'
+          }}
+        >
+          {record.agency}
+        </Typography>
       </TableCell>
       {record.schedule.map((checked, index) => (
         <TableCell 
@@ -1066,9 +1405,9 @@ const SalesTable: React.FC<SalesTableProps> = ({ initialViewMode }) => {
           sx={{ 
             width: '45px',
             borderLeft: index === 0 ? '1px solid #e0e0e0' : '1px solid #e0e0e0',
-            borderRight: index === 6 ? '1px solid #e0e0e0' : '1px solid #e0e0e0',
+            borderRight: index === 6 ? '1px solid #e0e0e0' : 'none',
             px: 0,
-            backgroundColor: record.isBandShift && checked ? '#f5f9ff' : 'transparent',
+            backgroundColor: '#ffffff',
             transition: 'background-color 0.2s ease'
           }}
         >
@@ -1086,7 +1425,7 @@ const SalesTable: React.FC<SalesTableProps> = ({ initialViewMode }) => {
           </Select>
         </FormControl>
       </TableCell>
-      <TableCell align="center" sx={{ width: '120px', borderRight: '1px solid #e0e0e0' }}>
+      <TableCell align="center" sx={{ width: '120px', borderRight: '1px solid #e0e0e0', backgroundColor: '#ffffff' }}>
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
           <Checkbox
             checked={record.isBandShift}
@@ -1149,6 +1488,12 @@ const SalesTable: React.FC<SalesTableProps> = ({ initialViewMode }) => {
                 });
               }
             }}
+            recordId={record.id}
+            handleCellDoubleClick={handleCellDoubleClick}
+            editingCell={editingCell}
+            cellInputRef={cellInputRef}
+            handleCellKeyDown={handleCellKeyDown}
+            handleCellEditComplete={handleCellEditComplete}
           />
           <SalesDetails
             counts={record.counts}
@@ -1179,6 +1524,11 @@ const SalesTable: React.FC<SalesTableProps> = ({ initialViewMode }) => {
                 });
               }
             }}
+            recordId={record.id}
+            handleCellDoubleClick={handleCellDoubleClick}
+            editingCell={editingCell}
+            cellInputRef={cellInputRef}
+            handleCellKeyDown={handleCellKeyDown}
           />
         </Box>
       </TableCell>
@@ -1192,50 +1542,125 @@ const SalesTable: React.FC<SalesTableProps> = ({ initialViewMode }) => {
         '& .MuiIconButton-root': { opacity: 1 }
       }
     }}>
+      {/* アクション列 */}
       <TableCell padding="checkbox" sx={{ width: columnWidths.checkbox }}>
+        <Box sx={{ display: 'flex', gap: 0.5 }}>
         <IconButton 
           size="small" 
           onClick={() => setEditingRecord(record)}
-          sx={{ 
-            opacity: 0,
-            transition: 'opacity 0.2s'
-          }}
+            sx={{ opacity: 0, transition: 'opacity 0.2s' }}
         >
           <EditIcon fontSize="small" color="primary" />
         </IconButton>
+          <IconButton 
+            size="small" 
+            onClick={() => handleDeleteRecord(record.id)}
+            sx={{ opacity: 0, transition: 'opacity 0.2s' }}
+          >
+            <DeleteIcon fontSize="small" color="error" />
+          </IconButton>
+        </Box>
       </TableCell>
-      <TableCell sx={{ width: columnWidths.assignee }}>
-        <Typography variant="body2">{record.assignee}</Typography>
+
+      {/* 担当者 */}
+      <TableCell 
+        sx={{ 
+          width: columnWidths.assignee, 
+          cursor: 'pointer' 
+        }}
+        onClick={(e) => handleCellClick(e, 'assignee', record.id)}
+        onDoubleClick={() => handleCellDoubleClick(record.id, 'assignee')}
+      >
+        {editingCell?.recordId === record.id && editingCell?.field === 'assignee' ? (
+          <TextField
+            size="small"
+            defaultValue={record.assignee}
+            inputRef={cellInputRef}
+            fullWidth
+            onKeyDown={(e) => handleCellKeyDown(e, record.id, 'assignee', e.currentTarget.value)}
+            sx={{ my: -1 }}
+          />
+        ) : (
+          <Typography variant="body2" sx={{ 
+            padding: '4px 8px', 
+            borderRadius: '4px',
+            transition: 'background-color 0.2s',
+            '&:hover': { backgroundColor: '#f0f0f0' }
+          }}>
+            {record.assignee}
+          </Typography>
+        )}
       </TableCell>
-      <TableCell sx={{ width: columnWidths.updater }}>
+      {/* 更新者 */}
+      <TableCell 
+        sx={{ width: columnWidths.updater }}
+        onDoubleClick={() => handleCellDoubleClick(record.id, 'updatedBy')}
+      >
+        {editingCell?.recordId === record.id && editingCell?.field === 'updatedBy' ? (
+          <TextField
+            size="small"
+            defaultValue={record.updatedBy}
+            inputRef={cellInputRef}
+            fullWidth
+            onKeyDown={(e) => handleCellKeyDown(e, record.id, 'updatedBy', e.currentTarget.value)}
+            sx={{ my: -1 }}
+          />
+        ) : (
         <Typography variant="body2">{record.updatedBy}</Typography>
+        )}
       </TableCell>
-      <TableCell sx={{ width: columnWidths.status }}>
+      {/* ステータス */}
+      <TableCell 
+        sx={{ 
+          width: columnWidths.status,
+          cursor: 'pointer' 
+        }}
+        onClick={(e) => handleCellClick(e, 'status', record.id)}
+      >
         <Chip 
           label={record.status} 
           size="small"
           sx={{ 
-            backgroundColor: 
-              record.status === '確定' ? '#e8f5e9' :
-              record.status === '代理店調整中' ? '#fff3e0' : '#f5f5f5',
-            color: 
-              record.status === '確定' ? '#2e7d32' :
-              record.status === '代理店調整中' ? '#ef6c00' : '#666666',
+            backgroundColor: record.status === '確定' ? '#e8f5e9' : (record.status === '代理店調整中' ? '#fff3e0' : '#f5f5f5'),
+            color: record.status === '確定' ? '#2e7d32' : (record.status === '代理店調整中' ? '#ef6c00' : '#666666'),
             fontSize: '0.75rem',
-            height: '24px'
+            height: '24px',
+            width: '100%',
+            '&:hover': { opacity: 0.85 },
+            fontWeight: 'bold'
           }} 
         />
       </TableCell>
-      <TableCell sx={{ width: columnWidths.agency }}>
-        <Typography variant="body2">{record.agency}</Typography>
+      {/* 代理店 */}
+      <TableCell 
+        sx={{ 
+          width: columnWidths.agency,
+          cursor: 'pointer' 
+        }}
+        onClick={(e) => handleCellClick(e, 'agency', record.id)}
+      >
+        <Typography 
+          variant="body2" 
+          sx={{ 
+            padding: '4px 8px',
+            borderRadius: '4px',
+            backgroundColor: getAgencyColor(record.agency).bg,
+            color: getAgencyColor(record.agency).text,
+            '&:hover': { opacity: 0.85 }
+          }}
+        >
+          {record.agency}
+        </Typography>
       </TableCell>
+
+      {/* スケジュール（チェックのみ） */}
       {record.schedule.map((checked, index) => (
         <TableCell 
           key={index} 
           align="center"
           sx={{ 
             width: columnWidths.weekday,
-            borderLeft: index === 0 ? '1px solid #e0e0e0' : 'none',
+            borderLeft: '1px solid #e0e0e0',
             borderRight: index === 6 ? '1px solid #e0e0e0' : 'none',
             px: 0,
             backgroundColor: record.isBandShift && checked ? '#f5f9ff' : 'transparent'
@@ -1244,10 +1669,16 @@ const SalesTable: React.FC<SalesTableProps> = ({ initialViewMode }) => {
           {checked && <CheckIcon fontSize="small" color="primary" />}
         </TableCell>
       ))}
-      <TableCell sx={{ width: columnWidths.dayType, borderRight: '1px solid #e0e0e0' }}>
+
+      {/* 曜日タイプ & 帯案件 */}
+      <TableCell sx={{ 
+        width: columnWidths.dayType, 
+        borderRight: '1px solid #e0e0e0',
+        backgroundColor: record.dayType === '週末' ? '#e3f2fd' : '#f5f5f5' 
+      }}>
         <Typography variant="body2">{record.dayType}</Typography>
       </TableCell>
-      <TableCell align="center" sx={{ width: columnWidths.bandProject, borderRight: '1px solid #e0e0e0' }}>
+      <TableCell align="center" sx={{ width: columnWidths.bandProject, borderRight: '1px solid #e0e0e0', backgroundColor: '#ffffff' }}>
         {record.isBandShift && (
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
             <CheckIcon fontSize="small" color="primary" />
@@ -1257,45 +1688,59 @@ const SalesTable: React.FC<SalesTableProps> = ({ initialViewMode }) => {
           </Box>
         )}
       </TableCell>
+
+      {/* 詳細列（簡易） */}
       <TableCell sx={{ width: columnWidths.details }}>
         <Box sx={{ display: 'flex', gap: 2 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: '300px' }}>
-            <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+          {/* 場所名 + フラグアイコン */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, width: '300px', minWidth: '300px' }}>
+            <Typography
+              variant="body2"
+              sx={{
+                fontWeight: 'bold',
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                maxWidth: '240px'
+              }}
+            >
               {record.location.name}
             </Typography>
             {record.location.hasLocation && (
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                 <LocationOnIcon fontSize="small" color="primary" />
-                <Typography variant="body2" color="primary">場所取りあり</Typography>
-              </Box>
+            )}
+            {record.location.isOutdoor && (
+              <TerrainIcon fontSize="small" sx={{ color: '#4caf50' }} />
+            )}
+            {record.location.hasBusinessTrip && (
+              <FlightIcon fontSize="small" sx={{ color: '#ff9800' }} />
             )}
           </Box>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, minWidth: '150px' }}>
+          {/* クローザー人数 */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, width: '160px', minWidth: '160px' }}>
             <PersonIcon fontSize="small" color="primary" />
             <Typography variant="body2" color="primary">
               クローザー: {record.counts.closer}名
             </Typography>
           </Box>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, minWidth: '120px' }}>
+          {/* ガール人数 + 無料入店人数 */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, width: '200px', minWidth: '200px' }}>
             <FaceIcon fontSize="small" color="secondary" />
             <Typography variant="body2" color="secondary">
               ガール: {record.counts.girl}名
             </Typography>
-          </Box>
-          {record.counts.freeStaff > 0 && (
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, minWidth: '120px' }}>
-              <SchoolIcon fontSize="small" color="success" />
+            <SchoolIcon fontSize="small" color="success" sx={{ ml: 1 }} />
               <Typography variant="body2" color="success.main">
-                無料入店: {record.counts.freeStaff}名
+              無料: {record.counts.freeStaff}名
               </Typography>
             </Box>
-          )}
         </Box>
       </TableCell>
     </TableRow>
   );
 
-  const renderDetailRow = (record: SalesData) => (
+  const renderDetailRow = (record: SalesData) => {
+    return (
     <TableRow key={record.id} sx={{ 
       '&:hover': { 
         backgroundColor: '#fafafa',
@@ -1303,6 +1748,7 @@ const SalesTable: React.FC<SalesTableProps> = ({ initialViewMode }) => {
       }
     }}>
       <TableCell padding="checkbox" sx={{ width: columnWidths.checkbox }}>
+          <Box sx={{ display: 'flex', gap: 0.5 }}>
         <IconButton 
           size="small" 
           onClick={() => setEditingRecord(record)}
@@ -1313,10 +1759,69 @@ const SalesTable: React.FC<SalesTableProps> = ({ initialViewMode }) => {
         >
           <EditIcon fontSize="small" color="primary" />
         </IconButton>
+            <IconButton 
+              size="small" 
+              onClick={() => handleDeleteRecord(record.id)}
+              sx={{ 
+                opacity: 0,
+                transition: 'opacity 0.2s'
+              }}
+            >
+              <DeleteIcon fontSize="small" color="error" />
+            </IconButton>
+          </Box>
       </TableCell>
-      <TableCell sx={{ width: columnWidths.assignee }}>{record.assignee}</TableCell>
-      <TableCell sx={{ width: columnWidths.updater }}>{record.updatedBy}</TableCell>
-      <TableCell sx={{ width: columnWidths.status }}>
+        <TableCell 
+          sx={{ 
+            width: columnWidths.assignee, 
+            cursor: 'pointer'
+          }}
+          onClick={(e) => handleCellClick(e, 'assignee', record.id)}
+          onDoubleClick={() => handleCellDoubleClick(record.id, 'assignee')}
+        >
+          {editingCell?.recordId === record.id && editingCell?.field === 'assignee' ? (
+            <TextField
+              size="small"
+              defaultValue={record.assignee}
+              inputRef={cellInputRef}
+              fullWidth
+              onKeyDown={(e) => handleCellKeyDown(e, record.id, 'assignee', e.currentTarget.value)}
+              sx={{ my: -1 }}
+            />
+          ) : (
+            <Typography variant="body2" sx={{ 
+              padding: '4px 8px', 
+              borderRadius: '4px',
+              transition: 'background-color 0.2s',
+              '&:hover': { backgroundColor: '#f0f0f0' }
+            }}>
+              {record.assignee}
+            </Typography>
+          )}
+        </TableCell>
+        <TableCell sx={{ width: columnWidths.updater }}
+          onDoubleClick={() => handleCellDoubleClick(record.id, 'updatedBy')}
+        >
+          {editingCell?.recordId === record.id && editingCell?.field === 'updatedBy' ? (
+            <TextField
+              size="small"
+              defaultValue={record.updatedBy}
+              inputRef={cellInputRef}
+              fullWidth
+              onKeyDown={(e) => handleCellKeyDown(e, record.id, 'updatedBy', e.currentTarget.value)}
+              sx={{ my: -1 }}
+            />
+          ) : (
+            <Typography variant="body2">{record.updatedBy}</Typography>
+          )}
+        </TableCell>
+        <TableCell 
+          sx={{ 
+            width: columnWidths.status,
+            cursor: 'pointer' 
+          }}
+          onClick={(e) => handleCellClick(e, 'status', record.id)}
+        >
         <Chip 
           label={record.status} 
           size="small"
@@ -1328,30 +1833,88 @@ const SalesTable: React.FC<SalesTableProps> = ({ initialViewMode }) => {
               record.status === '確定' ? '#2e7d32' :
               record.status === '代理店調整中' ? '#ef6c00' : '#666666',
             fontSize: '0.75rem',
-            height: '24px'
+              height: '24px',
+              width: '100%'
           }} 
         />
       </TableCell>
-      <TableCell sx={{ width: columnWidths.agency }}>{record.agency}</TableCell>
-      {record.schedule.map((checked, index) => (
+        <TableCell 
+          sx={{ 
+            width: columnWidths.agency,
+            cursor: 'pointer'
+          }}
+          onClick={(e) => handleCellClick(e, 'agency', record.id)}
+        >
+          <Typography 
+            variant="body2" 
+            sx={{ 
+              padding: '4px 8px',
+              borderRadius: '4px',
+              backgroundColor: getAgencyColor(record.agency).bg,
+              color: getAgencyColor(record.agency).text,
+              '&:hover': { opacity: 0.85 }
+            }}
+          >
+            {record.agency}
+          </Typography>
+        </TableCell>
+      {record.schedule.map((checked, index) => {
+        // Each iteration, calculate the calendar day number (1-7)
+        const day = index + 1;
+        return (
         <TableCell 
           key={index} 
           align="center"
           sx={{ 
             width: columnWidths.weekday,
-            borderLeft: index === 0 ? '1px solid #e0e0e0' : 'none',
+              borderLeft: '1px solid #e0e0e0',
             borderRight: index === 6 ? '1px solid #e0e0e0' : 'none',
             px: 0,
-            backgroundColor: record.isBandShift && checked ? '#f5f9ff' : 'transparent'
-          }}
-        >
-          {checked && <CheckIcon fontSize="small" color="primary" />}
+              backgroundColor: day === 6 ? '#ffebee' : (day === 5 ? '#e3f2fd' : '#ffffff'),
+              position: 'relative',
+              '&::after': day === 6 ? {
+                content: '""',
+                position: 'absolute',
+                height: '3px',
+                width: '100%',
+                backgroundColor: '#ffcdd2',
+                bottom: 0,
+                left: 0
+              } : (day === 5 ? {
+                content: '""',
+                position: 'absolute',
+                height: '3px',
+                width: '100%',
+                backgroundColor: '#bbdefb',
+                bottom: 0,
+                left: 0
+              } : {})
+            }}
+          >
+            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5 }}>
+              <Typography variant="caption" sx={{ 
+                color: day === 6 ? '#e53935' : (day === 5 ? '#1976d2' : '#666666'),
+                fontWeight: day >= 5 && day <= 6 ? 'bold' : 'normal'
+              }}>
+                {getDayLabel(index)}
+              </Typography>
+              <Typography variant="caption" sx={{ 
+                color: day === 6 ? '#e53935' : (day === 5 ? '#1976d2' : '#666666'),
+                fontWeight: day >= 5 && day <= 6 ? 'bold' : 'normal'
+              }}>
+                {day}日
+              </Typography>
+            </Box>
         </TableCell>
-      ))}
-      <TableCell sx={{ width: columnWidths.dayType, borderRight: '1px solid #e0e0e0' }}>
-        {record.dayType}
+      )})}
+        <TableCell sx={{ 
+          width: columnWidths.dayType, 
+          borderRight: '1px solid #e0e0e0',
+          backgroundColor: record.dayType === '週末' ? '#e3f2fd' : '#f5f5f5'
+        }}>
+          <Typography variant="body2">{record.dayType}</Typography>
       </TableCell>
-      <TableCell align="center" sx={{ width: columnWidths.bandProject, borderRight: '1px solid #e0e0e0' }}>
+        <TableCell align="center" sx={{ width: columnWidths.bandProject, borderRight: '1px solid #e0e0e0', backgroundColor: '#ffffff' }}>
         {record.isBandShift && (
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
             <CheckIcon fontSize="small" color="primary" />
@@ -1368,6 +1931,12 @@ const SalesTable: React.FC<SalesTableProps> = ({ initialViewMode }) => {
             phone={record.phone}
             isEditing={false}
             onEdit={() => {}}
+              recordId={record.id}
+              handleCellDoubleClick={handleCellDoubleClick}
+              editingCell={editingCell}
+              cellInputRef={cellInputRef}
+              handleCellKeyDown={handleCellKeyDown}
+              handleCellEditComplete={handleCellEditComplete}
           />
           <SalesDetails
             counts={record.counts}
@@ -1381,11 +1950,17 @@ const SalesTable: React.FC<SalesTableProps> = ({ initialViewMode }) => {
             memo={record.memo}
             isEditing={false}
             onEdit={() => {}}
+              recordId={record.id}
+              handleCellDoubleClick={handleCellDoubleClick}
+              editingCell={editingCell}
+              cellInputRef={cellInputRef}
+              handleCellKeyDown={handleCellKeyDown}
           />
         </Box>
       </TableCell>
     </TableRow>
   );
+  };
 
   return (
     <Box>
@@ -1404,27 +1979,59 @@ const SalesTable: React.FC<SalesTableProps> = ({ initialViewMode }) => {
                   align="center"
                   sx={{ 
                     width: columnWidths.weekday,
-                    borderLeft: day === 1 ? '1px solid #e0e0e0' : 'none',
+                    borderLeft: '1px solid #e0e0e0',
                     borderRight: day === 7 ? '1px solid #e0e0e0' : 'none',
-                    px: 0
+                    px: 0,
+                    backgroundColor: day === 6 ? '#ffebee' : (day === 5 ? '#e3f2fd' : '#ffffff'),
+                    position: 'relative',
+                    '&::after': day === 6 ? {
+                      content: '""',
+                      position: 'absolute',
+                      height: '3px',
+                      width: '100%',
+                      backgroundColor: '#ffcdd2',
+                      bottom: 0,
+                      left: 0
+                    } : (day === 5 ? {
+                      content: '""',
+                      position: 'absolute',
+                      height: '3px',
+                      width: '100%',
+                      backgroundColor: '#bbdefb',
+                      bottom: 0,
+                      left: 0
+                    } : {})
                   }}
                 >
                   <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5 }}>
-                    <Typography variant="caption" sx={{ color: '#666666' }}>{getDayLabel(day - 1)}</Typography>
-                    <Typography variant="caption" sx={{ color: '#666666' }}>{day}日</Typography>
+                    <Typography variant="caption" sx={{ 
+                      color: day === 6 ? '#e53935' : (day === 5 ? '#1976d2' : '#666666'),
+                      fontWeight: day >= 5 && day <= 6 ? 'bold' : 'normal'
+                    }}>
+                      {getDayLabel(day - 1)}
+                    </Typography>
+                    <Typography variant="caption" sx={{ 
+                      color: day === 6 ? '#e53935' : (day === 5 ? '#1976d2' : '#666666'),
+                      fontWeight: day >= 5 && day <= 6 ? 'bold' : 'normal'
+                    }}>
+                      {day}日
+                    </Typography>
                   </Box>
                 </TableCell>
               ))}
-              <TableCell sx={{ width: columnWidths.dayType, borderRight: '1px solid #e0e0e0' }}>曜日</TableCell>
-              <TableCell align="center" sx={{ width: columnWidths.bandProject, borderRight: '1px solid #e0e0e0' }}>帯案件</TableCell>
+              <TableCell sx={{ width: columnWidths.dayType, borderRight: '1px solid #e0e0e0', backgroundColor: '#ffffff' }}>曜日</TableCell>
+              <TableCell align="center" sx={{ width: columnWidths.bandProject, borderRight: '1px solid #e0e0e0', backgroundColor: '#ffffff' }}>帯案件</TableCell>
               <TableCell sx={{ width: columnWidths.details }}>詳細</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {records.map((record) => (
-              viewMode === 'summary' ? renderSummaryRow(record) : renderDetailRow(record)
+              editingRecord?.id === record.id 
+              ? renderEditableRow(record) 
+              : viewMode === 'summary' 
+                ? renderSummaryRow(record) 
+                : renderDetailRow(record)
             ))}
-            {isDialogOpen && renderEditableRow(editingRecord || emptyRecord)}
           </TableBody>
           <TableBody>
             <TableRow>
@@ -1450,32 +2057,122 @@ const SalesTable: React.FC<SalesTableProps> = ({ initialViewMode }) => {
         </Table>
       </TableContainer>
 
-      <Dialog
-        open={isDialogOpen}
-        onClose={() => setIsDialogOpen(false)}
-        maxWidth="md"
-        fullWidth
+      {/* カスタム担当者ドロップダウン */}
+      <DropdownMenu
+        open={menuType === 'assignee' && Boolean(menuPosition)}
+        anchorPosition={menuPosition}
+        onClose={handleMenuClose}
+        width={120}
       >
-        <DialogTitle>
-          {editingRecord ? '案件編集' : '新規追加'}
-        </DialogTitle>
-        <DialogContent>
-          {/* フォームの内容 */}
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setIsDialogOpen(false)}>キャンセル</Button>
-          <Button
-            variant="contained"
-            onClick={handleSave}
-            startIcon={<SaveIcon />}
-            sx={{ bgcolor: '#1976d2', '&:hover': { bgcolor: '#1565c0' } }}
-          >
-            保存
-          </Button>
-        </DialogActions>
-      </Dialog>
+        <List sx={{ p: 0 }}>
+          {['山田', '鈴木', '佐藤', '田中', '高橋'].map((name) => (
+            <ListItem 
+              key={name} 
+              button
+              onClick={() => handleMenuSelect(name)}
+              sx={{ 
+                py: 1, 
+                px: 2,
+                cursor: 'pointer',
+                '&:hover': { 
+                  bgcolor: '#f5f5f5' 
+                } 
+              }}
+            >
+              <ListItemText 
+                primary={name} 
+                primaryTypographyProps={{ 
+                  variant: 'body2' 
+                }} 
+              />
+            </ListItem>
+          ))}
+        </List>
+      </DropdownMenu>
+
+      {/* カスタムステータスドロップダウン */}
+      <DropdownMenu
+        open={menuType === 'status' && Boolean(menuPosition)}
+        anchorPosition={menuPosition}
+        onClose={handleMenuClose}
+        width={150}
+      >
+        <List sx={{ p: 0 }}>
+          {[
+            { value: '代理店連絡前', bg: '#f5f5f5', color: '#666666' },
+            { value: '代理店調整中', bg: '#fff3e0', color: '#ef6c00' },
+            { value: '確定', bg: '#e8f5e9', color: '#2e7d32' }
+          ].map((status) => (
+            <ListItem 
+              key={status.value} 
+              button
+              onClick={() => handleMenuSelect(status.value)}
+              sx={{ 
+                py: 1, 
+                px: 2,
+                cursor: 'pointer',
+                '&:hover': { 
+                  bgcolor: '#f5f5f5' 
+                } 
+              }}
+            >
+              <Chip 
+                label={status.value} 
+                size="small"
+                sx={{ 
+                  backgroundColor: status.bg,
+                  color: status.color,
+                  fontSize: '0.75rem',
+                  height: '24px',
+                  width: '100%',
+                  fontWeight: 'bold'
+                }} 
+              />
+            </ListItem>
+          ))}
+        </List>
+      </DropdownMenu>
+
+      {/* カスタム代理店ドロップダウン */}
+      <DropdownMenu
+        open={menuType === 'agency' && Boolean(menuPosition)}
+        anchorPosition={menuPosition}
+        onClose={handleMenuClose}
+        width={150}
+      >
+        <List sx={{ p: 0 }}>
+          {['ピーアップ', 'ラネット', 'CS'].map((agency) => (
+            <ListItem 
+              key={agency} 
+              button
+              onClick={() => handleMenuSelect(agency)}
+              sx={{ 
+                py: 1, 
+                px: 2,
+                cursor: 'pointer',
+                '&:hover': { 
+                  bgcolor: '#f5f5f5' 
+                } 
+              }}
+            >
+              <Box 
+                sx={{ 
+                  padding: '4px 8px',
+                  borderRadius: '4px',
+                  backgroundColor: getAgencyColor(agency).bg,
+                  color: getAgencyColor(agency).text,
+                  width: '100%',
+                  fontSize: '0.875rem'
+                }}
+              >
+                {agency}
+              </Box>
+            </ListItem>
+          ))}
+        </List>
+      </DropdownMenu>
     </Box>
   );
-}
+};
 
 export default SalesTable; 

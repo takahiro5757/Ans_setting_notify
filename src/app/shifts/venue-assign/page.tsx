@@ -445,10 +445,10 @@ export default function VenueAssignPage() {
         overflow: 'hidden'
       }}
     >
-      {/* ヘッダー部分（パンくずリストとズームコントロール）- コンパクトに */}
+      {/* ヘッダー部分（ズームコントロール）- コンパクトに */}
       <Box sx={{ 
         display: 'flex', 
-        justifyContent: 'space-between', 
+        justifyContent: 'flex-end', 
         alignItems: 'center', 
         mb: 1, // マージンを小さく
         flexShrink: 0,

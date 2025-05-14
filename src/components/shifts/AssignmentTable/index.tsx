@@ -47,6 +47,7 @@ import { Droppable, Draggable } from '@hello-pangea/dnd';
 import ClearIcon from '@mui/icons-material/Clear';
 import SettingsIcon from '@mui/icons-material/Settings';
 import OrderFrameDialog from '../OrderFrameDialog';
+import { AssignmentItem, DateInfo, MemoItem } from '@/types/shifts';
 
 // スタイル付きコンポーネント
 const StyledTableContainer = styled('div')(({ theme }) => ({
@@ -125,89 +126,30 @@ const OrderCell = styled(TableCell, {
   borderBottom: '1px solid rgba(210, 210, 210, 0.8)',
 }));
 
-interface AssignmentItem {
-  id: string;
-  agency: string;
-  venue: string;
-  venueDetail: string;
-  hasTrip: boolean;
-  isOutdoor: boolean;
-  orders: {
-    id: string;
-    name: string;
-    isGirl: boolean;
-  }[];
-  availability: {
-    [key: string]: boolean;
-  };
-  statuses?: {
-    [orderId: string]: {
-      [date: string]: string;
-    };
-  };
-  staff?: {
-    [orderId: string]: {
-      [date: string]: {
-        id: string;
-        name: string;
-        isGirl: boolean;
-        isFemale: boolean;
-      };
-    };
-  };
-  // メモ情報を追加
-  memos?: {
-    [orderId: string]: {
-      [date: string]: {
-        id: string;
-        text: string;
-        timestamp: string;
-        user: string;
-      }[];
-    };
-  };
-  // ロック情報を追加
-  locks?: {
-    [orderId: string]: {
-      [date: string]: boolean;
-    };
-  };
-  // オーダー枠数と単価情報を追加
-  orderFrames?: {
-    [orderId: string]: {
-      [dayOfWeek: string]: { // '0'=日曜, '1'=月曜, ..., '6'=土曜
-        frames: number;
-        priceType: string; // '平日' or '週末'
-        priceAmount: number;
-      }
-    }
-  };
-  // 帯案件残数情報を追加
-  seriesFrames?: {
-    totalFrames: number;    // 全体の枠数
-    confirmedFrames: number; // 確定済みの枠数
-  };
-  // 帯案件モードでの店舗名
-  seriesVenue?: string;    // SB○○店 形式の店舗名
-}
+// ステータスチップのスタイリング
+const StatusChip = styled('div')<{ status: string }>(({ theme, status }) => ({
+  display: 'inline-block',
+  padding: '4px 8px',
+  borderRadius: '4px',
+  fontSize: '0.8rem',
+  fontWeight: 'bold',
+  width: '90%',
+  boxShadow: '0 1px 2px rgba(0,0,0,0.1)',
+  backgroundColor: 
+    status === 'absent' ? '#ffcdd2' : 
+    status === 'tm' ? '#bbdefb' : 
+    status === 'selected' ? '#dcedc8' : 'transparent',
+  color:
+    status === 'absent' ? '#c62828' :
+    status === 'tm' ? '#0d47a1' :
+    status === 'selected' ? '#33691e' : 'inherit',
+}));
 
-interface AssignmentTableProps {
-  assignments: AssignmentItem[];
-  dates: {
-    date: string;
-    dayOfWeek: string;
-    display: string;
-    isOtherMonth?: boolean;
-  }[];
-  onEdit?: (assignment: AssignmentItem) => void;
-  displayMode?: string; // 表示モード: 'normal' または 'series'
-}
-
-// 追加
+// 各セルの利用可否を計算するヘルパー関数
 function getBackgroundColor(isAvailable: boolean, assignmentId: string, date: string, orderId: string): string {
   if (!isAvailable) return '#f5f5f5';
   
-  // 一貫性のあるランダム値を生成（同じ入力に対して同じ結果が返る）
+  // 同じセルで固定の背景色を得るためのハッシュ関数
   const hashCode = (str: string): number => {
     let hash = 0;
     for (let i = 0; i < str.length; i++) {
@@ -215,21 +157,119 @@ function getBackgroundColor(isAvailable: boolean, assignmentId: string, date: st
       hash = ((hash << 5) - hash) + char;
       hash = hash & hash; // Convert to 32bit integer
     }
-    return hash;
+    return Math.abs(hash);
   };
   
-  // 日付から曜日を取得（0=日曜日, 6=土曜日）
-  const dateObj = new Date(date);
-  const dayOfWeek = dateObj.getDay();
+  // 文字列を連結してハッシュを計算
+  const combinedString = `${assignmentId}-${date}-${orderId}`;
+  const hash = hashCode(combinedString);
   
-  // 土日の場合は薄い黄色に
-  if (dayOfWeek === 0 || dayOfWeek === 6) {
-    return '#fffde7'; // 薄い黄色
+  // 70%の確率で白、30%の確率で薄いグレー
+  return hash % 10 < 7 ? '#ffffff' : '#f9f9f9';
+}
+
+// ステータスの表示テキストを取得
+const getStatusDisplay = (status: string) => {
+  switch(status) {
+    case 'absent': return '欠勤';
+    case 'tm': return 'TM';
+    case 'selected': return '選択';
+    default: return '';
   }
+};
+
+// メモテキストのフォーマット
+const formatMemoText = (memos: MemoItem[]): string => {
+  if (!memos || memos.length === 0) return '';
   
-  const hash = hashCode(`${assignmentId}-${date}-${orderId}`);
-  // 70%の確率で白、30%の確率で灰色
-  return (hash % 10 < 7) ? '#fff' : '#f5f5f5';
+  // 新しいメモから順に並べる
+  const sortedMemos = [...memos].sort((a, b) => 
+    new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+  );
+  
+  // 最新の3件まで表示
+  const displayMemos = sortedMemos.slice(0, 3);
+  
+  if (memos.length > 3) {
+    return `${memos.length}件のメモ (最新: ${displayMemos[0].text.substring(0, 20)}${displayMemos[0].text.length > 20 ? '...' : ''})`;
+  } else if (memos.length === 1) {
+    return displayMemos[0].text;
+  } else {
+    return `${memos.length}件のメモ`;
+  }
+};
+
+// セルの背景色を取得するヘルパー関数
+const getCellBackgroundColor = (
+  assignmentId: string, 
+  date: string, 
+  orderId: string, 
+  isAvailable: boolean, 
+  isOtherMonth: boolean, 
+  customColors: {[key: string]: string}, 
+  displayMode?: string
+) => {
+  // 他の月の日付は薄いグレー
+  if (isOtherMonth) return '#f5f5f5';
+  
+  // カスタムカラーが設定されている場合はそちらを優先
+  const colorKey = `${assignmentId}-${date}-${orderId}`;
+  if (customColors[colorKey]) return customColors[colorKey];
+  
+  // その他の場合はランダムだが固定の背景色を使用
+  return getBackgroundColor(isAvailable, assignmentId, date, orderId);
+};
+
+// メモ入力のキーダウンハンドラ
+const handleMemoKeyDown = (event: React.KeyboardEvent, onSend: () => void) => {
+  if (event.key === 'Enter' && !event.shiftKey) {
+    event.preventDefault();
+    onSend();
+  }
+};
+
+// 帯案件残数の表示をレンダリング
+const renderSeriesFrames = (assignment: AssignmentItem) => {
+  if (!assignment.seriesFrames) return null;
+  
+  const { totalFrames, confirmedFrames } = assignment.seriesFrames;
+  const percentage = Math.round((confirmedFrames / totalFrames) * 100);
+  
+  // 進捗バーの色を決定（50%以下は青、51-80%は黄色、81%以上は赤）
+  let barColor = '#2196f3'; // 青
+  if (percentage > 80) {
+    barColor = '#f44336'; // 赤
+  } else if (percentage > 50) {
+    barColor = '#ff9800'; // オレンジ
+  }
+
+  return (
+    <Box sx={{ 
+      width: '100%', 
+      mt: 1, 
+      borderRadius: 1, 
+      overflow: 'hidden',
+      border: '1px solid #e0e0e0',
+      bgcolor: '#f5f5f5'
+    }}>
+      <Box sx={{ 
+        height: '12px', 
+        width: `${percentage}%`, 
+        bgcolor: barColor,
+        borderRadius: '2px 0 0 2px'
+      }} />
+      <Typography variant="caption" sx={{ display: 'block', textAlign: 'center', mt: 0.5 }}>
+        {confirmedFrames}/{totalFrames} 枠（{percentage}%）
+      </Typography>
+    </Box>
+  );
+};
+
+interface AssignmentTableProps {
+  assignments: AssignmentItem[];
+  dates: DateInfo[];
+  onEdit?: (assignment: AssignmentItem) => void;
+  displayMode?: string; // 表示モード: 'normal' または 'series'
 }
 
 // セルが利用可能かどうかを判断する関数を拡張
@@ -257,45 +297,6 @@ function isCellAvailable(baseAvailability: boolean, assignmentId: string, date: 
   return bgColor === '#fff'; // 白いセルのみ利用可能
 }
 
-// ステータス表示用のスタイル付きコンポーネント
-const StatusChip = styled('div')<{ status: string }>(({ theme, status }) => {
-  // ステータスに応じた色を設定
-  let bgColor = '';
-  let textColor = '#fff';
-  
-  switch (status) {
-    case 'absent':
-      bgColor = '#ff8a80'; // 欠勤用の赤
-      break;
-    case 'tm':
-      bgColor = '#90caf9'; // TM用の青
-      break;
-    case 'selected':
-      bgColor = '#dce775'; // 選択中用の黄緑
-      textColor = '#000';
-      break;
-    default:
-      bgColor = 'transparent';
-  }
-  
-  return {
-    backgroundColor: bgColor,
-    color: textColor,
-    padding: '2px 4px',
-    borderRadius: '4px',
-    fontSize: '0.7rem',
-    fontWeight: 'bold',
-    display: 'block',
-    margin: '0 auto',
-    textAlign: 'center',
-    width: '90%',
-    boxShadow: '0 1px 2px rgba(0, 0, 0, 0.1)',
-    position: 'relative',
-    height: '18px',
-    lineHeight: '14px',
-  };
-});
-
 // 削除ボタン用のスタイル
 const DeleteButton = styled(IconButton)(({ theme }) => ({
   position: 'absolute',
@@ -314,20 +315,6 @@ const DeleteButton = styled(IconButton)(({ theme }) => ({
   display: 'none',
   className: 'delete-button',
 }));
-
-// セル内に表示するステータスを取得する関数
-const getStatusDisplay = (status: string) => {
-  switch (status) {
-    case 'absent':
-      return '欠勤';
-    case 'tm':
-      return 'TM';
-    case 'selected':
-      return '選択中';
-    default:
-      return '';
-  }
-};
 
 // 要員情報表示用のスタイル付きコンポーネント
 const StaffItem = styled(Box)<{ isGirl: boolean }>(({ theme, isGirl }) => ({
@@ -368,23 +355,6 @@ const CellContent = styled(Box)({
   padding: '2px',
 });
 
-// メモ内のテキストをフォーマットする関数
-const formatMemoText = (memos: any[]): string => {
-  if (!memos || memos.length === 0) return '';
-  
-  // 最新のメモを上に表示
-  const sortedMemos = [...memos].sort((a, b) => 
-    new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
-  );
-  
-  // 3件までを表示
-  const displayMemos = sortedMemos.slice(0, 3);
-  
-  return displayMemos.map(memo => 
-    `${new Date(memo.timestamp).toLocaleDateString()} ${memo.user}:\n${memo.text}`
-  ).join('\n\n');
-};
-
 // メモ通知インジケーター用のスタイル
 const MemoIndicator = styled('div')({
   position: 'absolute',
@@ -401,84 +371,6 @@ const MemoIndicator = styled('div')({
   fontSize: '10px',
   fontWeight: 'bold',
 });
-
-// セルの背景色を取得
-const getCellBackgroundColor = (assignmentId: string, date: string, orderId: string, isAvailable: boolean, isOtherMonth: boolean, customColors: {[key: string]: string}, displayMode?: string) => {
-  // 他の月の日付セルは常に灰色に
-  if (isOtherMonth) {
-    return '#f5f5f5';
-  }
-
-  // カスタム色が設定されている場合はそれを使用
-  const cellId = `${assignmentId}-${date}-${orderId}`;
-  if (customColors[cellId]) {
-    return customColors[cellId];
-  }
-
-  // 日付から曜日を取得（0=日曜日, 6=土曜日）
-  const dateObj = new Date(date);
-  const dayOfWeek = dateObj.getDay();
-  
-  // 帯案件モードでも土日の場合は薄い黄色に
-  if (dayOfWeek === 0 || dayOfWeek === 6) {
-    return '#fffde7'; // 薄い黄色
-  }
-  
-  // 帯案件モードの場合は白に
-  if (displayMode === 'series') {
-    return '#fff';
-  }
-  
-  // 通常モードの場合は既存のロジック
-  return getBackgroundColor(isAvailable, assignmentId, date, orderId);
-};
-
-// メモ入力フィールドのキーダウンイベントハンドラ
-const handleMemoKeyDown = (event: React.KeyboardEvent, onSend: () => void) => {
-  if (event.key === 'Enter' && !event.shiftKey) {
-    event.preventDefault();
-    onSend();
-  }
-};
-
-// 帯案件モードでの残数表示
-const renderSeriesFrames = (assignment: AssignmentItem) => {
-  if (!assignment.seriesFrames) return null;
-  
-  const { totalFrames, confirmedFrames } = assignment.seriesFrames;
-  const hasRemaining = confirmedFrames < totalFrames;
-  
-  return (
-    <Box sx={{ 
-      display: 'flex',
-      justifyContent: 'flex-end',
-      alignItems: 'center',
-      position: 'absolute',
-      right: 8,
-      top: 0,
-      bottom: 0,
-      height: '100%'
-    }}>
-      <Typography 
-        variant="body2" 
-        component="span"
-        sx={{ 
-          fontWeight: hasRemaining ? 'bold' : 'normal',
-          color: hasRemaining ? '#e91e63' : 'inherit',
-          whiteSpace: 'nowrap',
-          fontSize: '0.7rem',
-          border: hasRemaining ? '1px solid rgba(233, 30, 99, 0.3)' : 'none',
-          borderRadius: '4px',
-          px: 0.75,
-          py: 0.25,
-          backgroundColor: hasRemaining ? 'rgba(233, 30, 99, 0.05)' : 'transparent'
-        }}
-      >
-        {confirmedFrames}/{totalFrames}
-      </Typography>
-    </Box>
-  );
-};
 
 export default function AssignmentTable({ assignments, dates, onEdit, displayMode }: AssignmentTableProps) {
   // 状態管理
@@ -540,7 +432,7 @@ export default function AssignmentTable({ assignments, dates, onEdit, displayMod
   
   // オーダー枠設定ダイアログ用の状態
   const [orderFrameDialogOpen, setOrderFrameDialogOpen] = useState<boolean>(false);
-  
+
   // メモポップアップを開く - クリックイベントハンドラ
   const handleCellClick = (
     event: React.MouseEvent<HTMLElement>,
@@ -594,7 +486,7 @@ export default function AssignmentTable({ assignments, dates, onEdit, displayMod
       }, 250);
     }
   };
-  
+
   // セルのダブルクリックハンドラ - ロック切り替え
   const handleCellDoubleClick = (
     event: React.MouseEvent<HTMLElement>,
@@ -620,7 +512,7 @@ export default function AssignmentTable({ assignments, dates, onEdit, displayMod
     console.log('Double click detected - toggling lock state');
     toggleCellLock(assignmentId, date, orderId);
   };
-  
+
   // セルのロック状態を切り替える
   const toggleCellLock = (assignmentId: string, date: string, orderId: string) => {
     if (!onEdit) return;
@@ -648,14 +540,14 @@ export default function AssignmentTable({ assignments, dates, onEdit, displayMod
       onEdit(updatedAssignment);
     }
   };
-  
+
   // メモポップアップを閉じる
   const handleCloseMemoPopup = () => {
     console.log('Closing memo popup');
     setMemoPopupPosition(null);
     setCurrentMemoCell(null);
   };
-  
+
   // メモ送信ハンドラ
   const handleSendMemo = () => {
     if (!currentMemoCell || !memoText.trim()) return;
@@ -704,7 +596,7 @@ export default function AssignmentTable({ assignments, dates, onEdit, displayMod
     // コンソールで確認（実際のシステムではAPIに送信など）
     console.log('Updated assignments with new memo:', updatedAssignments);
   };
-  
+
   // コンポーネントのアンマウント時にタイマーをクリア
   useEffect(() => {
     return () => {
@@ -794,12 +686,12 @@ export default function AssignmentTable({ assignments, dates, onEdit, displayMod
       orderId
     });
   };
-  
+
   // 右クリックメニューを閉じる
   const handleCloseContextMenu = () => {
     setContextMenu(null);
   };
-  
+
   // 編集履歴を表示
   const handleOpenHistory = () => {
     if (contextMenu) {
@@ -812,13 +704,13 @@ export default function AssignmentTable({ assignments, dates, onEdit, displayMod
       handleCloseContextMenu();
     }
   };
-  
+
   // 編集履歴ダイアログを閉じる
   const handleCloseHistoryDialog = () => {
     setHistoryDialog(false);
     setSelectedCellForHistory(null);
   };
-  
+
   // セル色変更ダイアログを開く
   const handleOpenColorDialog = () => {
     if (contextMenu) {
@@ -831,13 +723,13 @@ export default function AssignmentTable({ assignments, dates, onEdit, displayMod
       handleCloseContextMenu();
     }
   };
-  
+
   // セル色変更ダイアログを閉じる
   const handleCloseColorDialog = () => {
     setColorDialog(false);
     setSelectedCellForColor(null);
   };
-  
+
   // セルの色を変更する
   const handleChangeColor = (color: string) => {
     if (selectedCellForColor) {
@@ -849,7 +741,7 @@ export default function AssignmentTable({ assignments, dates, onEdit, displayMod
       handleCloseColorDialog();
     }
   };
-  
+
   // オーダー枠設定ダイアログを開く
   const handleOpenOrderFrameDialog = (assignment: AssignmentItem) => {
     setCurrentAssignment(assignment);
@@ -868,7 +760,7 @@ export default function AssignmentTable({ assignments, dates, onEdit, displayMod
     }
     handleCloseOrderFrameDialog();
   };
-  
+
   // セル内の内容をレンダリングする関数
   const renderCellContent = (assignment: AssignmentItem, date: string, orderId: string, isAvailable: boolean, isOtherMonth: boolean) => {
     const dateObj = new Date(date);
@@ -1005,7 +897,7 @@ export default function AssignmentTable({ assignments, dates, onEdit, displayMod
       </CellContent>
     );
   };
-
+  
   return (
     <>
       <Paper>

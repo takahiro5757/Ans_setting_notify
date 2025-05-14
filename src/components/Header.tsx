@@ -91,7 +91,7 @@ export default function Header() {
               }}
               onClick={() => router.push('/sales')}
             >
-              営業案件管理
+              案件管理
             </Button>
             <Button
               startIcon={<AccountBalanceIcon />}

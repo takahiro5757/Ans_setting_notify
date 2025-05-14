@@ -10,75 +10,7 @@ import AssignmentTable from '@/components/shifts/AssignmentTable';
 import { getWeeks, generateDummySummary, getAvailableWeeks } from '@/utils/dateUtils';
 import { generateDates, generateDummyAssignments, generateWeekDates, generate2025AprilMayAssignments } from '@/utils/assignmentUtils';
 import { DragDropContext, DropResult } from '@hello-pangea/dnd';
-
-// AssignmentItemインターフェース
-interface AssignmentItem {
-  id: string;
-  agency: string;
-  venue: string;
-  venueDetail: string;
-  hasTrip: boolean;
-  isOutdoor: boolean;
-  orders: {
-    id: string;
-    name: string;
-    isGirl: boolean;
-  }[];
-  availability: {
-    [key: string]: boolean;
-  };
-  // ステータス情報を追加
-  statuses?: {
-    [orderId: string]: {
-      [date: string]: string; // 'absent', 'tm', 'selected'のいずれか
-    };
-  };
-  // 要員アサイン情報を追加
-  staff?: {
-    [orderId: string]: {
-      [date: string]: {
-        id: string;
-        name: string;
-        isGirl: boolean;
-        isFemale: boolean;
-      };
-    };
-  };
-  // メモ情報を追加
-  memos?: {
-    [orderId: string]: {
-      [date: string]: {
-        id: string;
-        text: string;
-        timestamp: string;
-        user: string;
-      }[];
-    };
-  };
-  // ロック情報を追加
-  locks?: {
-    [orderId: string]: {
-      [date: string]: boolean;
-    };
-  };
-  // オーダー枠数と単価情報を追加
-  orderFrames?: {
-    [orderId: string]: {
-      [dayOfWeek: string]: { // '0'=日曜, '1'=月曜, ..., '6'=土曜
-        frames: number;
-        priceType: string; // '平日' or '週末'
-        priceAmount: number;
-      };
-    };
-  };
-  // 帯案件情報を追加
-  seriesFrames?: {
-    totalFrames: number;
-    confirmedFrames: number;
-  };
-  // 帯案件モードでは現場名をSB○○店形式に変更
-  seriesVenue?: string;
-}
+import { AssignmentItem } from '@/types/shifts';
 
 export default function AssignPage() {
   // 状態管理
