@@ -18,9 +18,18 @@ export default function Header() {
   const [shiftsMenuOpen, setShiftsMenuOpen] = useState(false);
   const shiftsAnchorRef = useRef<HTMLButtonElement>(null);
 
+  // 経理処理メニューの状態管理
+  const [accountingMenuOpen, setAccountingMenuOpen] = useState(false);
+  const accountingAnchorRef = useRef<HTMLButtonElement>(null);
+
   // シフト管理メニューの表示/非表示を切り替える
   const handleShiftsMenuToggle = () => {
     setShiftsMenuOpen((prevOpen) => !prevOpen);
+  };
+
+  // 経理処理メニューの表示/非表示を切り替える
+  const handleAccountingMenuToggle = () => {
+    setAccountingMenuOpen((prevOpen) => !prevOpen);
   };
 
   // メニュー外をクリックした時に閉じる
@@ -34,9 +43,25 @@ export default function Header() {
     setShiftsMenuOpen(false);
   };
 
+  // 経理メニュー外をクリックした時に閉じる
+  const handleAccountingMenuClose = (event: Event | React.SyntheticEvent) => {
+    if (
+      accountingAnchorRef.current &&
+      accountingAnchorRef.current.contains(event.target as HTMLElement)
+    ) {
+      return;
+    }
+    setAccountingMenuOpen(false);
+  };
+
   // マウスが離れた時にメニューを閉じる
   const handleShiftsMenuLeave = () => {
     setShiftsMenuOpen(false);
+  };
+
+  // 経理メニューからマウスが離れた時にメニューを閉じる
+  const handleAccountingMenuLeave = () => {
+    setAccountingMenuOpen(false);
   };
 
   // サブメニューアイテムをクリックした時の処理
@@ -45,11 +70,24 @@ export default function Header() {
     setShiftsMenuOpen(false);
   };
 
+  // 経理サブメニューアイテムをクリックした時の処理
+  const handleAccountingMenuItemClick = (path: string) => {
+    router.push(path);
+    setAccountingMenuOpen(false);
+  };
+
   // シフト関連ページかどうかをチェック
   const isShiftsActive = pathname === '/shifts' || 
                          pathname === '/shifts/assign' || 
                          pathname === '/shifts/management' || 
                          pathname === '/shifts/venue-assign';
+
+  // 経理関連ページかどうかをチェック
+  const isAccountingActive = pathname === '/accounting' || 
+                         pathname === '/accounting/projects' || 
+                         pathname === '/accounting/estimates' || 
+                         pathname === '/accounting/invoices' || 
+                         pathname === '/accounting/amounts';
 
   // 共通のボタンスタイル
   const buttonStyle = {
@@ -93,16 +131,84 @@ export default function Header() {
             >
               案件管理
             </Button>
-            <Button
-              startIcon={<AccountBalanceIcon />}
-              sx={{
-                ...buttonStyle,
-                bgcolor: pathname === '/accounting' ? 'rgba(255, 255, 255, 0.1)' : 'transparent',
-              }}
-              onClick={() => router.push('/accounting')}
+            
+            {/* 経理処理ボタンとサブメニュー */}
+            <Box 
+              sx={{ position: 'relative' }}
+              onMouseEnter={() => setAccountingMenuOpen(true)}
+              onMouseLeave={handleAccountingMenuLeave}
             >
-              経理処理
-            </Button>
+              <Button
+                ref={accountingAnchorRef}
+                startIcon={<AccountBalanceIcon />}
+                endIcon={<ArrowDropDownIcon />}
+                sx={{
+                  ...buttonStyle,
+                  bgcolor: isAccountingActive ? 'rgba(255, 255, 255, 0.1)' : 'transparent',
+                }}
+                onClick={() => router.push('/accounting')}
+              >
+                経理処理
+              </Button>
+              <Popper
+                open={accountingMenuOpen}
+                anchorEl={accountingAnchorRef.current}
+                placement="bottom-start"
+                transition
+                disablePortal
+                style={{ zIndex: 1300 }}
+              >
+                {({ TransitionProps }) => (
+                  <Grow
+                    {...TransitionProps}
+                    style={{ transformOrigin: 'top left' }}
+                  >
+                    <Paper elevation={3} sx={{ mt: 0.5, minWidth: '180px' }}>
+                      <ClickAwayListener onClickAway={handleAccountingMenuClose}>
+                        <MenuList autoFocusItem={accountingMenuOpen}>
+                          <MenuItem 
+                            onClick={() => handleAccountingMenuItemClick('/accounting/projects')}
+                            sx={{ 
+                              fontSize: '0.9rem',
+                              bgcolor: pathname === '/accounting/projects' ? 'rgba(0, 0, 0, 0.04)' : 'transparent'
+                            }}
+                          >
+                            案件一覧
+                          </MenuItem>
+                          <MenuItem 
+                            onClick={() => handleAccountingMenuItemClick('/accounting/estimates')}
+                            sx={{ 
+                              fontSize: '0.9rem',
+                              bgcolor: pathname === '/accounting/estimates' ? 'rgba(0, 0, 0, 0.04)' : 'transparent'
+                            }}
+                          >
+                            見積処理
+                          </MenuItem>
+                          <MenuItem 
+                            onClick={() => handleAccountingMenuItemClick('/accounting/invoices')}
+                            sx={{ 
+                              fontSize: '0.9rem',
+                              bgcolor: pathname === '/accounting/invoices' ? 'rgba(0, 0, 0, 0.04)' : 'transparent'
+                            }}
+                          >
+                            請求処理
+                          </MenuItem>
+                          <MenuItem 
+                            onClick={() => handleAccountingMenuItemClick('/accounting/amounts')}
+                            sx={{ 
+                              fontSize: '0.9rem',
+                              bgcolor: pathname === '/accounting/amounts' ? 'rgba(0, 0, 0, 0.04)' : 'transparent'
+                            }}
+                          >
+                            金額確認
+                          </MenuItem>
+                        </MenuList>
+                      </ClickAwayListener>
+                    </Paper>
+                  </Grow>
+                )}
+              </Popper>
+            </Box>
             
             {/* シフト調整ボタンとサブメニュー */}
             <Box 
