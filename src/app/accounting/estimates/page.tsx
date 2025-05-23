@@ -226,9 +226,9 @@ export default function EstimatesPage() {
     <Box sx={{ bgcolor: '#f5f5f5', minHeight: 'calc(100vh - 64px)', py: 3 }}>
       <Container maxWidth={false} sx={{ position: 'relative' }}>
         {/* 固定ヘッダー：年月週・代理店選択・ステータス選択 */}
-        <Box sx={{ position: 'sticky', top: 0, zIndex: 10, bgcolor: '#f5f7fa', borderRadius: 2, mb: 3, px: 3, pt: 1, pb: 3 }}>
+        <Box sx={{ position: 'sticky', top: 0, zIndex: 10, bgcolor: '#f5f7fa', borderRadius: 2, mb: 3, px: 3, pt: 0, pb: 3 }}>
           {/* 年月週選択コンポーネント */}
-          <Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-end', flexWrap: 'nowrap', height: '58px', mb: 2, mt: 1 }}>
+          <Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-end', flexWrap: 'nowrap', height: '58px', mb: 2, mt: 0 }}>
             <YearMonthSelector
               year={year}
               month={month}
