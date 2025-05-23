@@ -6,6 +6,12 @@ const nextConfig = {
     removeConsole: process.env.NODE_ENV === 'production',
   },
   webpack: (config, { dev, isServer }) => {
+    // referenceとtmpフォルダを除外
+    config.module.rules.push({
+      test: /\.(js|jsx|ts|tsx)$/,
+      exclude: /(refarence|tmp|backup-.*)/,
+    });
+    
     if (dev) {
       config.watchOptions = {
         poll: 1000,
@@ -13,7 +19,10 @@ const nextConfig = {
         ignored: [
           '**/.git/**',
           '**/node_modules/**',
-          '**/.next/**'
+          '**/.next/**',
+          '**/refarence/**',
+          '**/tmp/**',
+          '**/backup-*/**'
         ]
       }
     }
