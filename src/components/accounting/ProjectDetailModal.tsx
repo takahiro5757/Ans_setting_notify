@@ -60,6 +60,7 @@ export interface Project {
   girlCount: number;
   freeEntryCount: number;
   hasPlaceReservation: boolean;
+  isMonthlyPayment: boolean; // 月払いフラグを追加
 }
 
 // ステータスの定義
@@ -67,6 +68,9 @@ const STATUS_OPTIONS = [
   { value: 'draft', label: '起票' },
   { value: 'quote_ready', label: '見積送付前' },
   { value: 'quote_sent', label: '見積送付済' },
+  { value: 'quote_revision', label: '見積修正中' },
+  { value: 'quote_revised', label: '見積修正済' },
+  { value: 'on_hold', label: '保留' },
   { value: 'invoice_ready', label: '請求送付前' },
   { value: 'invoice_sent', label: '請求送付済' },
   { value: 'rejected', label: 'お断り' }
@@ -197,21 +201,34 @@ const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
       <Box sx={{ p: 0, height: '100%', display: 'flex', flexDirection: 'column' }}>
         {/* ステータスプルダウン＋アイコンボタン（最上部・横並び） */}
         <Box sx={{ px: 3, pt: 3, pb: 1, display: 'flex', alignItems: 'center', gap: 2, justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 10, bgcolor: 'background.paper' }}>
-          <FormControl size="small" sx={{ minWidth: 180 }}>
-            <InputLabel>ステータス</InputLabel>
-            <Select
-              value={editedProject.status}
-              onChange={(e) => handleFieldChange('status', e.target.value)}
-              label="ステータス"
-              disabled={false}
-            >
-              {STATUS_OPTIONS.map(option => (
-                <MenuItem key={option.value} value={option.value}>
-                  {option.label}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <FormControl size="small" sx={{ minWidth: 180 }}>
+              <InputLabel>ステータス</InputLabel>
+              <Select
+                value={editedProject.status}
+                onChange={(e) => handleFieldChange('status', e.target.value)}
+                label="ステータス"
+                disabled={false}
+              >
+                {STATUS_OPTIONS.map(option => (
+                  <MenuItem key={option.value} value={option.value}>
+                    {option.label}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={editedProject.isMonthlyPayment}
+                  onChange={(e) => handleFieldChange('isMonthlyPayment', e.target.checked)}
+                  color="primary"
+                />
+              }
+              label="月払い"
+              sx={{ ml: 1 }}
+            />
+          </Box>
           <Box>
             <IconButton onClick={handleEditToggle} color={isEditing ? 'primary' : 'default'} sx={{ mr: 1 }}>
               <EditIcon />
@@ -229,7 +246,7 @@ const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
           </Typography>
           <Typography variant="h5" sx={{ fontWeight: 'normal', mb: 1 }}>
             {editedProject.agencyName}
-          </Typography>
+            </Typography>
         </Box>
         {/* 開催店舗・連名店舗ラベル＋バッジ */}
         <Box sx={{ px: 3, pt: 1, pb: 1 }}>
@@ -367,7 +384,7 @@ const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
             <Box sx={{ px: 3, pb: 2 }}>
               <Typography sx={{ fontWeight: 'normal', fontSize: '1.15rem', mb: 1, mt: 2 }}>
                 減算登録
-              </Typography>
+            </Typography>
               {deductions.map((deduction, idx) => (
                 <Box key={idx} sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
                   <TextField
@@ -405,7 +422,7 @@ const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
               ) : (
                 <Typography sx={{ fontSize: '1rem', color: '#888', bgcolor: '#f5f5f5', px: 2, py: 1, borderRadius: 1, display: 'inline-block' }}>
                   メモはありません。
-                </Typography>
+            </Typography>
               )}
             </Box>
           </>
@@ -501,9 +518,9 @@ const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
         )}
         {/* 必要最小限のボタンのみ表示 */}
         <Box sx={{ flex: 1 }} />
-        <Divider />
-        <DialogActions sx={{ px: 3, py: 2 }}>
-          {isEditing ? (
+      <Divider />
+      <DialogActions sx={{ px: 3, py: 2 }}>
+        {isEditing ? (
             <Button 
               onClick={handleSave} 
               variant="contained" 
@@ -513,7 +530,7 @@ const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
               保存
             </Button>
           ) : null}
-        </DialogActions>
+      </DialogActions>
       </Box>
     </Drawer>
   );

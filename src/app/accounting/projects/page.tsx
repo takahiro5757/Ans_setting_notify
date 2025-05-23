@@ -44,7 +44,8 @@ const MOCK_PROJECTS: Project[] = [
     closerCount: 1,
     girlCount: 2,
     freeEntryCount: 0,
-    hasPlaceReservation: true
+    hasPlaceReservation: true,
+    isMonthlyPayment: true
   },
   {
     id: 2,
@@ -62,7 +63,8 @@ const MOCK_PROJECTS: Project[] = [
     closerCount: 2,
     girlCount: 1,
     freeEntryCount: 1,
-    hasPlaceReservation: false
+    hasPlaceReservation: false,
+    isMonthlyPayment: false
   },
   {
     id: 3,
@@ -80,7 +82,8 @@ const MOCK_PROJECTS: Project[] = [
     closerCount: 1,
     girlCount: 2,
     freeEntryCount: 0,
-    hasPlaceReservation: true
+    hasPlaceReservation: true,
+    isMonthlyPayment: true
   },
   {
     id: 4,
@@ -98,7 +101,8 @@ const MOCK_PROJECTS: Project[] = [
     closerCount: 2,
     girlCount: 2,
     freeEntryCount: 1,
-    hasPlaceReservation: false
+    hasPlaceReservation: false,
+    isMonthlyPayment: false
   },
   // DEF広告株式会社
   {
@@ -117,7 +121,8 @@ const MOCK_PROJECTS: Project[] = [
     closerCount: 2,
     girlCount: 3,
     freeEntryCount: 1,
-    hasPlaceReservation: false
+    hasPlaceReservation: false,
+    isMonthlyPayment: true
   },
   {
     id: 6,
@@ -135,7 +140,8 @@ const MOCK_PROJECTS: Project[] = [
     closerCount: 1,
     girlCount: 2,
     freeEntryCount: 2,
-    hasPlaceReservation: true
+    hasPlaceReservation: true,
+    isMonthlyPayment: false
   },
   {
     id: 7,
@@ -153,7 +159,8 @@ const MOCK_PROJECTS: Project[] = [
     closerCount: 2,
     girlCount: 1,
     freeEntryCount: 0,
-    hasPlaceReservation: false
+    hasPlaceReservation: false,
+    isMonthlyPayment: true
   },
   {
     id: 8,
@@ -171,7 +178,8 @@ const MOCK_PROJECTS: Project[] = [
     closerCount: 1,
     girlCount: 3,
     freeEntryCount: 2,
-    hasPlaceReservation: true
+    hasPlaceReservation: true,
+    isMonthlyPayment: false
   },
   // GHIプロモーション
   {
@@ -190,7 +198,8 @@ const MOCK_PROJECTS: Project[] = [
     closerCount: 1,
     girlCount: 1,
     freeEntryCount: 0,
-    hasPlaceReservation: true
+    hasPlaceReservation: true,
+    isMonthlyPayment: true
   },
   {
     id: 10,
@@ -208,7 +217,8 @@ const MOCK_PROJECTS: Project[] = [
     closerCount: 2,
     girlCount: 2,
     freeEntryCount: 1,
-    hasPlaceReservation: false
+    hasPlaceReservation: false,
+    isMonthlyPayment: false
   },
   {
     id: 11,
@@ -226,7 +236,8 @@ const MOCK_PROJECTS: Project[] = [
     closerCount: 1,
     girlCount: 3,
     freeEntryCount: 2,
-    hasPlaceReservation: true
+    hasPlaceReservation: true,
+    isMonthlyPayment: true
   },
   {
     id: 12,
@@ -244,7 +255,8 @@ const MOCK_PROJECTS: Project[] = [
     closerCount: 2,
     girlCount: 1,
     freeEntryCount: 0,
-    hasPlaceReservation: false
+    hasPlaceReservation: false,
+    isMonthlyPayment: false
   },
   // JKLマーケティング
   {
@@ -263,7 +275,8 @@ const MOCK_PROJECTS: Project[] = [
     closerCount: 2,
     girlCount: 2,
     freeEntryCount: 2,
-    hasPlaceReservation: false
+    hasPlaceReservation: false,
+    isMonthlyPayment: true
   },
   {
     id: 14,
@@ -281,7 +294,8 @@ const MOCK_PROJECTS: Project[] = [
     closerCount: 1,
     girlCount: 2,
     freeEntryCount: 1,
-    hasPlaceReservation: true
+    hasPlaceReservation: true,
+    isMonthlyPayment: false
   },
   {
     id: 15,
@@ -299,7 +313,8 @@ const MOCK_PROJECTS: Project[] = [
     closerCount: 2,
     girlCount: 1,
     freeEntryCount: 0,
-    hasPlaceReservation: false
+    hasPlaceReservation: false,
+    isMonthlyPayment: true
   },
   {
     id: 16,
@@ -317,7 +332,8 @@ const MOCK_PROJECTS: Project[] = [
     closerCount: 1,
     girlCount: 2,
     freeEntryCount: 1,
-    hasPlaceReservation: true
+    hasPlaceReservation: true,
+    isMonthlyPayment: false
   },
   // 代理店ごとにさらに1件ずつ追加
   {
@@ -336,7 +352,8 @@ const MOCK_PROJECTS: Project[] = [
     closerCount: 2,
     girlCount: 1,
     freeEntryCount: 0,
-    hasPlaceReservation: false
+    hasPlaceReservation: false,
+    isMonthlyPayment: true
   },
   {
     id: 18,
@@ -354,7 +371,8 @@ const MOCK_PROJECTS: Project[] = [
     closerCount: 1,
     girlCount: 2,
     freeEntryCount: 1,
-    hasPlaceReservation: true
+    hasPlaceReservation: true,
+    isMonthlyPayment: false
   },
   {
     id: 19,
@@ -372,7 +390,8 @@ const MOCK_PROJECTS: Project[] = [
     closerCount: 2,
     girlCount: 1,
     freeEntryCount: 0,
-    hasPlaceReservation: false
+    hasPlaceReservation: false,
+    isMonthlyPayment: true
   },
   {
     id: 20,
@@ -390,7 +409,8 @@ const MOCK_PROJECTS: Project[] = [
     closerCount: 1,
     girlCount: 2,
     freeEntryCount: 1,
-    hasPlaceReservation: true
+    hasPlaceReservation: true,
+    isMonthlyPayment: false
   }
 ];
 
@@ -425,9 +445,12 @@ const STATUS_TILE_COLORS: Record<string, string> = {
   draft: '#fff', // 起票: 白
   quote_ready: '#e3f0fa', // 見積送付前: 薄青
   quote_sent: '#eaf6fb', // 見積送付済: 薄水色
+  quote_revision: '#fff8e1', // 見積修正中: 薄黄
+  quote_revised: '#e8f5e9', // 見積修正済: 薄緑
+  on_hold: '#f5f5f5', // 保留: 薄グレー
   invoice_ready: '#fff3e0', // 請求送付前: 薄オレンジ
   invoice_sent: '#e8f5e9', // 請求送付済: 薄緑
-  rejected: '#eeeeee' // お断り: 薄グレー
+  rejected: '#bdbdbd' // お断り: 濃いグレー
 };
 
 export default function ProjectsPage() {
@@ -454,7 +477,7 @@ export default function ProjectsPage() {
       setSelectedAgencies(newAgencies);
     }
   };
-
+  
   // フィルター適用済みプロジェクト
   const filteredProjects = MOCK_PROJECTS.filter(project => {
     // 代理店フィルター
@@ -517,9 +540,12 @@ export default function ProjectsPage() {
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}><Box sx={{ width: 16, height: 16, bgcolor: '#fff', borderRadius: 1, mr: 0.5, border: '1px solid #e0e0e0' }} /> <Typography variant="caption">起票</Typography></Box>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}><Box sx={{ width: 16, height: 16, bgcolor: '#e3f0fa', borderRadius: 1, mr: 0.5 }} /> <Typography variant="caption">見積送付前</Typography></Box>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}><Box sx={{ width: 16, height: 16, bgcolor: '#eaf6fb', borderRadius: 1, mr: 0.5 }} /> <Typography variant="caption">見積送付済</Typography></Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}><Box sx={{ width: 16, height: 16, bgcolor: '#fff8e1', borderRadius: 1, mr: 0.5 }} /> <Typography variant="caption">見積修正中</Typography></Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}><Box sx={{ width: 16, height: 16, bgcolor: '#e8f5e9', borderRadius: 1, mr: 0.5 }} /> <Typography variant="caption">見積修正済</Typography></Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}><Box sx={{ width: 16, height: 16, bgcolor: '#f5f5f5', borderRadius: 1, mr: 0.5 }} /> <Typography variant="caption">保留</Typography></Box>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}><Box sx={{ width: 16, height: 16, bgcolor: '#fff3e0', borderRadius: 1, mr: 0.5 }} /> <Typography variant="caption">請求送付前</Typography></Box>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}><Box sx={{ width: 16, height: 16, bgcolor: '#e8f5e9', borderRadius: 1, mr: 0.5 }} /> <Typography variant="caption">請求送付済</Typography></Box>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}><Box sx={{ width: 16, height: 16, bgcolor: '#eeeeee', borderRadius: 1, mr: 0.5 }} /> <Typography variant="caption">お断り</Typography></Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}><Box sx={{ width: 16, height: 16, bgcolor: '#bdbdbd', borderRadius: 1, mr: 0.5 }} /> <Typography variant="caption">お断り</Typography></Box>
             </Box>
           </Box>
           {/* 年月週選択コンポーネント */}
@@ -612,126 +638,126 @@ export default function ProjectsPage() {
                 <Box sx={{ width: 4, height: 28, bgcolor: '#17424d', mr: 1 }} />
                 <Typography variant="h6" sx={{ fontWeight: 'bold' }}>{agency}</Typography>
               </Box>
-              <Grid container spacing={3}>
+          <Grid container spacing={3}>
                 {projects.map((project) => (
                   <Grid item xs={12} sm={12} md={2} key={project.id}>
-                    <Card 
-                      sx={{ 
-                        cursor: 'pointer',
-                        '&:hover': { boxShadow: 3, transform: 'scale(1.02)' },
-                        transition: 'all 0.2s ease',
-                        height: '100%',
-                        width: '100%',
+                <Card 
+                  sx={{ 
+                    cursor: 'pointer',
+                    '&:hover': { boxShadow: 3, transform: 'scale(1.02)' },
+                    transition: 'all 0.2s ease',
+                    height: '100%',
+                    width: '100%',
                         maxWidth: 400,
                         bgcolor: STATUS_TILE_COLORS[project.status] || '#ffffff',
-                        borderRadius: 2,
-                        position: 'relative',
-                        p: 0,
-                        overflow: 'visible'
+                    borderRadius: 2,
+                    position: 'relative',
+                    p: 0,
+                    overflow: 'visible'
+                  }}
+                  onClick={() => handleCardClick(project)}
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`${formatDate(project.eventDate)} ${project.storeName} ${project.venue} クローザー${project.closerCount}名 ガール${project.girlCount}名 無料入店${project.freeEntryCount}名 ${project.hasPlaceReservation ? '場所取りあり' : ''}`}
+                >
+                  {/* カード全体のコンテナ */}
+                  <Box sx={{ p: 3 }}>
+                    {/* 場所取りマーカー（右上） */}
+                    {project.hasPlaceReservation && (
+                      <Box 
+                        sx={{ 
+                          position: 'absolute', 
+                          top: 8, 
+                          right: 8, 
+                          zIndex: 1,
+                          color: '#4caf50'
+                        }}
+                        aria-hidden="true"
+                      >
+                        <RoomIcon
+                          sx={{
+                            fontSize: 32,
+                          }}
+                        />
+                      </Box>
+                    )}
+                    {/* 開催店舗 */}
+                    <Box sx={{ display: 'flex', mb: 1.5 }}>
+                      <Typography 
+                        variant="caption" 
+                        sx={{
+                          px: 2,
+                          py: 0.5,
+                          borderRadius: '16px',
+                          bgcolor: '#2196f3',
+                          color: 'white',
+                          fontWeight: 'medium',
+                          fontSize: '0.9rem',
+                          display: 'inline-block'
+                        }}
+                      >
+                        {project.storeName}
+                      </Typography>
+                    </Box>
+                    {/* 連名店舗 */}
+                    <Box 
+                      sx={{ 
+                        display: 'flex',
+                        flexWrap: 'nowrap',
+                        overflow: 'auto',
+                        '&::-webkit-scrollbar': { display: 'none' },
+                        scrollbarWidth: 'none',
+                        mb: 1.5,
+                        gap: 0.8
                       }}
-                      onClick={() => handleCardClick(project)}
-                      role="button"
-                      tabIndex={0}
-                      aria-label={`${formatDate(project.eventDate)} ${project.storeName} ${project.venue} クローザー${project.closerCount}名 ガール${project.girlCount}名 無料入店${project.freeEntryCount}名 ${project.hasPlaceReservation ? '場所取りあり' : ''}`}
                     >
-                      {/* カード全体のコンテナ */}
-                      <Box sx={{ p: 3 }}>
-                        {/* 場所取りマーカー（右上） */}
-                        {project.hasPlaceReservation && (
-                          <Box 
-                            sx={{ 
-                              position: 'absolute', 
-                              top: 8, 
-                              right: 8, 
-                              zIndex: 1,
-                              color: '#4caf50'
-                            }}
-                            aria-hidden="true"
-                          >
-                            <RoomIcon
-                              sx={{
-                                fontSize: 32,
-                              }}
-                            />
-                          </Box>
-                        )}
-                        {/* 開催店舗 */}
-                        <Box sx={{ display: 'flex', mb: 1.5 }}>
-                          <Typography 
-                            variant="caption" 
-                            sx={{
-                              px: 2,
-                              py: 0.5,
-                              borderRadius: '16px',
-                              bgcolor: '#2196f3',
-                              color: 'white',
-                              fontWeight: 'medium',
-                              fontSize: '0.9rem',
-                              display: 'inline-block'
-                            }}
-                          >
-                            {project.storeName}
-                          </Typography>
-                        </Box>
-                        {/* 連名店舗 */}
-                        <Box 
+                      {project.coStores.map((store, index) => (
+                        <Typography 
+                          key={index} 
+                          variant="caption" 
                           sx={{ 
-                            display: 'flex',
-                            flexWrap: 'nowrap',
-                            overflow: 'auto',
-                            '&::-webkit-scrollbar': { display: 'none' },
-                            scrollbarWidth: 'none',
-                            mb: 1.5,
-                            gap: 0.8
+                            px: 1.5,
+                            py: 0.4,
+                            bgcolor: '#e0e0e0',
+                            color: '#666',
+                            borderRadius: '14px',
+                            whiteSpace: 'nowrap',
+                            fontSize: '0.8rem',
+                            fontWeight: 'normal'
                           }}
                         >
-                          {project.coStores.map((store, index) => (
-                            <Typography 
-                              key={index} 
-                              variant="caption" 
-                              sx={{ 
-                                px: 1.5,
-                                py: 0.4,
-                                bgcolor: '#e0e0e0',
-                                color: '#666',
-                                borderRadius: '14px',
-                                whiteSpace: 'nowrap',
-                                fontSize: '0.8rem',
-                                fontWeight: 'normal'
-                              }}
-                            >
-                              {store}
-                            </Typography>
-                          ))}
-                        </Box>
-                        {/* 開催日 */}
-                        <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.95rem', display: 'block', mb: 0.8 }}>
-                          {formatDate(project.eventDate)}
+                          {store}
                         </Typography>
-                        {/* 開催場所 */}
-                        <Typography variant="body2" component="div" sx={{ fontWeight: 'medium', mb: 2, fontSize: '1.25rem' }}>
-                          {project.venue}
-                        </Typography>
-                        {/* 人員情報 */}
-                        <Box sx={{ display: 'flex', gap: 3, mt: 1.5, alignItems: 'center' }}>
-                          <Box display="flex" alignItems="center">
-                            <PersonIcon sx={{ color: '#1976d2', mr: 0.7, fontSize: '2rem' }} />
-                            <Typography variant="caption" fontSize="1.2rem">{project.closerCount}名</Typography>
-                          </Box>
-                          <Box display="flex" alignItems="center">
-                            <WomanIcon sx={{ color: '#f50057', mr: 0.7, fontSize: '2rem' }} />
-                            <Typography variant="caption" fontSize="1.2rem">{project.girlCount}名</Typography>
-                          </Box>
-                          <Box display="flex" alignItems="center">
-                            <GroupIcon sx={{ color: '#4caf50', mr: 0.7, fontSize: '2rem' }} />
-                            <Typography variant="caption" fontSize="1.2rem">{project.freeEntryCount}名</Typography>
-                          </Box>
-                        </Box>
+                      ))}
+                    </Box>
+                    {/* 開催日 or 稼働日数 */}
+                    <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.95rem', display: 'block', mb: 0.8 }}>
+                      {displayMode === 'multi' ? `稼働日数：${project.days}日` : formatDate(project.eventDate)}
+                    </Typography>
+                    {/* 開催場所 */}
+                    <Typography variant="body2" component="div" sx={{ fontWeight: 'medium', mb: 2, fontSize: '1.25rem' }}>
+                      {project.venue}
+                    </Typography>
+                    {/* 人員情報 */}
+                    <Box sx={{ display: 'flex', gap: 3, mt: 1.5, alignItems: 'center' }}>
+                      <Box display="flex" alignItems="center">
+                        <PersonIcon sx={{ color: '#1976d2', mr: 0.7, fontSize: '2rem' }} />
+                        <Typography variant="caption" fontSize="1.2rem">{project.closerCount}名</Typography>
                       </Box>
-                    </Card>
-                  </Grid>
-                ))}
+                      <Box display="flex" alignItems="center">
+                        <WomanIcon sx={{ color: '#f50057', mr: 0.7, fontSize: '2rem' }} />
+                        <Typography variant="caption" fontSize="1.2rem">{project.girlCount}名</Typography>
+                      </Box>
+                      <Box display="flex" alignItems="center">
+                        <GroupIcon sx={{ color: '#4caf50', mr: 0.7, fontSize: '2rem' }} />
+                        <Typography variant="caption" fontSize="1.2rem">{project.freeEntryCount}名</Typography>
+                      </Box>
+                    </Box>
+                  </Box>
+                </Card>
               </Grid>
+            ))}
+          </Grid>
             </Box>
           ))}
 
