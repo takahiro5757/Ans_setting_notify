@@ -52,7 +52,7 @@ export default function Sales() {
   const router = useRouter();
   const [year, setYear] = useState<string>('2024');
   const [month, setMonth] = useState<string>('1');
-  const [selectedWeek, setSelectedWeek] = useState<number>(1);
+  const [selectedWeek, setSelectedWeek] = useState<number | string>(1);
   const [viewMode, setViewMode] = useState<'detail' | 'summary'>('summary');
   const [summary, setSummary] = useState(initialSummary);
   const weeks = getWeeks(year, month);
@@ -102,7 +102,7 @@ export default function Sales() {
             <Box sx={{ mx: 1 }}>
               <WeekSelector 
                 selectedWeek={selectedWeek}
-                onChange={(week) => setSelectedWeek(week)}
+                onChange={setSelectedWeek}
                 year={year}
                 month={month}
               />

@@ -16,7 +16,7 @@ export default function AssignPage() {
   // 状態管理
   const [year, setYear] = useState<string>('2025');
   const [month, setMonth] = useState<string>('4');
-  const [selectedWeek, setSelectedWeek] = useState<number>(0);
+  const [selectedWeek, setSelectedWeek] = useState<number | string>(0);
   const [assignments, setAssignments] = useState<AssignmentItem[]>(generate2025AprilMayAssignments());
   // 表示モードの状態追加
   const [displayMode, setDisplayMode] = useState<string>('normal');
@@ -39,14 +39,17 @@ export default function AssignPage() {
     // 利用可能な週を取得
     const availableWeeks = getAvailableWeeks(year, month);
     
+    // selectedWeekをnumberに変換
+    const numericWeek = typeof selectedWeek === 'string' ? parseInt(selectedWeek) : selectedWeek;
+    
     // 選択された週が利用可能でない場合、最初の利用可能な週を選択
-    if (!availableWeeks.includes(selectedWeek)) {
+    if (!availableWeeks.includes(numericWeek)) {
       setSelectedWeek(availableWeeks[0]);
       return;
     }
     
     // 選択された週に基づいて日付データを生成
-    const weekDates = generateWeekDates(year, month, selectedWeek);
+    const weekDates = generateWeekDates(year, month, numericWeek);
     setDates(weekDates);
   }, [year, month, selectedWeek]);
 
@@ -436,7 +439,7 @@ export default function AssignPage() {
               <Box sx={{ mx: 1 }}>
                 <WeekSelector 
                   selectedWeek={selectedWeek}
-                  onChange={(week) => setSelectedWeek(week)}
+                  onChange={setSelectedWeek}
                   year={year}
                   month={month}
                 />
@@ -521,7 +524,7 @@ export default function AssignPage() {
                 <StaffList 
                   year={parseInt(year)} 
                   month={parseInt(month)} 
-                  selectedWeek={selectedWeek}
+                  selectedWeek={typeof selectedWeek === 'string' ? parseInt(selectedWeek) : selectedWeek}
                 />
               </Box>
             </Grid>

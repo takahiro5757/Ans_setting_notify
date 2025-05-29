@@ -292,7 +292,7 @@ export default function Header() {
             <Box sx={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 2 }}>
               <Avatar sx={{ width: 32, height: 32 }} />
               <Typography sx={{ fontSize: '0.9rem', color: 'white' }}>
-                アホ 将大
+                モック 管理者
               </Typography>
               <Button
                 variant="contained"

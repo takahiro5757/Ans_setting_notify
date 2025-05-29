@@ -6,8 +6,8 @@ import { Theme } from '@mui/material/styles';
 import { getAvailableWeeks } from '@/utils/dateUtils';
 
 interface WeekSelectorProps {
-  selectedWeek: number;
-  onChange: (week: number) => void;
+  selectedWeek: number | string;
+  onChange: (week: number | string) => void;
   year?: string | number;
   month?: string | number;
 }
@@ -48,7 +48,7 @@ const WeekSelector = ({
     borderRadius: 1
   };
 
-  const handleWeekChange = (event: React.MouseEvent<HTMLElement>, newWeek: number | null) => {
+  const handleWeekChange = (event: React.MouseEvent<HTMLElement>, newWeek: number | string | null) => {
     if (newWeek !== null) {
       onChange(newWeek);
     }
@@ -76,6 +76,13 @@ const WeekSelector = ({
             <Typography variant="body2">{week}W</Typography>
           </ToggleButton>
         ))}
+        <ToggleButton 
+          key="monthly"
+          value="monthly"
+          sx={weekToggleButtonStyle}
+        >
+          <Typography variant="body2">月払い</Typography>
+        </ToggleButton>
       </ToggleButtonGroup>
     </Box>
   );

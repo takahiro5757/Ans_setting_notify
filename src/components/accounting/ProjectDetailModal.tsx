@@ -61,6 +61,7 @@ export interface Project {
   freeEntryCount: number;
   hasPlaceReservation: boolean;
   isMonthlyPayment: boolean; // 月払いフラグを追加
+  transportationTaxFree: boolean; // 交通費非課税フラグを追加
 }
 
 // ステータスの定義
@@ -323,10 +324,21 @@ const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
               </Table>
             </Box>
             {/* 交通費ページ分けチェックボックス */}
-            <Box sx={{ px: 3, pb: 1 }}>
+            <Box sx={{ px: 3, pb: 1, display: 'flex', alignItems: 'center', gap: 3 }}>
               <FormControlLabel
                 control={<Switch color="primary" />}
                 label="交通費ページ分け"
+              />
+              <FormControlLabel
+                control={
+                  <Switch 
+                    color="primary" 
+                    checked={editedProject.transportationTaxFree || false}
+                    onChange={(e) => handleFieldChange('transportationTaxFree', e.target.checked)}
+                    disabled={!isEditing}
+                  />
+                }
+                label="交通費非課税"
               />
             </Box>
             {/* 場所取り情報（場所ラベル） - テーブル直下 */}

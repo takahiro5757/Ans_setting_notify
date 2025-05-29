@@ -45,7 +45,8 @@ const MOCK_PROJECTS: Project[] = [
     girlCount: 2,
     freeEntryCount: 0,
     hasPlaceReservation: true,
-    isMonthlyPayment: true
+    isMonthlyPayment: true,
+    transportationTaxFree: false
   },
   {
     id: 2,
@@ -64,7 +65,8 @@ const MOCK_PROJECTS: Project[] = [
     girlCount: 1,
     freeEntryCount: 1,
     hasPlaceReservation: false,
-    isMonthlyPayment: false
+    isMonthlyPayment: false,
+    transportationTaxFree: true
   },
   {
     id: 3,
@@ -83,7 +85,8 @@ const MOCK_PROJECTS: Project[] = [
     girlCount: 2,
     freeEntryCount: 0,
     hasPlaceReservation: true,
-    isMonthlyPayment: true
+    isMonthlyPayment: true,
+    transportationTaxFree: false
   },
   {
     id: 4,
@@ -102,7 +105,8 @@ const MOCK_PROJECTS: Project[] = [
     girlCount: 2,
     freeEntryCount: 1,
     hasPlaceReservation: false,
-    isMonthlyPayment: false
+    isMonthlyPayment: false,
+    transportationTaxFree: true
   },
   // DEF広告株式会社
   {
@@ -122,7 +126,8 @@ const MOCK_PROJECTS: Project[] = [
     girlCount: 3,
     freeEntryCount: 1,
     hasPlaceReservation: false,
-    isMonthlyPayment: true
+    isMonthlyPayment: true,
+    transportationTaxFree: false
   },
   {
     id: 6,
@@ -141,7 +146,8 @@ const MOCK_PROJECTS: Project[] = [
     girlCount: 2,
     freeEntryCount: 2,
     hasPlaceReservation: true,
-    isMonthlyPayment: false
+    isMonthlyPayment: false,
+    transportationTaxFree: true
   },
   {
     id: 7,
@@ -160,7 +166,8 @@ const MOCK_PROJECTS: Project[] = [
     girlCount: 1,
     freeEntryCount: 0,
     hasPlaceReservation: false,
-    isMonthlyPayment: true
+    isMonthlyPayment: true,
+    transportationTaxFree: false
   },
   {
     id: 8,
@@ -179,7 +186,8 @@ const MOCK_PROJECTS: Project[] = [
     girlCount: 3,
     freeEntryCount: 2,
     hasPlaceReservation: true,
-    isMonthlyPayment: false
+    isMonthlyPayment: false,
+    transportationTaxFree: true
   },
   // GHIプロモーション
   {
@@ -199,7 +207,8 @@ const MOCK_PROJECTS: Project[] = [
     girlCount: 1,
     freeEntryCount: 0,
     hasPlaceReservation: true,
-    isMonthlyPayment: true
+    isMonthlyPayment: true,
+    transportationTaxFree: false
   },
   {
     id: 10,
@@ -218,7 +227,8 @@ const MOCK_PROJECTS: Project[] = [
     girlCount: 2,
     freeEntryCount: 1,
     hasPlaceReservation: false,
-    isMonthlyPayment: false
+    isMonthlyPayment: false,
+    transportationTaxFree: true
   },
   {
     id: 11,
@@ -237,7 +247,8 @@ const MOCK_PROJECTS: Project[] = [
     girlCount: 3,
     freeEntryCount: 2,
     hasPlaceReservation: true,
-    isMonthlyPayment: true
+    isMonthlyPayment: true,
+    transportationTaxFree: false
   },
   {
     id: 12,
@@ -256,7 +267,8 @@ const MOCK_PROJECTS: Project[] = [
     girlCount: 1,
     freeEntryCount: 0,
     hasPlaceReservation: false,
-    isMonthlyPayment: false
+    isMonthlyPayment: false,
+    transportationTaxFree: true
   },
   // JKLマーケティング
   {
@@ -276,7 +288,8 @@ const MOCK_PROJECTS: Project[] = [
     girlCount: 2,
     freeEntryCount: 2,
     hasPlaceReservation: false,
-    isMonthlyPayment: true
+    isMonthlyPayment: true,
+    transportationTaxFree: false
   },
   {
     id: 14,
@@ -295,7 +308,8 @@ const MOCK_PROJECTS: Project[] = [
     girlCount: 2,
     freeEntryCount: 1,
     hasPlaceReservation: true,
-    isMonthlyPayment: false
+    isMonthlyPayment: false,
+    transportationTaxFree: true
   },
   {
     id: 15,
@@ -314,7 +328,8 @@ const MOCK_PROJECTS: Project[] = [
     girlCount: 1,
     freeEntryCount: 0,
     hasPlaceReservation: false,
-    isMonthlyPayment: true
+    isMonthlyPayment: true,
+    transportationTaxFree: false
   },
   {
     id: 16,
@@ -333,7 +348,8 @@ const MOCK_PROJECTS: Project[] = [
     girlCount: 2,
     freeEntryCount: 1,
     hasPlaceReservation: true,
-    isMonthlyPayment: false
+    isMonthlyPayment: false,
+    transportationTaxFree: true
   },
   // 代理店ごとにさらに1件ずつ追加
   {
@@ -353,7 +369,8 @@ const MOCK_PROJECTS: Project[] = [
     girlCount: 1,
     freeEntryCount: 0,
     hasPlaceReservation: false,
-    isMonthlyPayment: true
+    isMonthlyPayment: true,
+    transportationTaxFree: false
   },
   {
     id: 18,
@@ -372,7 +389,8 @@ const MOCK_PROJECTS: Project[] = [
     girlCount: 2,
     freeEntryCount: 1,
     hasPlaceReservation: true,
-    isMonthlyPayment: false
+    isMonthlyPayment: false,
+    transportationTaxFree: true
   },
   {
     id: 19,
@@ -391,7 +409,8 @@ const MOCK_PROJECTS: Project[] = [
     girlCount: 1,
     freeEntryCount: 0,
     hasPlaceReservation: false,
-    isMonthlyPayment: true
+    isMonthlyPayment: true,
+    transportationTaxFree: false
   },
   {
     id: 20,
@@ -410,7 +429,8 @@ const MOCK_PROJECTS: Project[] = [
     girlCount: 2,
     freeEntryCount: 1,
     hasPlaceReservation: true,
-    isMonthlyPayment: false
+    isMonthlyPayment: false,
+    transportationTaxFree: true
   }
 ];
 
@@ -457,7 +477,7 @@ export default function ProjectsPage() {
   // 状態管理
   const [year, setYear] = useState('2025');
   const [month, setMonth] = useState('1');
-  const [selectedWeek, setSelectedWeek] = useState(1);
+  const [selectedWeek, setSelectedWeek] = useState<number | string>(1);
   const [selectedAgencies, setSelectedAgencies] = useState<string[]>(['all']);
   const [searchKeyword, setSearchKeyword] = useState('');
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
