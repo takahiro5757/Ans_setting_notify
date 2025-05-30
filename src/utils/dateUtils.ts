@@ -75,6 +75,7 @@ export const generateDummySummary = () => {
   return {
     closerCapacity: [30, 30, 30, 30, 30, 30],
     girlCapacity: [20, 20, 20, 20, 20, 20],
+    freeCapacity: [10, 10, 10, 10, 10, 10],
     totalCapacity: [50, 50, 50, 50, 50, 50]
   };
 };

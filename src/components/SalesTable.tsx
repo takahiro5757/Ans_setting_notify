@@ -49,10 +49,16 @@ import FlightIcon from '@mui/icons-material/Flight';
 // ステータスに応じた色を返す関数
 const getStatusColor = (status: string): "default" | "primary" | "secondary" | "error" | "info" | "success" | "warning" => {
   switch (status) {
-    case '確定':
+    case '連絡済':
       return 'success';
-    case '代理店調整中':
+    case '連絡前':
       return 'warning';
+    case 'お断り':
+      return 'error';
+    case '連絡不要':
+      return 'info';
+    case '起票':
+      return 'default';
     default:
       return 'default';
   }
@@ -105,7 +111,7 @@ const emptyRecord: SalesData = {
   id: '',
   assignee: '',
   updatedBy: '',
-  status: '代理店連絡前',
+  status: '起票',
   agency: '',
   schedule: [false, false, false, false, false, false, false],
   isBandShift: false,
@@ -771,7 +777,7 @@ const SalesTable: React.FC<SalesTableProps> = ({ initialViewMode }) => {
       id: '1',
       assignee: '山田',
       updatedBy: '山田',
-      status: '代理店連絡前',
+      status: '起票',
       agency: 'ピーアップ',
       schedule: [true, false, false, false, false, false, false],
       isBandShift: false,
@@ -807,7 +813,7 @@ const SalesTable: React.FC<SalesTableProps> = ({ initialViewMode }) => {
       id: '2',
       assignee: '鈴木',
       updatedBy: '山田',
-      status: '代理店連絡前',
+      status: '連絡前',
       agency: 'ピーアップ',
       schedule: [false, true, true, true, false, false, false],
       isBandShift: false,
@@ -843,7 +849,7 @@ const SalesTable: React.FC<SalesTableProps> = ({ initialViewMode }) => {
       id: '3',
       assignee: '佐藤',
       updatedBy: '佐藤',
-      status: '代理店連絡前',
+      status: '連絡済',
       agency: 'ピーアップ',
       schedule: [false, false, false, true, true, false, false],
       isBandShift: false,
@@ -879,7 +885,7 @@ const SalesTable: React.FC<SalesTableProps> = ({ initialViewMode }) => {
       id: '4',
       assignee: '山田',
       updatedBy: '山田',
-      status: '代理店連絡前',
+      status: '連絡不要',
       agency: 'ピーアップ',
       schedule: [true, true, false, false, false, false, false],
       isBandShift: false,
@@ -951,7 +957,7 @@ const SalesTable: React.FC<SalesTableProps> = ({ initialViewMode }) => {
       id: '6',
       assignee: '田中',
       updatedBy: '田中',
-      status: '代理店連絡前',
+      status: '連絡済',
       agency: 'ラネット',
       schedule: [false, false, false, true, true, false, false],
       isBandShift: false,
@@ -987,7 +993,7 @@ const SalesTable: React.FC<SalesTableProps> = ({ initialViewMode }) => {
       id: '7',
       assignee: '鈴木',
       updatedBy: '山田',
-      status: '代理店連絡前',
+      status: '連絡不要',
       agency: 'CS',
       schedule: [true, true, true, true, false, false, false],
       isBandShift: false,
@@ -1023,7 +1029,7 @@ const SalesTable: React.FC<SalesTableProps> = ({ initialViewMode }) => {
       id: '8',
       assignee: '佐藤',
       updatedBy: '佐藤',
-      status: '代理店連絡前',
+      status: 'お断り',
       agency: 'CS',
       schedule: [false, false, false, false, true, true, false],
       isBandShift: false,
@@ -1059,7 +1065,7 @@ const SalesTable: React.FC<SalesTableProps> = ({ initialViewMode }) => {
       id: '9',
       assignee: '山田',
       updatedBy: '山田',
-      status: '代理店連絡前',
+      status: '起票',
       agency: 'CS',
       schedule: [true, true, false, false, false, false, false],
       isBandShift: false,
@@ -1095,7 +1101,7 @@ const SalesTable: React.FC<SalesTableProps> = ({ initialViewMode }) => {
       id: '10',
       assignee: '高橋',
       updatedBy: '田中',
-      status: '代理店連絡前',
+      status: '連絡前',
       agency: 'CS',
       schedule: [false, true, true, true, false, false, false],
       isBandShift: false,
@@ -1308,7 +1314,7 @@ const SalesTable: React.FC<SalesTableProps> = ({ initialViewMode }) => {
     updater: '80px',
     status: '120px',
     agency: '120px',
-    weekday: '28px',
+    weekday: '45px',
     dayType: '65px',
     bandProject: '120px',
     details: 'auto'
@@ -1316,7 +1322,7 @@ const SalesTable: React.FC<SalesTableProps> = ({ initialViewMode }) => {
 
   const renderEditableRow = (record: SalesData) => (
     <TableRow key={record.id} sx={{ bgcolor: '#f5f5f5' }}>
-      <TableCell padding="checkbox" sx={{ width: '60px' }}>
+      <TableCell padding="checkbox" sx={{ width: columnWidths.checkbox }}>
         <Box sx={{ display: 'flex', gap: 0.5 }}>
           <IconButton size="small" onClick={handleSave}>
             <CheckIcon fontSize="small" color="success" />
@@ -1327,7 +1333,7 @@ const SalesTable: React.FC<SalesTableProps> = ({ initialViewMode }) => {
         </Box>
       </TableCell>
       <TableCell 
-        sx={{ width: '80px' }}
+        sx={{ width: columnWidths.assignee }}
         onDoubleClick={() => handleCellDoubleClick(record.id, 'assignee')}
       >
         {editingCell?.recordId === record.id && editingCell?.field === 'assignee' ? (
@@ -1344,7 +1350,7 @@ const SalesTable: React.FC<SalesTableProps> = ({ initialViewMode }) => {
         )}
       </TableCell>
       <TableCell 
-        sx={{ width: '80px' }}
+        sx={{ width: columnWidths.updater }}
         onDoubleClick={() => handleCellDoubleClick(record.id, 'updatedBy')}
       >
         {editingCell?.recordId === record.id && editingCell?.field === 'updatedBy' ? (
@@ -1361,7 +1367,7 @@ const SalesTable: React.FC<SalesTableProps> = ({ initialViewMode }) => {
         )}
       </TableCell>
       <TableCell
-        sx={{ width: '120px', cursor: 'pointer' }}
+        sx={{ width: columnWidths.status, cursor: 'pointer' }}
         onClick={(e) => handleCellClick(e, 'status', record.id)}
       >
         <Chip 
@@ -1369,11 +1375,15 @@ const SalesTable: React.FC<SalesTableProps> = ({ initialViewMode }) => {
           size="small"
           sx={{ 
             backgroundColor: 
-              record.status === '確定' ? '#e8f5e9' :
-              record.status === '代理店調整中' ? '#fff3e0' : '#f5f5f5',
+              record.status === '連絡済' ? '#e8f5e9' :
+              record.status === '連絡前' ? '#fff3e0' : 
+              record.status === 'お断り' ? '#ffebee' :
+              record.status === '連絡不要' ? '#e3f2fd' : '#f5f5f5',
             color: 
-              record.status === '確定' ? '#2e7d32' :
-              record.status === '代理店調整中' ? '#ef6c00' : '#666666',
+              record.status === '連絡済' ? '#2e7d32' :
+              record.status === '連絡前' ? '#ef6c00' :
+              record.status === 'お断り' ? '#d32f2f' :
+              record.status === '連絡不要' ? '#1976d2' : '#666666',
             fontSize: '0.75rem',
             height: '24px',
             width: '100%',
@@ -1382,7 +1392,7 @@ const SalesTable: React.FC<SalesTableProps> = ({ initialViewMode }) => {
         />
       </TableCell>
       <TableCell
-        sx={{ width: '120px', cursor: 'pointer' }}
+        sx={{ width: columnWidths.agency, cursor: 'pointer' }}
         onClick={(e) => handleCellClick(e, 'agency', record.id)}
       >
         <Typography 
@@ -1403,7 +1413,7 @@ const SalesTable: React.FC<SalesTableProps> = ({ initialViewMode }) => {
           key={index} 
           align="center"
           sx={{ 
-            width: '45px',
+            width: columnWidths.weekday,
             borderLeft: index === 0 ? '1px solid #e0e0e0' : '1px solid #e0e0e0',
             borderRight: index === 6 ? '1px solid #e0e0e0' : 'none',
             px: 0,
@@ -1414,18 +1424,42 @@ const SalesTable: React.FC<SalesTableProps> = ({ initialViewMode }) => {
           {checked && <CheckIcon fontSize="small" color="primary" />}
         </TableCell>
       ))}
-      <TableCell sx={{ width: '100px', borderRight: '1px solid #e0e0e0' }}>
-        <FormControl fullWidth size="small">
+      <TableCell sx={{ 
+        width: columnWidths.dayType, 
+        minWidth: columnWidths.dayType,
+        maxWidth: columnWidths.dayType,
+        borderRight: '1px solid #e0e0e0',
+        padding: '8px 4px',
+        overflow: 'hidden'
+      }}>
+        <FormControl size="small" sx={{ width: '57px', minWidth: '57px', maxWidth: '57px' }}>
           <Select
             value={record.dayType}
             onChange={(e) => setEditingRecord({ ...record, dayType: e.target.value as '平日' | '週末' })}
+            sx={{
+              width: '57px',
+              minWidth: '57px',
+              maxWidth: '57px',
+              '& .MuiSelect-select': {
+                padding: '2px 4px',
+                fontSize: '0.75rem',
+                minWidth: 'unset'
+              },
+              '& .MuiOutlinedInput-notchedOutline': {
+                borderColor: '#e0e0e0'
+              },
+              '& .MuiInputBase-root': {
+                width: '57px',
+                minWidth: '57px'
+              }
+            }}
           >
-            <MenuItem value="平日">平日</MenuItem>
-            <MenuItem value="週末">週末</MenuItem>
+            <MenuItem value="平日" sx={{ fontSize: '0.75rem' }}>平日</MenuItem>
+            <MenuItem value="週末" sx={{ fontSize: '0.75rem' }}>週末</MenuItem>
           </Select>
         </FormControl>
       </TableCell>
-      <TableCell align="center" sx={{ width: '120px', borderRight: '1px solid #e0e0e0', backgroundColor: '#ffffff' }}>
+      <TableCell align="center" sx={{ width: columnWidths.bandProject, borderRight: '1px solid #e0e0e0', backgroundColor: '#ffffff' }}>
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
           <Checkbox
             checked={record.isBandShift}
@@ -1471,7 +1505,7 @@ const SalesTable: React.FC<SalesTableProps> = ({ initialViewMode }) => {
           )}
         </Box>
       </TableCell>
-      <TableCell>
+      <TableCell sx={{ width: columnWidths.details }}>
         <Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-start' }}>
           <LocationDetails
             location={record.location}
@@ -1621,8 +1655,16 @@ const SalesTable: React.FC<SalesTableProps> = ({ initialViewMode }) => {
           label={record.status} 
           size="small"
           sx={{ 
-            backgroundColor: record.status === '確定' ? '#e8f5e9' : (record.status === '代理店調整中' ? '#fff3e0' : '#f5f5f5'),
-            color: record.status === '確定' ? '#2e7d32' : (record.status === '代理店調整中' ? '#ef6c00' : '#666666'),
+            backgroundColor: 
+              record.status === '連絡済' ? '#e8f5e9' :
+              record.status === '連絡前' ? '#fff3e0' : 
+              record.status === 'お断り' ? '#ffebee' :
+              record.status === '連絡不要' ? '#e3f2fd' : '#f5f5f5',
+            color: 
+              record.status === '連絡済' ? '#2e7d32' :
+              record.status === '連絡前' ? '#ef6c00' :
+              record.status === 'お断り' ? '#d32f2f' :
+              record.status === '連絡不要' ? '#1976d2' : '#666666',
             fontSize: '0.75rem',
             height: '24px',
             width: '100%',
@@ -1827,11 +1869,15 @@ const SalesTable: React.FC<SalesTableProps> = ({ initialViewMode }) => {
           size="small"
           sx={{ 
             backgroundColor: 
-              record.status === '確定' ? '#e8f5e9' :
-              record.status === '代理店調整中' ? '#fff3e0' : '#f5f5f5',
+              record.status === '連絡済' ? '#e8f5e9' :
+              record.status === '連絡前' ? '#fff3e0' : 
+              record.status === 'お断り' ? '#ffebee' :
+              record.status === '連絡不要' ? '#e3f2fd' : '#f5f5f5',
             color: 
-              record.status === '確定' ? '#2e7d32' :
-              record.status === '代理店調整中' ? '#ef6c00' : '#666666',
+              record.status === '連絡済' ? '#2e7d32' :
+              record.status === '連絡前' ? '#ef6c00' :
+              record.status === 'お断り' ? '#d32f2f' :
+              record.status === '連絡不要' ? '#1976d2' : '#666666',
             fontSize: '0.75rem',
               height: '24px',
               width: '100%'
@@ -1913,7 +1959,7 @@ const SalesTable: React.FC<SalesTableProps> = ({ initialViewMode }) => {
           backgroundColor: record.dayType === '週末' ? '#e3f2fd' : '#f5f5f5'
         }}>
           <Typography variant="body2">{record.dayType}</Typography>
-      </TableCell>
+        </TableCell>
         <TableCell align="center" sx={{ width: columnWidths.bandProject, borderRight: '1px solid #e0e0e0', backgroundColor: '#ffffff' }}>
         {record.isBandShift && (
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
@@ -1931,12 +1977,12 @@ const SalesTable: React.FC<SalesTableProps> = ({ initialViewMode }) => {
             phone={record.phone}
             isEditing={false}
             onEdit={() => {}}
-              recordId={record.id}
-              handleCellDoubleClick={handleCellDoubleClick}
-              editingCell={editingCell}
-              cellInputRef={cellInputRef}
-              handleCellKeyDown={handleCellKeyDown}
-              handleCellEditComplete={handleCellEditComplete}
+            recordId={record.id}
+            handleCellDoubleClick={handleCellDoubleClick}
+            editingCell={editingCell}
+            cellInputRef={cellInputRef}
+            handleCellKeyDown={handleCellKeyDown}
+            handleCellEditComplete={handleCellEditComplete}
           />
           <SalesDetails
             counts={record.counts}
@@ -1950,11 +1996,11 @@ const SalesTable: React.FC<SalesTableProps> = ({ initialViewMode }) => {
             memo={record.memo}
             isEditing={false}
             onEdit={() => {}}
-              recordId={record.id}
-              handleCellDoubleClick={handleCellDoubleClick}
-              editingCell={editingCell}
-              cellInputRef={cellInputRef}
-              handleCellKeyDown={handleCellKeyDown}
+            recordId={record.id}
+            handleCellDoubleClick={handleCellDoubleClick}
+            editingCell={editingCell}
+            cellInputRef={cellInputRef}
+            handleCellKeyDown={handleCellKeyDown}
           />
         </Box>
       </TableCell>
@@ -2099,9 +2145,11 @@ const SalesTable: React.FC<SalesTableProps> = ({ initialViewMode }) => {
       >
         <List sx={{ p: 0 }}>
           {[
-            { value: '代理店連絡前', bg: '#f5f5f5', color: '#666666' },
-            { value: '代理店調整中', bg: '#fff3e0', color: '#ef6c00' },
-            { value: '確定', bg: '#e8f5e9', color: '#2e7d32' }
+            { value: '起票', bg: '#f5f5f5', color: '#666666' },
+            { value: '連絡前', bg: '#fff3e0', color: '#ef6c00' },
+            { value: '連絡済', bg: '#e8f5e9', color: '#2e7d32' },
+            { value: '連絡不要', bg: '#e3f2fd', color: '#1976d2' },
+            { value: 'お断り', bg: '#ffebee', color: '#d32f2f' }
           ].map((status) => (
             <ListItem 
               key={status.value} 

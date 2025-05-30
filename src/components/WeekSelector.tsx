@@ -10,13 +10,15 @@ interface WeekSelectorProps {
   onChange: (week: number | string) => void;
   year?: string | number;
   month?: string | number;
+  showMonthlyPayment?: boolean;
 }
 
 const WeekSelector = ({ 
   selectedWeek, 
   onChange, 
   year = new Date().getFullYear(), 
-  month = new Date().getMonth() + 1 
+  month = new Date().getMonth() + 1,
+  showMonthlyPayment = false
 }: WeekSelectorProps) => {
   // 週選択用のToggleButtonスタイル
   const weekToggleButtonStyle: SxProps<Theme> = {
@@ -76,13 +78,15 @@ const WeekSelector = ({
             <Typography variant="body2">{week}W</Typography>
           </ToggleButton>
         ))}
-        <ToggleButton 
-          key="monthly"
-          value="monthly"
-          sx={weekToggleButtonStyle}
-        >
-          <Typography variant="body2">月払い</Typography>
-        </ToggleButton>
+        {showMonthlyPayment && (
+          <ToggleButton 
+            key="monthly"
+            value="monthly"
+            sx={weekToggleButtonStyle}
+          >
+            <Typography variant="body2">月払い</Typography>
+          </ToggleButton>
+        )}
       </ToggleButtonGroup>
     </Box>
   );

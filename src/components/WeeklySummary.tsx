@@ -10,6 +10,7 @@ interface WeeklySummaryProps {
   summary: {
     closerCapacity: number[];
     girlCapacity: number[];
+    freeCapacity: number[];
     totalCapacity: number[];
   };
   year?: string | number;
@@ -28,8 +29,9 @@ const WeeklySummary = ({ weeks, summary, year = new Date().getFullYear(), month 
   
   // 月間合計を計算
   const monthlyTotal = {
-    closer: summary.closerCapacity.reduce((acc, curr) => acc + curr, 0),
-    girl: summary.girlCapacity.reduce((acc, curr) => acc + curr, 0)
+    closer: (summary.closerCapacity || []).reduce((acc, curr) => acc + curr, 0),
+    girl: (summary.girlCapacity || []).reduce((acc, curr) => acc + curr, 0),
+    free: (summary.freeCapacity || []).reduce((acc, curr) => acc + curr, 0)
   };
 
   // フィルター変更ハンドラー
@@ -167,7 +169,7 @@ const WeeklySummary = ({ weeks, summary, year = new Date().getFullYear(), month 
                       minWidth: '45px',
                       whiteSpace: 'nowrap'
                     }}>
-                      {summary.closerCapacity[weekIndex] || 0}枠
+                      {(summary.closerCapacity && summary.closerCapacity[weekIndex]) || 0}枠
                     </Box>
                   </TableCell>
                 ))}
@@ -227,7 +229,7 @@ const WeeklySummary = ({ weeks, summary, year = new Date().getFullYear(), month 
                       minWidth: '45px',
                       whiteSpace: 'nowrap'
                     }}>
-                      {summary.girlCapacity[weekIndex] || 0}枠
+                      {(summary.girlCapacity && summary.girlCapacity[weekIndex]) || 0}枠
                     </Box>
                   </TableCell>
                 ))}
@@ -250,6 +252,66 @@ const WeeklySummary = ({ weeks, summary, year = new Date().getFullYear(), month 
                     whiteSpace: 'nowrap'
                   }}>
                     {monthlyTotal.girl}枠
+                  </Box>
+                </TableCell>
+              </TableRow>
+              
+              {/* 無料枠数 */}
+              <TableRow hover>
+                <TableCell 
+                  sx={{ 
+                    textAlign: 'center', 
+                    p: 0.75, 
+                    color: '#4caf50', 
+                    fontWeight: 500,
+                  }}
+                >
+                  <Box sx={{ whiteSpace: 'nowrap' }}>
+                    無料枠数
+                  </Box>
+                </TableCell>
+                {availableWeeks.map((weekIndex) => (
+                  <TableCell 
+                    key={weekIndex} 
+                    sx={{ 
+                      textAlign: 'center', 
+                      p: 0.75, 
+                      color: '#4caf50',
+                      fontWeight: 500,
+                    }}
+                  >
+                    <Box sx={{ 
+                      display: 'inline-block',
+                      backgroundColor: 'rgba(76, 175, 80, 0.08)',
+                      borderRadius: 1,
+                      px: 0.75,
+                      py: 0.2,
+                      minWidth: '45px',
+                      whiteSpace: 'nowrap'
+                    }}>
+                      {(summary.freeCapacity && summary.freeCapacity[weekIndex]) || 0}枠
+                    </Box>
+                  </TableCell>
+                ))}
+                <TableCell 
+                  sx={{ 
+                    textAlign: 'center', 
+                    p: 0.75, 
+                    color: '#4caf50',
+                    fontWeight: 600,
+                    backgroundColor: 'rgba(76, 175, 80, 0.04)',
+                  }}
+                >
+                  <Box sx={{ 
+                    display: 'inline-block',
+                    backgroundColor: 'rgba(76, 175, 80, 0.12)',
+                    borderRadius: 1,
+                    px: 0.75,
+                    py: 0.2,
+                    minWidth: '45px',
+                    whiteSpace: 'nowrap'
+                  }}>
+                    {monthlyTotal.free}枠
                   </Box>
                 </TableCell>
               </TableRow>

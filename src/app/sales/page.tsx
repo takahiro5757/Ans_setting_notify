@@ -19,6 +19,7 @@ const getWeeks = (year: string, month: string) => {
 const initialSummary = {
   closerCapacity: [10, 12, 8, 15, 9, 11],
   girlCapacity: [20, 22, 18, 25, 19, 21],
+  freeCapacity: [5, 6, 4, 8, 5, 7],
   totalCapacity: [30, 34, 26, 40, 28, 32]
 };
 

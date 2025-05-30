@@ -26,9 +26,7 @@ import {
   TableCell,
   TableContainer,
   TableHead,
-  TableRow,
-  Tabs,
-  Tab
+  TableRow
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import EditIcon from '@mui/icons-material/Edit';
@@ -94,16 +92,6 @@ const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
   const [editedProject, setEditedProject] = React.useState<Project | null>(null);
   const [newCoStore, setNewCoStore] = React.useState('');
   const [deductions, setDeductions] = React.useState<{ name: string; amount: number }[]>([]);
-  const [tabValue, setTabValue] = React.useState(0);
-  // 連絡先リスト（ダミー）
-  const [toContacts, setToContacts] = React.useState([
-    { email: 'to1@example.com', lastName: '山田', firstName: '太郎' },
-    { email: 'to2@example.com', lastName: '佐藤', firstName: '花子' }
-  ]);
-  const [ccContacts, setCcContacts] = React.useState([
-    { email: 'cc1@example.com', lastName: '田中', firstName: '一郎' },
-    { email: 'cc2@example.com', lastName: '鈴木', firstName: '美咲' }
-  ]);
 
   // モーダルが開いたときに編集用の状態を初期化
   React.useEffect(() => {
@@ -182,11 +170,6 @@ const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
 
   // 案件管理側のメモ（ダミー）
   const assignMemo = '';
-
-  const handleAddToContact = () => setToContacts([...toContacts, { email: '', lastName: '', firstName: '' }]);
-  const handleAddCcContact = () => setCcContacts([...ccContacts, { email: '', lastName: '', firstName: '' }]);
-  const handleRemoveToContact = (idx: number) => setToContacts(toContacts.filter((_, i) => i !== idx));
-  const handleRemoveCcContact = (idx: number) => setCcContacts(ccContacts.filter((_, i) => i !== idx));
 
   if (!project || !editedProject) {
     return null;
@@ -277,257 +260,157 @@ const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
             {editedProject.venue}
           </Typography>
         </Box>
-        {/* 金額・連絡先タブ */}
-        <Box sx={{ px: 3, borderBottom: 1, borderColor: 'divider', mb: 2 }}>
-          <Tabs value={tabValue} onChange={(_, v) => setTabValue(v)}>
-            <Tab label="金額" />
-            <Tab label="連絡先" />
-          </Tabs>
+        {/* 役割ごとの要員数・単価・交通費・小計・合計テーブル */}
+        <Box sx={{ px: 3, pt: 1, pb: 2 }}>
+          <Table size="small" sx={{ minWidth: 480, borderCollapse: 'separate', borderSpacing: 0 }}>
+            <TableHead>
+              <TableRow>
+                <TableCell sx={{ fontWeight: 'bold', fontSize: '1.15rem' }}>役割</TableCell>
+                <TableCell sx={{ fontWeight: 'bold', fontSize: '1.15rem' }}>人数</TableCell>
+                <TableCell sx={{ fontWeight: 'bold', fontSize: '1.15rem' }}>日数</TableCell>
+                <TableCell sx={{ fontWeight: 'bold', fontSize: '1.15rem' }}>単価</TableCell>
+                <TableCell sx={{ fontWeight: 'bold', fontSize: '1.15rem' }}>交通費</TableCell>
+                <TableCell sx={{ fontWeight: 'bold', fontSize: '1.15rem' }}>小計</TableCell>
+                <TableCell sx={{ fontWeight: 'bold', fontSize: '1.15rem' }}>合計</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {/* クローザー */}
+              <TableRow sx={{ height: 72 }}>
+                <TableCell sx={{ color: '#1565c0', fontWeight: 'bold', fontSize: '1.15rem' }}>クローザー</TableCell>
+                <TableCell sx={{ fontSize: '1.15rem' }}>{editedProject.closerCount}名</TableCell>
+                <TableCell sx={{ fontSize: '1.15rem' }}>{editedProject.days}日</TableCell>
+                <TableCell sx={{ fontSize: '1.15rem' }}>¥18,000</TableCell>
+                <TableCell sx={{ fontSize: '1.15rem' }}>¥4,000</TableCell>
+                <TableCell sx={{ color: '#1565c0', fontWeight: 'bold', fontSize: '1.15rem' }}>¥44,000</TableCell>
+                <TableCell rowSpan={2} sx={{ color: '#1565c0', fontWeight: 'bold', fontSize: '1.3rem', borderLeft: '2px solid #e0e0e0', textAlign: 'center', verticalAlign: 'middle' }}>¥67,000</TableCell>
+              </TableRow>
+              {/* ガール */}
+              <TableRow sx={{ height: 72 }}>
+                <TableCell sx={{ color: '#e91e63', fontWeight: 'bold', fontSize: '1.15rem' }}>ガール</TableCell>
+                <TableCell sx={{ fontSize: '1.15rem' }}>{editedProject.girlCount}名</TableCell>
+                <TableCell sx={{ fontSize: '1.15rem' }}>{editedProject.days}日</TableCell>
+                <TableCell sx={{ fontSize: '1.15rem' }}>¥9,000</TableCell>
+                <TableCell sx={{ fontSize: '1.15rem' }}>¥2,500</TableCell>
+                <TableCell sx={{ color: '#e91e63', fontWeight: 'bold', fontSize: '1.15rem' }}>¥23,000</TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
         </Box>
-        {tabValue === 0 && (
-          <>
-            {/* 役割ごとの要員数・単価・交通費・小計・合計テーブル */}
-            <Box sx={{ px: 3, pt: 1, pb: 2 }}>
-              <Table size="small" sx={{ minWidth: 480, borderCollapse: 'separate', borderSpacing: 0 }}>
-                <TableHead>
-                  <TableRow>
-                    <TableCell sx={{ fontWeight: 'bold', fontSize: '1.15rem' }}>役割</TableCell>
-                    <TableCell sx={{ fontWeight: 'bold', fontSize: '1.15rem' }}>人数</TableCell>
-                    <TableCell sx={{ fontWeight: 'bold', fontSize: '1.15rem' }}>日数</TableCell>
-                    <TableCell sx={{ fontWeight: 'bold', fontSize: '1.15rem' }}>単価</TableCell>
-                    <TableCell sx={{ fontWeight: 'bold', fontSize: '1.15rem' }}>交通費</TableCell>
-                    <TableCell sx={{ fontWeight: 'bold', fontSize: '1.15rem' }}>小計</TableCell>
-                    <TableCell sx={{ fontWeight: 'bold', fontSize: '1.15rem' }}>合計</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {/* クローザー */}
-                  <TableRow sx={{ height: 72 }}>
-                    <TableCell sx={{ color: '#1565c0', fontWeight: 'bold', fontSize: '1.15rem' }}>クローザー</TableCell>
-                    <TableCell sx={{ fontSize: '1.15rem' }}>{editedProject.closerCount}名</TableCell>
-                    <TableCell sx={{ fontSize: '1.15rem' }}>{editedProject.days}日</TableCell>
-                    <TableCell sx={{ fontSize: '1.15rem' }}>¥18,000</TableCell>
-                    <TableCell sx={{ fontSize: '1.15rem' }}>¥4,000</TableCell>
-                    <TableCell sx={{ color: '#1565c0', fontWeight: 'bold', fontSize: '1.15rem' }}>¥44,000</TableCell>
-                    <TableCell rowSpan={2} sx={{ color: '#1565c0', fontWeight: 'bold', fontSize: '1.3rem', borderLeft: '2px solid #e0e0e0', textAlign: 'center', verticalAlign: 'middle' }}>¥67,000</TableCell>
-                  </TableRow>
-                  {/* ガール */}
-                  <TableRow sx={{ height: 72 }}>
-                    <TableCell sx={{ color: '#e91e63', fontWeight: 'bold', fontSize: '1.15rem' }}>ガール</TableCell>
-                    <TableCell sx={{ fontSize: '1.15rem' }}>{editedProject.girlCount}名</TableCell>
-                    <TableCell sx={{ fontSize: '1.15rem' }}>{editedProject.days}日</TableCell>
-                    <TableCell sx={{ fontSize: '1.15rem' }}>¥9,000</TableCell>
-                    <TableCell sx={{ fontSize: '1.15rem' }}>¥2,500</TableCell>
-                    <TableCell sx={{ color: '#e91e63', fontWeight: 'bold', fontSize: '1.15rem' }}>¥23,000</TableCell>
-                  </TableRow>
-                </TableBody>
-              </Table>
-            </Box>
-            {/* 交通費ページ分けチェックボックス */}
-            <Box sx={{ px: 3, pb: 1, display: 'flex', alignItems: 'center', gap: 3 }}>
-              <FormControlLabel
-                control={<Switch color="primary" />}
-                label="交通費ページ分け"
+        {/* 交通費ページ分けチェックボックス */}
+        <Box sx={{ px: 3, pb: 1, display: 'flex', alignItems: 'center', gap: 3 }}>
+          <FormControlLabel
+            control={<Switch color="primary" />}
+            label="交通費ページ分け"
+          />
+          <FormControlLabel
+            control={
+              <Switch 
+                color="primary" 
+                checked={editedProject.transportationTaxFree || false}
+                onChange={(e) => handleFieldChange('transportationTaxFree', e.target.checked)}
+                disabled={!isEditing}
               />
-              <FormControlLabel
-                control={
-                  <Switch 
-                    color="primary" 
-                    checked={editedProject.transportationTaxFree || false}
-                    onChange={(e) => handleFieldChange('transportationTaxFree', e.target.checked)}
-                    disabled={!isEditing}
-                  />
-                }
-                label="交通費非課税"
+            }
+            label="交通費非課税"
+          />
+        </Box>
+        {/* 場所取り情報（場所ラベル） - テーブル直下 */}
+        <Box sx={{ px: 3, pt: 2, pb: 2, display: 'flex', alignItems: 'center' }}>
+          <RoomIcon sx={{ color: 'green', mr: 1, fontSize: 32 }} />
+          <Typography variant="subtitle1" sx={{ fontSize: '1.5rem' }}>
+            {editedProject.venue}
+          </Typography>
+        </Box>
+        {/* 場所取り詳細テーブル */}
+        <Box sx={{ px: 3, pb: 2 }}>
+          <Table size="small" sx={{ minWidth: 480, borderCollapse: 'separate', borderSpacing: 0 }}>
+            <TableHead>
+              <TableRow>
+                <TableCell sx={{ fontWeight: 'bold', fontSize: '1.15rem' }}>日付</TableCell>
+                <TableCell sx={{ fontWeight: 'bold', fontSize: '1.15rem' }}>ステータス</TableCell>
+                <TableCell sx={{ fontWeight: 'bold', fontSize: '1.15rem' }}>手配会社</TableCell>
+                <TableCell sx={{ fontWeight: 'bold', fontSize: '1.15rem' }}>卸単価</TableCell>
+                <TableCell sx={{ fontWeight: 'bold', fontSize: '1.15rem' }}>仕入単価</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              <TableRow>
+                <TableCell sx={{ fontSize: '1.15rem' }}>1/15</TableCell>
+                <TableCell sx={{ fontSize: '1.15rem' }}>確定</TableCell>
+                <TableCell sx={{ fontSize: '1.15rem' }}>場所とる.com</TableCell>
+                <TableCell sx={{ fontSize: '1.15rem' }}>¥50,000</TableCell>
+                <TableCell sx={{ fontSize: '1.15rem' }}>¥30,000</TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell sx={{ fontSize: '1.15rem' }}>1/16</TableCell>
+                <TableCell sx={{ fontSize: '1.15rem' }}>確定</TableCell>
+                <TableCell sx={{ fontSize: '1.15rem' }}>場所とる.com</TableCell>
+                <TableCell sx={{ fontSize: '1.15rem' }}>¥50,000</TableCell>
+                <TableCell sx={{ fontSize: '1.15rem' }}>¥30,000</TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell sx={{ fontSize: '1.15rem' }}>1/17</TableCell>
+                <TableCell sx={{ fontSize: '1.15rem' }}>確定</TableCell>
+                <TableCell sx={{ fontSize: '1.15rem' }}>場所とる.com</TableCell>
+                <TableCell sx={{ fontSize: '1.15rem' }}>¥50,000</TableCell>
+                <TableCell sx={{ fontSize: '1.15rem' }}>¥30,000</TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
+        </Box>
+        {/* 催事場費ページ分けチェックボックス */}
+        <Box sx={{ px: 3, pb: 1 }}>
+          <FormControlLabel
+            control={<Switch color="primary" />}
+            label="催事場費ページ分け"
+          />
+        </Box>
+        {/* 減算金額入力セクション */}
+        <Box sx={{ px: 3, pb: 2 }}>
+          <Typography sx={{ fontWeight: 'normal', fontSize: '1.15rem', mb: 1, mt: 2 }}>
+            減算登録
+          </Typography>
+          {deductions.map((deduction, idx) => (
+            <Box key={idx} sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
+              <TextField
+                label="項目名"
+                variant="outlined"
+                size="small"
+                sx={{ minWidth: 180 }}
+                value={deduction.name}
+                onChange={e => handleDeductionChange(idx, 'name', e.target.value)}
               />
-            </Box>
-            {/* 場所取り情報（場所ラベル） - テーブル直下 */}
-            <Box sx={{ px: 3, pt: 2, pb: 2, display: 'flex', alignItems: 'center' }}>
-              <RoomIcon sx={{ color: 'green', mr: 1, fontSize: 32 }} />
-              <Typography variant="subtitle1" sx={{ fontSize: '1.5rem' }}>
-                {editedProject.venue}
-              </Typography>
-            </Box>
-            {/* 場所取り詳細テーブル */}
-            <Box sx={{ px: 3, pb: 2 }}>
-              <Table size="small" sx={{ minWidth: 480, borderCollapse: 'separate', borderSpacing: 0 }}>
-                <TableHead>
-                  <TableRow>
-                    <TableCell sx={{ fontWeight: 'bold', fontSize: '1.15rem' }}>日付</TableCell>
-                    <TableCell sx={{ fontWeight: 'bold', fontSize: '1.15rem' }}>ステータス</TableCell>
-                    <TableCell sx={{ fontWeight: 'bold', fontSize: '1.15rem' }}>手配会社</TableCell>
-                    <TableCell sx={{ fontWeight: 'bold', fontSize: '1.15rem' }}>卸単価</TableCell>
-                    <TableCell sx={{ fontWeight: 'bold', fontSize: '1.15rem' }}>仕入単価</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  <TableRow>
-                    <TableCell sx={{ fontSize: '1.15rem' }}>1/15</TableCell>
-                    <TableCell sx={{ fontSize: '1.15rem' }}>確定</TableCell>
-                    <TableCell sx={{ fontSize: '1.15rem' }}>場所とる.com</TableCell>
-                    <TableCell sx={{ fontSize: '1.15rem' }}>¥50,000</TableCell>
-                    <TableCell sx={{ fontSize: '1.15rem' }}>¥30,000</TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell sx={{ fontSize: '1.15rem' }}>1/16</TableCell>
-                    <TableCell sx={{ fontSize: '1.15rem' }}>確定</TableCell>
-                    <TableCell sx={{ fontSize: '1.15rem' }}>場所とる.com</TableCell>
-                    <TableCell sx={{ fontSize: '1.15rem' }}>¥50,000</TableCell>
-                    <TableCell sx={{ fontSize: '1.15rem' }}>¥30,000</TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell sx={{ fontSize: '1.15rem' }}>1/17</TableCell>
-                    <TableCell sx={{ fontSize: '1.15rem' }}>確定</TableCell>
-                    <TableCell sx={{ fontSize: '1.15rem' }}>場所とる.com</TableCell>
-                    <TableCell sx={{ fontSize: '1.15rem' }}>¥50,000</TableCell>
-                    <TableCell sx={{ fontSize: '1.15rem' }}>¥30,000</TableCell>
-                  </TableRow>
-                </TableBody>
-              </Table>
-            </Box>
-            {/* 催事場費ページ分けチェックボックス */}
-            <Box sx={{ px: 3, pb: 1 }}>
-              <FormControlLabel
-                control={<Switch color="primary" />}
-                label="催事場費ページ分け"
+              <TextField
+                label="減算額"
+                variant="outlined"
+                size="small"
+                type="number"
+                InputProps={{ endAdornment: <InputAdornment position='end'>円</InputAdornment> }}
+                sx={{ minWidth: 140 }}
+                value={deduction.amount}
+                onChange={e => handleDeductionChange(idx, 'amount', Number(e.target.value))}
               />
+              <IconButton onClick={() => handleRemoveDeduction(idx)} size="small" color="error" disabled={!isEditing}>
+                <DeleteIcon />
+              </IconButton>
             </Box>
-            {/* 減算金額入力セクション */}
-            <Box sx={{ px: 3, pb: 2 }}>
-              <Typography sx={{ fontWeight: 'normal', fontSize: '1.15rem', mb: 1, mt: 2 }}>
-                減算登録
-            </Typography>
-              {deductions.map((deduction, idx) => (
-                <Box key={idx} sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
-                  <TextField
-                    label="項目名"
-                    variant="outlined"
-                    size="small"
-                    sx={{ minWidth: 180 }}
-                    value={deduction.name}
-                    onChange={e => handleDeductionChange(idx, 'name', e.target.value)}
-                  />
-                  <TextField
-                    label="減算額"
-                    variant="outlined"
-                    size="small"
-                    type="number"
-                    InputProps={{ endAdornment: <InputAdornment position='end'>円</InputAdornment> }}
-                    sx={{ minWidth: 140 }}
-                    value={deduction.amount}
-                    onChange={e => handleDeductionChange(idx, 'amount', Number(e.target.value))}
-                  />
-                  <IconButton onClick={() => handleRemoveDeduction(idx)} size="small" color="error" disabled={!isEditing}>
-                    <DeleteIcon />
-                  </IconButton>
-                </Box>
-              ))}
-              <Button onClick={handleAddDeduction} variant="outlined" size="small" sx={{ minWidth: 120 }} disabled={!isEditing}>⊕追加</Button>
-            </Box>
-            {/* メモセクション */}
-            <Box sx={{ px: 3, pb: 2 }}>
-              <Typography sx={{ fontWeight: 'normal', fontSize: '1.15rem', mb: 1, mt: 2 }}>
-                営業/アサイン 担当メモ
-              </Typography>
-              {assignMemo ? (
-                <Typography sx={{ fontSize: '1rem', color: '#222', whiteSpace: 'pre-line' }}>{assignMemo}</Typography>
-              ) : (
-                <Typography sx={{ fontSize: '1rem', color: '#888', bgcolor: '#f5f5f5', px: 2, py: 1, borderRadius: 1, display: 'inline-block' }}>
-                  メモはありません。
-            </Typography>
-              )}
-            </Box>
-          </>
-        )}
-        {tabValue === 1 && (
-          <Box sx={{ px: 3, py: 2 }}>
-            {/* 見積送付先セクション */}
-            <Typography sx={{ fontWeight: 'bold', fontSize: '1.1rem', mb: 1 }}>見積送付先</Typography>
-            <Typography sx={{ fontWeight: 'normal', fontSize: '1rem', mb: 0.5 }}>To連絡先</Typography>
-            {toContacts.map((c, idx: number) => (
-              <Box key={idx} sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
-                <TextField
-                  value={c.lastName}
-                  size="small"
-                  variant="outlined"
-                  InputProps={{ readOnly: !isEditing }}
-                  sx={{ minWidth: 80 }}
-                  label="姓"
-                />
-                <TextField
-                  value={c.firstName}
-                  size="small"
-                  variant="outlined"
-                  InputProps={{ readOnly: !isEditing }}
-                  sx={{ minWidth: 80 }}
-                  label="名"
-                />
-                <TextField
-                  value={c.email}
-                  size="small"
-                  variant="outlined"
-                  InputProps={{ readOnly: !isEditing }}
-                  sx={{ minWidth: 220 }}
-                  label="連絡先"
-                />
-                <IconButton onClick={() => handleRemoveToContact(idx)} size="small" color="error" disabled={!isEditing}>
-                  <DeleteIcon />
-                </IconButton>
-              </Box>
-            ))}
-            <Button onClick={handleAddToContact} variant="outlined" size="small" sx={{ minWidth: 120, mb: 2 }} disabled={!isEditing}>⊕追加</Button>
-            <Typography sx={{ fontWeight: 'normal', fontSize: '1rem', mb: 0.5 }}>Cc連絡先</Typography>
-            {ccContacts.map((c, idx: number) => (
-              <Box key={idx} sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
-                <TextField
-                  value={c.lastName}
-                  size="small"
-                  variant="outlined"
-                  InputProps={{ readOnly: !isEditing }}
-                  sx={{ minWidth: 80 }}
-                  label="姓"
-                />
-                <TextField
-                  value={c.firstName}
-                  size="small"
-                  variant="outlined"
-                  InputProps={{ readOnly: !isEditing }}
-                  sx={{ minWidth: 80 }}
-                  label="名"
-                />
-                <TextField
-                  value={c.email}
-                  size="small"
-                  variant="outlined"
-                  InputProps={{ readOnly: !isEditing }}
-                  sx={{ minWidth: 220 }}
-                  label="連絡先"
-                />
-                <IconButton onClick={() => handleRemoveCcContact(idx)} size="small" color="error" disabled={!isEditing}>
-                  <DeleteIcon />
-                </IconButton>
-              </Box>
-            ))}
-            <Button onClick={handleAddCcContact} variant="outlined" size="small" sx={{ minWidth: 120, mb: 3 }} disabled={!isEditing}>⊕追加</Button>
-            {/* 請求送付先セクション */}
-            <Typography sx={{ fontWeight: 'bold', fontSize: '1.1rem', mb: 1 }}>請求送付先</Typography>
-            {/* To/Cc連絡先は空欄でダミー表示 */}
-            <Typography sx={{ fontWeight: 'normal', fontSize: '1rem', mb: 0.5 }}>To連絡先</Typography>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
-              <TextField value="" size="small" variant="outlined" InputProps={{ readOnly: !isEditing }} sx={{ minWidth: 80 }} label="姓" />
-              <TextField value="" size="small" variant="outlined" InputProps={{ readOnly: !isEditing }} sx={{ minWidth: 80 }} label="名" />
-              <TextField value="" size="small" variant="outlined" InputProps={{ readOnly: !isEditing }} sx={{ minWidth: 220 }} label="連絡先" />
-            </Box>
-            <Button variant="outlined" size="small" sx={{ minWidth: 120, mb: 2 }} disabled={!isEditing}>⊕追加</Button>
-            <Typography sx={{ fontWeight: 'normal', fontSize: '1rem', mb: 0.5 }}>Cc連絡先</Typography>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
-              <TextField value="" size="small" variant="outlined" InputProps={{ readOnly: !isEditing }} sx={{ minWidth: 80 }} label="姓" />
-              <TextField value="" size="small" variant="outlined" InputProps={{ readOnly: !isEditing }} sx={{ minWidth: 80 }} label="名" />
-              <TextField value="" size="small" variant="outlined" InputProps={{ readOnly: !isEditing }} sx={{ minWidth: 220 }} label="連絡先" />
-            </Box>
-            <Button variant="outlined" size="small" sx={{ minWidth: 120 }} disabled={!isEditing}>⊕追加</Button>
-          </Box>
-        )}
+          ))}
+          <Button onClick={handleAddDeduction} variant="outlined" size="small" sx={{ minWidth: 120 }} disabled={!isEditing}>⊕追加</Button>
+        </Box>
+        {/* メモセクション */}
+        <Box sx={{ px: 3, pb: 2 }}>
+          <Typography sx={{ fontWeight: 'normal', fontSize: '1.15rem', mb: 1, mt: 2 }}>
+            営業/アサイン 担当メモ
+          </Typography>
+          {assignMemo ? (
+            <Typography sx={{ fontSize: '1rem', color: '#222', whiteSpace: 'pre-line' }}>{assignMemo}</Typography>
+          ) : (
+            <Typography sx={{ fontSize: '1rem', color: '#888', bgcolor: '#f5f5f5', px: 2, py: 1, borderRadius: 1, display: 'inline-block' }}>
+              メモはありません。
+          </Typography>
+          )}
+        </Box>
         {/* 必要最小限のボタンのみ表示 */}
         <Box sx={{ flex: 1 }} />
       <Divider />
