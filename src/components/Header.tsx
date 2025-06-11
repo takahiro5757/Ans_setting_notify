@@ -245,7 +245,7 @@ export default function Header() {
                       <ClickAwayListener onClickAway={handleShiftsMenuClose}>
                         <MenuList autoFocusItem={shiftsMenuOpen}>
                           <MenuItem 
-                            onClick={() => handleShiftsMenuItemClick('/shifts/assign')}
+                            onClick={() => handleShiftsMenuItemClick('/shifts')}
                             sx={{ 
                               fontSize: '0.9rem',
                               bgcolor: pathname === '/shifts/assign' ? 'rgba(0, 0, 0, 0.04)' : 'transparent'
