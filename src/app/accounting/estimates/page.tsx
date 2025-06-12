@@ -945,10 +945,8 @@ export default function EstimatesPage() {
               </Box>
               <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
                 <Button
-                  variant="text"
-                  size="medium"
                   component="a"
-                  href="/accounting/estimates/free"
+                  href="/accounting/estimates/custom"
                   sx={{ 
                     color: '#1976d2',
                     textDecoration: 'underline',

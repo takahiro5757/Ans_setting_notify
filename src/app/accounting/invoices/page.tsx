@@ -1095,10 +1095,8 @@ export default function InvoicesPage() {
               </Box>
               <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
                 <Button
-                  variant="text"
-                  size="medium"
                   component="a"
-                  href="/accounting/invoices/free"
+                  href="/accounting/invoices/custom"
                   sx={{ 
                     color: '#1976d2',
                     textDecoration: 'underline',
