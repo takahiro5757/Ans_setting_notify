@@ -27,8 +27,8 @@ import YearMonthSelector from '@/components/YearMonthSelector';
 import WeekSelector from '@/components/WeekSelector';
 
 // ステップ定義
-const ESTIMATION_STEPS = [
-  '見積作成',
+const INVOICE_STEPS = [
+  '請求作成',
   '送付先設定',
   'プレビュー',
   '送付'
@@ -91,8 +91,8 @@ const CustomStepConnector = styled(StepConnector)(({ theme }) => ({
   },
 }));
 
-// 見積品目の型定義
-interface EstimateItem {
+// 請求品目の型定義
+interface InvoiceItem {
   id: number;
   eventDate: string;
   itemName: string;
@@ -101,7 +101,7 @@ interface EstimateItem {
   taxType: 'taxable' | 'tax-free';
 }
 
-export default function FreeEstimatePage() {
+export default function FreeInvoicePage() {
   const router = useRouter();
   
   // 今日の日付を取得
@@ -117,7 +117,7 @@ export default function FreeEstimatePage() {
   const [sendTo, setSendTo] = useState<string[]>(['大宮店']);
   const [storeAddress, setStoreAddress] = useState<string[]>(['春日部店', '保木間店', '若葉店']);
   const [paymentDeadline, setPaymentDeadline] = useState('');
-  const [items, setItems] = useState<EstimateItem[]>([
+  const [items, setItems] = useState<InvoiceItem[]>([
     {
       id: 1,
       eventDate: today,
@@ -128,7 +128,7 @@ export default function FreeEstimatePage() {
     }
   ]);
 
-  // 代理店リスト（見積管理ページと同じ）
+  // 代理店リスト（請求管理ページと同じ）
   const agencyList = ['株式会社ABC代理店', 'DEF広告株式会社', 'GHIプロモーション'];
 
   // 利用可能な店舗リスト
@@ -145,7 +145,7 @@ export default function FreeEstimatePage() {
 
   // 品目追加ハンドラー
   const handleAddItem = () => {
-    const newItem: EstimateItem = {
+    const newItem: InvoiceItem = {
       id: Date.now(),
       eventDate: today,
       itemName: '',
@@ -164,14 +164,14 @@ export default function FreeEstimatePage() {
   };
 
   // 品目更新ハンドラー
-  const handleUpdateItem = (id: number, field: keyof EstimateItem, value: any) => {
+  const handleUpdateItem = (id: number, field: keyof InvoiceItem, value: any) => {
     setItems(items.map(item => 
       item.id === id ? { ...item, [field]: value } : item
     ));
   };
 
-  // 見積作成ハンドラー
-  const handleCreateEstimate = () => {
+  // 請求作成ハンドラー
+  const handleCreateInvoice = () => {
     // バリデーション
     if (!agencyName.trim()) {
       alert('代理店を選択してください');
@@ -198,7 +198,7 @@ export default function FreeEstimatePage() {
       return;
     }
 
-    // 見積データを作成
+    // 請求データを作成
     const processedItems = items.map(item => ({
       id: item.id,
       eventDate: item.eventDate,
@@ -215,12 +215,12 @@ export default function FreeEstimatePage() {
     const taxAmount = Math.floor(taxableAmount * 0.1);
     const totalAmountWithTax = subtotal + taxAmount;
 
-    const estimateData = {
+    const invoiceData = {
       id: Date.now() + Math.random(),
       agencyName,
       sendTo: `${agencyName.replace('株式会社', '').replace('プロモーション', '')}@example.com`,
       storeAddressSetting: '本店住所',
-      fileName: `見積書_${agencyName}_${issueDate}.pdf`,
+      fileName: `請求書_${agencyName}_${issueDate}.pdf`,
       totalAmount: totalAmountWithTax,
       createdAt: new Date().toLocaleString('ja-JP'),
       projectIds: [],
@@ -232,13 +232,13 @@ export default function FreeEstimatePage() {
       paymentDeadline
     };
 
-    console.log('フリー見積データ:', estimateData);
+    console.log('フリー請求データ:', invoiceData);
     
-    // フリー見積データをlocalStorageに保存
-    localStorage.setItem('freeEstimateData', JSON.stringify(estimateData));
+    // フリー請求データをlocalStorageに保存
+    localStorage.setItem('freeInvoiceData', JSON.stringify(invoiceData));
     
     // 送付先設定ステップに遷移（activeStep=2）
-    router.push('/accounting/estimates?step=2&from=free');
+    router.push('/accounting/invoices?step=2&from=free');
   };
 
   // 合計金額計算
@@ -274,10 +274,10 @@ export default function FreeEstimatePage() {
             width: '100%'
           }}>
             <CustomStepper
-              activeStep={0} // フリー見積作成は最初のステップ
+              activeStep={0} // フリー請求作成は最初のステップ
               connector={<CustomStepConnector />}
             >
-              {ESTIMATION_STEPS.map((label) => (
+              {INVOICE_STEPS.map((label) => (
                 <Step key={label}>
                   <StepLabel>{label}</StepLabel>
                 </Step>
@@ -311,7 +311,7 @@ export default function FreeEstimatePage() {
           </Box>
         </Box>
 
-        {/* フリー見積作成フォーム */}
+        {/* フリー請求作成フォーム */}
         <Container maxWidth="lg" sx={{ px: 8 }}>
           <Paper sx={{ p: 4, mx: 4 }}>
             {/* ヘッダー */}
@@ -324,13 +324,13 @@ export default function FreeEstimatePage() {
                   <ArrowBackIcon />
                 </IconButton>
                 <Typography variant="h5" sx={{ fontWeight: 'bold' }}>
-                  フリー見積作成
+                  フリー請求作成
                 </Typography>
               </Box>
               <Button
                 variant="contained"
                 size="large"
-                onClick={handleCreateEstimate}
+                onClick={handleCreateInvoice}
                 sx={{ 
                   minWidth: '120px',
                   height: '48px',
@@ -338,7 +338,7 @@ export default function FreeEstimatePage() {
                   fontWeight: 'bold'
                 }}
               >
-                見積作成
+                請求作成
               </Button>
             </Box>
 
@@ -573,11 +573,11 @@ export default function FreeEstimatePage() {
               </Box>
             </Box>
 
-            {/* 見積品目は下部に配置（画像では見えていないため、スクロールで表示される想定） */}
+            {/* 請求品目は下部に配置（画像では見えていないため、スクロールで表示される想定） */}
             <Box sx={{ mb: 4 }}>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
                 <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
-                  見積品目
+                  請求品目
                 </Typography>
                 <Button
                   variant="outlined"

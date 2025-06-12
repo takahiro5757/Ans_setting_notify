@@ -11,6 +11,7 @@ interface WeekSelectorProps {
   year?: string | number;
   month?: string | number;
   showMonthlyPayment?: boolean;
+  showFullTimeEmployee?: boolean;
 }
 
 const WeekSelector = ({ 
@@ -18,7 +19,8 @@ const WeekSelector = ({
   onChange, 
   year = new Date().getFullYear(), 
   month = new Date().getMonth() + 1,
-  showMonthlyPayment = false
+  showMonthlyPayment = false,
+  showFullTimeEmployee = false
 }: WeekSelectorProps) => {
   // 週選択用のToggleButtonスタイル
   const weekToggleButtonStyle: SxProps<Theme> = {
@@ -41,6 +43,15 @@ const WeekSelector = ({
     '&:first-of-type': {
       borderLeft: '1px solid rgba(0, 0, 0, 0.12)',
     }
+  };
+
+  // 月払い・常勤ボタン用の統一スタイル
+  const specialButtonStyle: SxProps<Theme> = {
+    ...weekToggleButtonStyle,
+    minWidth: '80px', // より大きな幅を設定
+    maxWidth: '80px', // 最大幅も同じに設定
+    width: '80px', // 固定幅を設定
+    px: 1, // パディングを小さくして文字が収まるように
   };
 
   // ToggleButtonGroupスタイル
@@ -82,9 +93,18 @@ const WeekSelector = ({
           <ToggleButton 
             key="monthly"
             value="monthly"
-            sx={weekToggleButtonStyle}
+            sx={specialButtonStyle}
           >
             <Typography variant="body2">月払い</Typography>
+          </ToggleButton>
+        )}
+        {showFullTimeEmployee && (
+          <ToggleButton 
+            key="fulltime"
+            value="fulltime"
+            sx={specialButtonStyle}
+          >
+            <Typography variant="body2">常勤</Typography>
           </ToggleButton>
         )}
       </ToggleButtonGroup>

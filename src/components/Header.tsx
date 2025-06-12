@@ -202,6 +202,15 @@ export default function Header() {
                           >
                             金額確認
                           </MenuItem>
+                          <MenuItem 
+                            onClick={() => handleAccountingMenuItemClick('/accounting/delivery')}
+                            sx={{ 
+                              fontSize: '0.9rem',
+                              bgcolor: pathname === '/accounting/delivery' ? 'rgba(0, 0, 0, 0.04)' : 'transparent'
+                            }}
+                          >
+                            送付一覧
+                          </MenuItem>
                         </MenuList>
                       </ClickAwayListener>
                     </Paper>
