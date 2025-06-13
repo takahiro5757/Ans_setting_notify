@@ -1,5 +1,8 @@
 # Git運用ルール
 
+## リポジトリのURL
+https://github.com/Festal-KM/ANSTEYPE
+
 ## 🚨 重要な基本方針
 
 ### **絶対禁止事項**
