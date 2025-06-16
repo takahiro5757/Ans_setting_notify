@@ -202,6 +202,15 @@ export default function Header() {
                           >
                             金額確認
                           </MenuItem>
+                          <MenuItem 
+                            onClick={() => handleAccountingMenuItemClick('/accounting/delivery')}
+                            sx={{ 
+                              fontSize: '0.9rem',
+                              bgcolor: pathname === '/accounting/delivery' ? 'rgba(0, 0, 0, 0.04)' : 'transparent'
+                            }}
+                          >
+                            送付一覧
+                          </MenuItem>
                         </MenuList>
                       </ClickAwayListener>
                     </Paper>
@@ -245,7 +254,7 @@ export default function Header() {
                       <ClickAwayListener onClickAway={handleShiftsMenuClose}>
                         <MenuList autoFocusItem={shiftsMenuOpen}>
                           <MenuItem 
-                            onClick={() => handleShiftsMenuItemClick('/shifts/assign')}
+                            onClick={() => handleShiftsMenuItemClick('/shifts')}
                             sx={{ 
                               fontSize: '0.9rem',
                               bgcolor: pathname === '/shifts/assign' ? 'rgba(0, 0, 0, 0.04)' : 'transparent'

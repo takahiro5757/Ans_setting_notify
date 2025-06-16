@@ -452,6 +452,18 @@ export default function EstimatesPage() {
     return acc;
   }, {});
 
+  // 月払い選択時の店舗ごとのグルーピング
+  const groupedProjectsByStore = useMemo(() => {
+    if (selectedWeek !== 'monthly') return {};
+    
+    return filteredProjects.reduce<Record<string, Record<string, Project[]>>>((acc, project) => {
+      if (!acc[project.agencyName]) acc[project.agencyName] = {};
+      if (!acc[project.agencyName][project.storeName]) acc[project.agencyName][project.storeName] = [];
+      acc[project.agencyName][project.storeName].push(project);
+      return acc;
+    }, {});
+  }, [filteredProjects, selectedWeek]);
+
   // カードをクリックした時の処理（選択状態の切り替え）
   const handleCardClick = (projectId: number) => {
     setSelectedProjects(prev => {
@@ -509,6 +521,22 @@ export default function EstimatesPage() {
   const handleDeselectByAgency = (agencyProjects: Project[]) => {
     const agencyProjectIds = agencyProjects.map(project => project.id);
     setSelectedProjects(prev => prev.filter(id => !agencyProjectIds.includes(id)));
+  };
+
+  // 店舗別選択ハンドラー
+  const handleSelectByStore = (storeProjects: Project[]) => {
+    const storeProjectIds = storeProjects.map(project => project.id);
+    setSelectedProjects(prev => {
+      // 既存の選択から現在の店舗以外を残し、この店舗の全案件を追加
+      const otherStoreIds = prev.filter(id => !storeProjectIds.includes(id));
+      return [...otherStoreIds, ...storeProjectIds];
+    });
+  };
+
+  // 店舗別選択解除ハンドラー
+  const handleDeselectByStore = (storeProjects: Project[]) => {
+    const storeProjectIds = storeProjects.map(project => project.id);
+    setSelectedProjects(prev => prev.filter(id => !storeProjectIds.includes(id)));
   };
 
   // 見積作成ハンドラー
@@ -814,6 +842,7 @@ export default function EstimatesPage() {
                   onChange={setSelectedWeek}
                   year={year}
                   month={month}
+                  showMonthlyPayment={true}
                 />
               </Box>
             </Box>
@@ -916,10 +945,8 @@ export default function EstimatesPage() {
               </Box>
               <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
                 <Button
-                  variant="text"
-                  size="medium"
                   component="a"
-                  href="/accounting/estimates/free"
+                  href="/accounting/estimates/custom"
                   sx={{ 
                     color: '#1976d2',
                     textDecoration: 'underline',
@@ -951,7 +978,260 @@ export default function EstimatesPage() {
             </Box>
             
             {/* 代理店ごとにグループ化して表示 */}
-            {Object.entries(groupedProjects).map(([agency, projects]) => (
+            {selectedWeek === 'monthly' ? (
+              // 月払い選択時：代理店 > 店舗 > 案件の階層表示
+              Object.entries(groupedProjectsByStore).map(([agency, storeGroups]) => (
+                <Box key={agency} sx={{ mb: 5 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                      <Box sx={{ width: 4, height: 28, bgcolor: '#17424d', mr: 1 }} />
+                      <Typography variant="h6" sx={{ fontWeight: 'bold' }}>{agency}</Typography>
+                    </Box>
+                    <Box sx={{ display: 'flex', gap: 1 }}>
+                      <Button
+                        variant="text"
+                        size="small"
+                        onClick={() => {
+                          const allAgencyProjects = Object.values(storeGroups).flat();
+                          handleSelectByAgency(allAgencyProjects);
+                        }}
+                        sx={{ fontSize: '0.75rem', minWidth: 'auto', px: 1 }}
+                      >
+                        すべて選択
+                      </Button>
+                      <Button
+                        variant="text"
+                        size="small"
+                        onClick={() => {
+                          const allAgencyProjects = Object.values(storeGroups).flat();
+                          handleDeselectByAgency(allAgencyProjects);
+                        }}
+                        sx={{ fontSize: '0.75rem', minWidth: 'auto', px: 1 }}
+                      >
+                        すべて解除
+                      </Button>
+                    </Box>
+                  </Box>
+                  
+                  {/* 店舗ごとの小セクション */}
+                  {Object.entries(storeGroups).map(([storeName, storeProjects]) => (
+                    <Box key={`${agency}-${storeName}`} sx={{ mb: 3, ml: 2 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+                        <Box 
+                          sx={{ 
+                            display: 'flex', 
+                            alignItems: 'center',
+                            cursor: 'pointer',
+                            '&:hover': {
+                              opacity: 0.7
+                            }
+                          }}
+                          onClick={() => {
+                            const storeProjectIds = storeProjects.map(p => p.id);
+                            const allSelected = storeProjectIds.every(id => selectedProjects.includes(id));
+                            if (allSelected) {
+                              handleDeselectByStore(storeProjects);
+                            } else {
+                              handleSelectByStore(storeProjects);
+                            }
+                          }}
+                        >
+                          <Typography variant="subtitle2" sx={{ 
+                            fontWeight: 'medium', 
+                            color: '#666',
+                            fontSize: '0.9rem',
+                            pl: 1,
+                            borderLeft: '2px solid #e0e0e0',
+                            userSelect: 'none'
+                          }}>
+                            {storeName}
+                          </Typography>
+                        </Box>
+                        <Box sx={{ display: 'flex', gap: 1 }}>
+                          <Button
+                            variant="text"
+                            size="small"
+                            onClick={() => handleSelectByStore(storeProjects)}
+                            sx={{ 
+                              fontSize: '0.7rem', 
+                              minWidth: 'auto', 
+                              px: 1, 
+                              color: '#888',
+                              '&:hover': {
+                                color: '#666',
+                                backgroundColor: 'rgba(0,0,0,0.04)'
+                              }
+                            }}
+                          >
+                            選択
+                          </Button>
+                          <Button
+                            variant="text"
+                            size="small"
+                            onClick={() => handleDeselectByStore(storeProjects)}
+                            sx={{ 
+                              fontSize: '0.7rem', 
+                              minWidth: 'auto', 
+                              px: 1, 
+                              color: '#888',
+                              '&:hover': {
+                                color: '#666',
+                                backgroundColor: 'rgba(0,0,0,0.04)'
+                              }
+                            }}
+                          >
+                            解除
+                          </Button>
+                        </Box>
+                      </Box>
+                      <Grid container spacing={3}>
+                        {storeProjects.map((project) => (
+                          <Grid item xs={12} sm={6} md={4} lg={3} xl={2.4} key={project.id}>
+                            <Card 
+                              sx={{ 
+                                cursor: 'pointer',
+                                '&:hover': { boxShadow: 3, transform: 'scale(1.02)' },
+                                transition: 'all 0.2s ease',
+                                height: '100%',
+                                width: '100%',
+                                minHeight: 280,
+                                maxWidth: 'none',
+                                bgcolor: STATUS_TILE_COLORS[project.status] || '#ffffff',
+                                borderRadius: 2,
+                                position: 'relative',
+                                p: 0,
+                                overflow: 'visible',
+                                border: selectedProjects.includes(project.id) ? '3px solid #1976d2' : '1px solid #e0e0e0',
+                                boxShadow: selectedProjects.includes(project.id) ? 2 : 1
+                              }}
+                              onClick={() => handleCardClick(project.id)}
+                              role="button"
+                              tabIndex={0}
+                              aria-label={`${formatDate(project.eventDate)} ${project.storeName} ${project.venue} クローザー${project.closerCount}名 ガール${project.girlCount}名 無料入店${project.freeEntryCount}名 ${project.hasPlaceReservation ? '場所取りあり' : ''}`}
+                            >
+                              {/* カード全体のコンテナ */}
+                              <Box sx={{ p: 3 }}>
+                                {/* 編集ボタン（左上） */}
+                                <IconButton
+                                  size="small"
+                                  sx={{
+                                    position: 'absolute',
+                                    top: 8,
+                                    left: 8,
+                                    zIndex: 2,
+                                    bgcolor: 'rgba(255, 255, 255, 0.9)',
+                                    '&:hover': {
+                                      bgcolor: 'rgba(255, 255, 255, 1)',
+                                    },
+                                  }}
+                                  onClick={(e) => handleEditClick(e, project)}
+                                >
+                                  <EditIcon fontSize="small" />
+                                </IconButton>
+
+                                {/* 場所取りマーカー（右上） */}
+                                {project.hasPlaceReservation && (
+                                  <Box 
+                                    sx={{ 
+                                      position: 'absolute', 
+                                      top: 8, 
+                                      right: 8, 
+                                      zIndex: 1,
+                                      color: '#4caf50'
+                                    }}
+                                    aria-hidden="true"
+                                  >
+                                    <RoomIcon
+                                      sx={{
+                                        fontSize: 32,
+                                      }}
+                                    />
+                                  </Box>
+                                )}
+                                {/* 開催店舗 */}
+                                <Box sx={{ display: 'flex', mb: 1.5 }}>
+                                  <Typography 
+                                    variant="caption" 
+                                    sx={{
+                                      px: 2,
+                                      py: 0.5,
+                                      borderRadius: '16px',
+                                      bgcolor: '#2196f3',
+                                      color: 'white',
+                                      fontWeight: 'medium',
+                                      fontSize: '0.9rem',
+                                      display: 'inline-block'
+                                    }}
+                                  >
+                                    {project.storeName}
+                                  </Typography>
+                                </Box>
+                                {/* 連名店舗 */}
+                                <Box 
+                                  sx={{ 
+                                    display: 'flex',
+                                    flexWrap: 'nowrap',
+                                    overflow: 'auto',
+                                    '&::-webkit-scrollbar': { display: 'none' },
+                                    scrollbarWidth: 'none',
+                                    mb: 1.5,
+                                    gap: 0.8
+                                  }}
+                                >
+                                  {project.coStores.map((store: string, index: number) => (
+                                    <Typography 
+                                      key={index} 
+                                      variant="caption" 
+                                      sx={{ 
+                                        px: 1.5,
+                                        py: 0.4,
+                                        bgcolor: '#e0e0e0',
+                                        color: '#666',
+                                        borderRadius: '14px',
+                                        whiteSpace: 'nowrap',
+                                        fontSize: '0.8rem',
+                                        fontWeight: 'medium'
+                                      }}
+                                    >
+                                      {store}
+                                    </Typography>
+                                  ))}
+                                </Box>
+                                {/* 開催日 */}
+                                <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.95rem', display: 'block', mb: 0.8 }}>
+                                  {formatDate(project.eventDate)}
+                                </Typography>
+                                {/* 開催場所 */}
+                                <Typography variant="body2" component="div" sx={{ fontWeight: 'medium', mb: 2, fontSize: '1.25rem' }}>
+                                  {project.venue}
+                                </Typography>
+                                {/* 人員情報 */}
+                                <Box sx={{ display: 'flex', gap: 3, mt: 1.5, alignItems: 'center' }}>
+                                  <Box display="flex" alignItems="center">
+                                    <PersonIcon sx={{ color: '#1976d2', mr: 0.7, fontSize: '2rem' }} />
+                                    <Typography variant="caption" fontSize="1.2rem">{project.closerCount}名</Typography>
+                                  </Box>
+                                  <Box display="flex" alignItems="center">
+                                    <WomanIcon sx={{ color: '#f50057', mr: 0.7, fontSize: '2rem' }} />
+                                    <Typography variant="caption" fontSize="1.2rem">{project.girlCount}名</Typography>
+                                  </Box>
+                                  <Box display="flex" alignItems="center">
+                                    <GroupIcon sx={{ color: '#4caf50', mr: 0.7, fontSize: '2rem' }} />
+                                    <Typography variant="caption" fontSize="1.2rem">{project.freeEntryCount}名</Typography>
+                                  </Box>
+                                </Box>
+                              </Box>
+                            </Card>
+                          </Grid>
+                        ))}
+                      </Grid>
+                    </Box>
+                  ))}
+                </Box>
+              ))
+            ) : (
+              // 通常表示：代理店 > 案件の階層表示
+              Object.entries(groupedProjects).map(([agency, projects]) => (
               <Box key={agency} sx={{ mb: 5 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
                   <Box sx={{ display: 'flex', alignItems: 'center' }}>
@@ -1119,7 +1399,8 @@ export default function EstimatesPage() {
                   ))}
                 </Grid>
               </Box>
-            ))}
+              ))
+            )}
 
             {filteredProjects.length === 0 && (
               <Box sx={{ textAlign: 'center', py: 8 }}>
@@ -2087,7 +2368,7 @@ export default function EstimatesPage() {
                 color: '#888', 
                 maxWidth: '500px'
               }}>
-                送付履歴は見積管理画面でご確認いただけます。
+                送付履歴は送付一覧でご確認いただけます。
               </Typography>
 
             </Box>

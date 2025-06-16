@@ -13,13 +13,30 @@ import {
   IconButton,
   Stack,
   ToggleButton,
-  ToggleButtonGroup
+  ToggleButtonGroup,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Button,
+  Select,
+  MenuItem,
+  FormControl,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import PersonIcon from '@mui/icons-material/Person';
 import WomanIcon from '@mui/icons-material/Woman';
 import GroupIcon from '@mui/icons-material/Group';
 import RoomIcon from '@mui/icons-material/Room';
+import EditIcon from '@mui/icons-material/Edit';
+import CheckIcon from '@mui/icons-material/Check';
+import CancelIcon from '@mui/icons-material/Cancel';
 import ProjectDetailModal, { Project } from '../../../components/accounting/ProjectDetailModal';
 import YearMonthSelector from '@/components/YearMonthSelector';
 import WeekSelector from '@/components/WeekSelector';
@@ -46,7 +63,8 @@ const MOCK_PROJECTS: Project[] = [
     freeEntryCount: 0,
     hasPlaceReservation: true,
     isMonthlyPayment: true,
-    transportationTaxFree: false
+    transportationTaxFree: false,
+    accountingMemo: '初回案件につき、支払い条件要確認'
   },
   {
     id: 2,
@@ -79,14 +97,15 @@ const MOCK_PROJECTS: Project[] = [
     days: 3,
     addAmount: 2000,
     subAmount: 500,
-    status: 'revision',
+    status: 'quote_revision',
     revenue: 48000,
     closerCount: 1,
     girlCount: 2,
     freeEntryCount: 0,
     hasPlaceReservation: true,
     isMonthlyPayment: true,
-    transportationTaxFree: false
+    transportationTaxFree: false,
+    accountingMemo: '請求書分割希望との連絡あり'
   },
   {
     id: 4,
@@ -99,7 +118,7 @@ const MOCK_PROJECTS: Project[] = [
     days: 2,
     addAmount: 4000,
     subAmount: 2000,
-    status: 'invoice_ready',
+    status: 'invoice_revision',
     revenue: 36000,
     closerCount: 2,
     girlCount: 2,
@@ -147,7 +166,8 @@ const MOCK_PROJECTS: Project[] = [
     freeEntryCount: 2,
     hasPlaceReservation: true,
     isMonthlyPayment: false,
-    transportationTaxFree: true
+    transportationTaxFree: true,
+    accountingMemo: '月末締め翌月末支払い条件で合意済み'
   },
   {
     id: 7,
@@ -160,7 +180,7 @@ const MOCK_PROJECTS: Project[] = [
     days: 2,
     addAmount: 3000,
     subAmount: 500,
-    status: 'revision',
+    status: 'quote_revision',
     revenue: 36000,
     closerCount: 2,
     girlCount: 1,
@@ -180,7 +200,7 @@ const MOCK_PROJECTS: Project[] = [
     days: 3,
     addAmount: 1000,
     subAmount: 0,
-    status: 'invoice_ready',
+    status: 'invoice_revised',
     revenue: 57000,
     closerCount: 1,
     girlCount: 3,
@@ -201,7 +221,7 @@ const MOCK_PROJECTS: Project[] = [
     days: 4,
     addAmount: 8000,
     subAmount: 2000,
-    status: 'revision',
+    status: 'quote_revision',
     revenue: 78000,
     closerCount: 1,
     girlCount: 1,
@@ -261,7 +281,7 @@ const MOCK_PROJECTS: Project[] = [
     days: 2,
     addAmount: 3000,
     subAmount: 500,
-    status: 'invoice_ready',
+    status: 'invoice_revision',
     revenue: 37000,
     closerCount: 2,
     girlCount: 1,
@@ -309,7 +329,8 @@ const MOCK_PROJECTS: Project[] = [
     freeEntryCount: 1,
     hasPlaceReservation: true,
     isMonthlyPayment: false,
-    transportationTaxFree: true
+    transportationTaxFree: true,
+    accountingMemo: '振込手数料は当社負担で合意'
   },
   {
     id: 15,
@@ -342,7 +363,7 @@ const MOCK_PROJECTS: Project[] = [
     days: 3,
     addAmount: 3000,
     subAmount: 500,
-    status: 'revision',
+    status: 'quote_revision',
     revenue: 66000,
     closerCount: 1,
     girlCount: 2,
@@ -370,7 +391,8 @@ const MOCK_PROJECTS: Project[] = [
     freeEntryCount: 0,
     hasPlaceReservation: false,
     isMonthlyPayment: true,
-    transportationTaxFree: false
+    transportationTaxFree: false,
+    accountingMemo: '初回案件につき、支払い条件要確認'
   },
   {
     id: 18,
@@ -383,14 +405,15 @@ const MOCK_PROJECTS: Project[] = [
     days: 3,
     addAmount: 1000,
     subAmount: 0,
-    status: 'invoice_ready',
+    status: 'invoice_revised',
     revenue: 58500,
     closerCount: 1,
     girlCount: 2,
     freeEntryCount: 1,
     hasPlaceReservation: true,
     isMonthlyPayment: false,
-    transportationTaxFree: true
+    transportationTaxFree: true,
+    accountingMemo: '月末締め翌月末支払い条件で合意済み'
   },
   {
     id: 19,
@@ -434,6 +457,89 @@ const MOCK_PROJECTS: Project[] = [
   }
 ];
 
+// 常勤データ用の型定義
+interface RegularWorker {
+  id: number;
+  agencyName: string;
+  workLocation: string;
+  workType: '派遣' | '業務委託';
+  workerName: string;
+  unitPrice: number;
+  quantity: number;
+  unit: string;
+  totalAmount: number;
+}
+
+// 常勤ダミーデータ
+const MOCK_REGULAR_WORKERS: RegularWorker[] = [
+  {
+    id: 1,
+    agencyName: '株式会社ABC代理店',
+    workLocation: '新宿オフィス',
+    workType: '派遣',
+    workerName: '田中 太郎',
+    unitPrice: 2000,
+    quantity: 160,
+    unit: '時間',
+    totalAmount: 320000
+  },
+  {
+    id: 2,
+    agencyName: '株式会社ABC代理店',
+    workLocation: '渋谷オフィス',
+    workType: '業務委託',
+    workerName: '佐藤 花子',
+    unitPrice: 25000,
+    quantity: 20,
+    unit: '日',
+    totalAmount: 500000
+  },
+  {
+    id: 3,
+    agencyName: 'DEF広告株式会社',
+    workLocation: '池袋オフィス',
+    workType: '派遣',
+    workerName: '鈴木 一郎',
+    unitPrice: 1800,
+    quantity: 140,
+    unit: '時間',
+    totalAmount: 252000
+  },
+  {
+    id: 4,
+    agencyName: 'DEF広告株式会社',
+    workLocation: '銀座オフィス',
+    workType: '業務委託',
+    workerName: '山田 美咲',
+    unitPrice: 30000,
+    quantity: 15,
+    unit: '日',
+    totalAmount: 450000
+  },
+  {
+    id: 5,
+    agencyName: 'GHIプロモーション',
+    workLocation: '浦和オフィス',
+    workType: '派遣',
+    workerName: '高橋 健太',
+    unitPrice: 2200,
+    quantity: 170,
+    unit: '時間',
+    totalAmount: 374000
+  },
+  {
+    id: 6,
+    agencyName: 'GHIプロモーション',
+    workLocation: '大宮オフィス',
+    workType: '業務委託',
+    workerName: '伊藤 由美',
+    unitPrice: 28000,
+    quantity: 18,
+    unit: '日',
+    totalAmount: 504000
+  }
+];
+
 // アサイン画面風の丸み・配色のボタン
 const OrganizationButton = styled(ToggleButton)(({ theme }) => ({
   padding: '4px 12px',
@@ -469,6 +575,8 @@ const STATUS_TILE_COLORS: Record<string, string> = {
   quote_revised: '#e8f5e9', // 見積修正済: 薄緑
   on_hold: '#f5f5f5', // 保留: 薄グレー
   invoice_ready: '#fff3e0', // 請求送付前: 薄オレンジ
+  invoice_revision: '#ffcc80', // 請求書修正中: オレンジ
+  invoice_revised: '#c8e6c9', // 請求書修正済: 薄い緑
   invoice_sent: '#e8f5e9', // 請求送付済: 薄緑
   rejected: '#bdbdbd' // お断り: 濃いグレー
 };
@@ -482,7 +590,23 @@ export default function ProjectsPage() {
   const [searchKeyword, setSearchKeyword] = useState('');
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
-  const [displayMode, setDisplayMode] = useState<'normal' | 'multi'>('normal');
+  const [displayMode, setDisplayMode] = useState<'normal' | 'multi' | 'regular'>('normal');
+  
+  // 編集機能のための新しい状態
+  const [editingWorkers, setEditingWorkers] = useState<Set<number>>(new Set());
+  const [editedWorkerData, setEditedWorkerData] = useState<Record<number, RegularWorker>>({});
+  
+  // 新規追加機能のための状態
+  const [addDialogOpen, setAddDialogOpen] = useState(false);
+  const [newWorkerData, setNewWorkerData] = useState<Omit<RegularWorker, 'id' | 'totalAmount'>>({
+    agencyName: '株式会社ABC代理店',
+    workLocation: '',
+    workType: '派遣',
+    workerName: '',
+    unitPrice: 2000,
+    quantity: 160,
+    unit: '時間'
+  });
   
   // 代理店リスト（ダミーデータから一意に抽出）
   const agencyList = Array.from(new Set(MOCK_PROJECTS.map(p => p.agencyName)));
@@ -514,10 +638,32 @@ export default function ProjectsPage() {
     return keywordMatch;
   });
 
+  // 常勤データのフィルタリング
+  const filteredRegularWorkers = MOCK_REGULAR_WORKERS.filter(worker => {
+    // 代理店フィルター
+    if (!selectedAgencies.includes('all') && !selectedAgencies.includes(worker.agencyName)) {
+      return false;
+    }
+    // キーワード検索
+    const keyword = searchKeyword.toLowerCase();
+    const keywordMatch = 
+      searchKeyword === '' ||
+      worker.workLocation.toLowerCase().includes(keyword) ||
+      worker.workerName.toLowerCase().includes(keyword);
+    return keywordMatch;
+  });
+
   // 代理店ごとにグルーピング
   const groupedProjects = filteredProjects.reduce<Record<string, Project[]>>((acc, project) => {
     if (!acc[project.agencyName]) acc[project.agencyName] = [];
     acc[project.agencyName].push(project);
+    return acc;
+  }, {});
+
+  // 常勤データの代理店ごとグルーピング
+  const groupedRegularWorkers = filteredRegularWorkers.reduce<Record<string, RegularWorker[]>>((acc, worker) => {
+    if (!acc[worker.agencyName]) acc[worker.agencyName] = [];
+    acc[worker.agencyName].push(worker);
     return acc;
   }, {});
 
@@ -535,7 +681,27 @@ export default function ProjectsPage() {
   // プロジェクト保存処理
   const handleSaveProject = (updatedProject: Project) => {
     // 実際のアプリではここでAPIを呼び出して更新処理を行う
+    // ダミーデータ内の該当プロジェクトを更新
+    const projectIndex = MOCK_PROJECTS.findIndex(p => p.id === updatedProject.id);
+    if (projectIndex !== -1) {
+      MOCK_PROJECTS[projectIndex] = updatedProject;
+    }
     setModalOpen(false);
+  };
+
+  // 分割で作成された新案件をプロジェクト一覧に追加
+  const handleSplitCreate = (newProjects: Project[]) => {
+    // 新しいIDを生成して追加
+    const maxId = Math.max(...MOCK_PROJECTS.map(p => p.id));
+    const projectsWithNewIds = newProjects.map((project, index) => ({
+      ...project,
+      id: maxId + index + 1
+    }));
+    
+    MOCK_PROJECTS.push(...projectsWithNewIds);
+    
+    // 画面を強制的に再描画（実際のアプリでは状態管理ライブラリを使用）
+    window.location.reload();
   };
 
   // 日付表示用フォーマット関数
@@ -547,6 +713,154 @@ export default function ProjectsPage() {
       day: 'numeric'
     }).replace(/\//g, '/');
   };
+
+  // 編集開始ハンドラ
+  const handleStartEdit = (worker: RegularWorker) => {
+    setEditingWorkers(prev => new Set(prev).add(worker.id));
+    setEditedWorkerData(prev => ({
+      ...prev,
+      [worker.id]: { ...worker }
+    }));
+  };
+
+  // 編集キャンセルハンドラ
+  const handleCancelEdit = (workerId: number) => {
+    setEditingWorkers(prev => {
+      const newSet = new Set(prev);
+      newSet.delete(workerId);
+      return newSet;
+    });
+    setEditedWorkerData(prev => {
+      const newData = { ...prev };
+      delete newData[workerId];
+      return newData;
+    });
+  };
+
+  // 編集保存ハンドラ
+  const handleSaveEdit = (workerId: number) => {
+    const editedWorker = editedWorkerData[workerId];
+    if (editedWorker) {
+      // バリデーション
+      if (!editedWorker.workerName.trim()) {
+        alert('氏名を入力してください');
+        return;
+      }
+      if (editedWorker.unitPrice <= 0) {
+        alert('単価は0より大きい値を入力してください');
+        return;
+      }
+      if (editedWorker.quantity <= 0) {
+        alert('数量は0より大きい値を入力してください');
+        return;
+      }
+
+      // 合計金額を再計算
+      editedWorker.totalAmount = editedWorker.unitPrice * editedWorker.quantity;
+
+      // 実際のアプリではここでAPIを呼び出して更新
+      const workerIndex = MOCK_REGULAR_WORKERS.findIndex(w => w.id === workerId);
+      if (workerIndex !== -1) {
+        MOCK_REGULAR_WORKERS[workerIndex] = editedWorker;
+      }
+
+      // 編集モードを終了
+      setEditingWorkers(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(workerId);
+        return newSet;
+      });
+      setEditedWorkerData(prev => {
+        const newData = { ...prev };
+        delete newData[workerId];
+        return newData;
+      });
+    }
+  };
+
+  // 編集中のデータ更新ハンドラ
+  const handleEditChange = (workerId: number, field: keyof RegularWorker, value: any) => {
+    setEditedWorkerData(prev => ({
+      ...prev,
+      [workerId]: {
+        ...prev[workerId],
+        [field]: value,
+        // 単価または数量が変更された場合は合計金額も更新
+        ...(field === 'unitPrice' || field === 'quantity' ? {
+          totalAmount: field === 'unitPrice' ? value * prev[workerId].quantity : prev[workerId].unitPrice * value
+        } : {})
+      }
+    }));
+  };
+
+  // 新規追加ダイアログを開く
+  const handleAddDialogOpen = () => {
+    setAddDialogOpen(true);
+  };
+
+  // 新規追加ダイアログを閉じる
+  const handleAddDialogClose = () => {
+    setAddDialogOpen(false);
+    // フォームをリセット
+    setNewWorkerData({
+      agencyName: '株式会社ABC代理店',
+      workLocation: '',
+      workType: '派遣',
+      workerName: '',
+      unitPrice: 2000,
+      quantity: 160,
+      unit: '時間'
+    });
+  };
+
+  // 新規レコードのフィールド変更
+  const handleNewWorkerChange = (field: keyof Omit<RegularWorker, 'id' | 'totalAmount'>, value: any) => {
+    setNewWorkerData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  // 新規レコードを追加
+  const handleAddWorker = () => {
+    // バリデーション
+    if (!newWorkerData.workerName.trim()) {
+      alert('氏名を入力してください');
+      return;
+    }
+    if (!newWorkerData.workLocation.trim()) {
+      alert('稼働場所を入力してください');
+      return;
+    }
+    if (newWorkerData.unitPrice <= 0) {
+      alert('単価は0より大きい値を入力してください');
+      return;
+    }
+    if (newWorkerData.quantity <= 0) {
+      alert('数量は0より大きい値を入力してください');
+      return;
+    }
+
+    // 新しいIDを生成
+    const maxId = Math.max(...MOCK_REGULAR_WORKERS.map(w => w.id));
+    const newWorker: RegularWorker = {
+      ...newWorkerData,
+      id: maxId + 1,
+      totalAmount: newWorkerData.unitPrice * newWorkerData.quantity
+    };
+
+    // レコードを追加
+    MOCK_REGULAR_WORKERS.push(newWorker);
+
+    // ダイアログを閉じる
+    handleAddDialogClose();
+
+    // 画面を再描画（実際のアプリでは状態管理ライブラリを使用）
+    window.location.reload();
+  };
+
+  // 計算された合計金額
+  const calculatedTotal = newWorkerData.unitPrice * newWorkerData.quantity;
 
   return (
     <Box sx={{ bgcolor: '#f5f5f5', minHeight: 'calc(100vh - 64px)', py: 3 }}>
@@ -564,6 +878,8 @@ export default function ProjectsPage() {
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}><Box sx={{ width: 16, height: 16, bgcolor: '#e8f5e9', borderRadius: 1, mr: 0.5 }} /> <Typography variant="caption">見積修正済</Typography></Box>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}><Box sx={{ width: 16, height: 16, bgcolor: '#f5f5f5', borderRadius: 1, mr: 0.5 }} /> <Typography variant="caption">保留</Typography></Box>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}><Box sx={{ width: 16, height: 16, bgcolor: '#fff3e0', borderRadius: 1, mr: 0.5 }} /> <Typography variant="caption">請求送付前</Typography></Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}><Box sx={{ width: 16, height: 16, bgcolor: '#ffcc80', borderRadius: 1, mr: 0.5 }} /> <Typography variant="caption">請求書修正中</Typography></Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}><Box sx={{ width: 16, height: 16, bgcolor: '#c8e6c9', borderRadius: 1, mr: 0.5 }} /> <Typography variant="caption">請求書修正済</Typography></Box>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}><Box sx={{ width: 16, height: 16, bgcolor: '#e8f5e9', borderRadius: 1, mr: 0.5 }} /> <Typography variant="caption">請求送付済</Typography></Box>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}><Box sx={{ width: 16, height: 16, bgcolor: '#bdbdbd', borderRadius: 1, mr: 0.5 }} /> <Typography variant="caption">お断り</Typography></Box>
             </Box>
@@ -600,8 +916,11 @@ export default function ProjectsPage() {
               <ToggleButton value="normal" sx={{ minWidth: 64, fontWeight: 'bold', borderRadius: '8px 0 0 8px' }}>
                 通常
               </ToggleButton>
-              <ToggleButton value="multi" sx={{ minWidth: 64, fontWeight: 'bold', borderRadius: '0 8px 8px 0' }}>
+              <ToggleButton value="multi" sx={{ minWidth: 64, fontWeight: 'bold', borderRadius: 0 }}>
                 帯案件
+              </ToggleButton>
+              <ToggleButton value="regular" sx={{ minWidth: 64, fontWeight: 'bold', borderRadius: '0 8px 8px 0' }}>
+                常勤
               </ToggleButton>
             </ToggleButtonGroup>
             {/* 代理店選択ボタン群 */}
@@ -623,7 +942,26 @@ export default function ProjectsPage() {
             </ToggleButtonGroup>
           </Box>
           {/* ステータス集計コンポーネント */}
-          <Box sx={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'flex-end', gap: 6, pl: 3, py: 2 }}>
+          <Box sx={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'flex-end', gap: 4, pl: 3, py: 2, flexWrap: 'wrap' }}>
+            {displayMode === 'regular' ? (
+              /* 常勤ビューでは派遣人数と業務委託人数を表示 */
+              <>
+                <Box sx={{ textAlign: 'center' }}>
+                  <Typography variant="body2" sx={{ fontWeight: 400 }}>派遣</Typography>
+                  <Typography variant="h6" sx={{ fontWeight: 'bold', fontSize: '2rem', lineHeight: 1 }}>
+                    {filteredRegularWorkers.filter(worker => worker.workType === '派遣').length}名
+                  </Typography>
+                </Box>
+                <Box sx={{ textAlign: 'center' }}>
+                  <Typography variant="body2" sx={{ fontWeight: 400 }}>業務委託</Typography>
+                  <Typography variant="h6" sx={{ fontWeight: 'bold', fontSize: '2rem', lineHeight: 1 }}>
+                    {filteredRegularWorkers.filter(worker => worker.workType === '業務委託').length}名
+                  </Typography>
+                </Box>
+              </>
+            ) : (
+              /* 通常・帯案件ビューでは既存のステータス集計 */
+              <>
             <Box sx={{ textAlign: 'center' }}>
               <Typography variant="body2" sx={{ fontWeight: 400 }}>起票</Typography>
               <Typography variant="h6" sx={{ fontWeight: 'bold', fontSize: '2rem', lineHeight: 1 }}>{filteredProjects.filter(p => p.status === 'draft').length}</Typography>
@@ -636,9 +974,29 @@ export default function ProjectsPage() {
               <Typography variant="body2" sx={{ fontWeight: 400 }}>見積送付済</Typography>
               <Typography variant="h6" sx={{ fontWeight: 'bold', fontSize: '2rem', lineHeight: 1 }}>{filteredProjects.filter(p => p.status === 'quote_sent').length}</Typography>
             </Box>
+                <Box sx={{ textAlign: 'center' }}>
+                  <Typography variant="body2" sx={{ fontWeight: 400 }}>見積修正中</Typography>
+                  <Typography variant="h6" sx={{ fontWeight: 'bold', fontSize: '2rem', lineHeight: 1 }}>{filteredProjects.filter(p => p.status === 'quote_revision').length}</Typography>
+                </Box>
+                <Box sx={{ textAlign: 'center' }}>
+                  <Typography variant="body2" sx={{ fontWeight: 400 }}>見積修正済</Typography>
+                  <Typography variant="h6" sx={{ fontWeight: 'bold', fontSize: '2rem', lineHeight: 1 }}>{filteredProjects.filter(p => p.status === 'quote_revised').length}</Typography>
+                </Box>
+                <Box sx={{ textAlign: 'center' }}>
+                  <Typography variant="body2" sx={{ fontWeight: 400 }}>保留</Typography>
+                  <Typography variant="h6" sx={{ fontWeight: 'bold', fontSize: '2rem', lineHeight: 1 }}>{filteredProjects.filter(p => p.status === 'on_hold').length}</Typography>
+            </Box>
             <Box sx={{ textAlign: 'center' }}>
               <Typography variant="body2" sx={{ fontWeight: 400 }}>請求送付前</Typography>
               <Typography variant="h6" sx={{ fontWeight: 'bold', fontSize: '2rem', lineHeight: 1 }}>{filteredProjects.filter(p => p.status === 'invoice_ready').length}</Typography>
+            </Box>
+                <Box sx={{ textAlign: 'center' }}>
+                  <Typography variant="body2" sx={{ fontWeight: 400 }}>請求書修正中</Typography>
+                  <Typography variant="h6" sx={{ fontWeight: 'bold', fontSize: '2rem', lineHeight: 1 }}>{filteredProjects.filter(p => p.status === 'invoice_revision').length}</Typography>
+                </Box>
+                <Box sx={{ textAlign: 'center' }}>
+                  <Typography variant="body2" sx={{ fontWeight: 400 }}>請求書修正済</Typography>
+                  <Typography variant="h6" sx={{ fontWeight: 'bold', fontSize: '2rem', lineHeight: 1 }}>{filteredProjects.filter(p => p.status === 'invoice_revised').length}</Typography>
             </Box>
             <Box sx={{ textAlign: 'center' }}>
               <Typography variant="body2" sx={{ fontWeight: 400 }}>請求送付済</Typography>
@@ -648,10 +1006,312 @@ export default function ProjectsPage() {
               <Typography variant="body2" sx={{ fontWeight: 400 }}>お断り</Typography>
               <Typography variant="h6" sx={{ fontWeight: 'bold', fontSize: '2rem', lineHeight: 1 }}>{filteredProjects.filter(p => p.status === 'rejected').length}</Typography>
             </Box>
+              </>
+            )}
           </Box>
         </Box>
         <Paper sx={{ p: 3, mb: 3 }}>
-          {/* 代理店ごとにグループ化して表示 */}
+          {displayMode === 'regular' ? (
+            /* 常勤ビュー：テーブル表示 */
+            <Box>
+              {/* 新規追加ボタン */}
+              <Box sx={{ position: 'relative', mb: 2 }}>
+                <Button
+                  variant="contained"
+                  color="primary"
+                  sx={{
+                    position: 'absolute',
+                    top: -16,
+                    right: 0,
+                    zIndex: 1,
+                    minWidth: 100,
+                    height: 36,
+                    borderRadius: 1
+                  }}
+                  onClick={handleAddDialogOpen}
+                >
+                  新規追加
+                </Button>
+              </Box>
+
+              {Object.entries(groupedRegularWorkers).map(([agency, workers]) => (
+                <Box key={agency} sx={{ mb: 4 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                    <Box sx={{ width: 4, height: 28, bgcolor: '#17424d', mr: 1 }} />
+                    <Typography variant="h6" sx={{ fontWeight: 'bold' }}>{agency}</Typography>
+                  </Box>
+                  <TableContainer component={Paper} elevation={0} sx={{ border: '1px solid #e0e0e0' }}>
+                    <Table sx={{ tableLayout: 'fixed', width: '100%' }}>
+                      <TableHead>
+                        <TableRow sx={{ bgcolor: '#f5f5f5' }}>
+                          <TableCell sx={{ width: '60px', padding: '8px', minWidth: '60px', maxWidth: '60px' }}></TableCell>
+                          <TableCell sx={{ fontWeight: 'bold', width: '180px', minWidth: '180px', maxWidth: '180px' }}>稼働場所</TableCell>
+                          <TableCell sx={{ fontWeight: 'bold', width: '120px', minWidth: '120px', maxWidth: '120px' }}>形態</TableCell>
+                          <TableCell sx={{ fontWeight: 'bold', width: '140px', minWidth: '140px', maxWidth: '140px' }}>氏名</TableCell>
+                          <TableCell sx={{ fontWeight: 'bold', textAlign: 'right', width: '120px', minWidth: '120px', maxWidth: '120px' }}>単価</TableCell>
+                          <TableCell sx={{ fontWeight: 'bold', textAlign: 'right', width: '150px', minWidth: '150px', maxWidth: '150px' }}>数量/単位</TableCell>
+                          <TableCell sx={{ fontWeight: 'bold', textAlign: 'right', width: '120px', minWidth: '120px', maxWidth: '120px' }}>合計金額</TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {workers.map((worker) => {
+                          const isEditing = editingWorkers.has(worker.id);
+                          const displayWorker = isEditing ? editedWorkerData[worker.id] || worker : worker;
+                          
+                          return (
+                            <TableRow key={worker.id} sx={{ 
+                              '&:hover': { bgcolor: '#f9f9f9' },
+                              ...(isEditing && { bgcolor: '#f0f8ff' })
+                            }}>
+                              <TableCell sx={{ textAlign: 'center', width: '60px', minWidth: '60px', maxWidth: '60px', padding: '8px' }}>
+                                <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+                                  {isEditing ? (
+                                    <Box sx={{ display: 'flex', gap: 0.5 }}>
+                                      <IconButton 
+                                        size="small"
+                                        sx={{
+                                          width: '26px',
+                                          height: '26px',
+                                          backgroundColor: 'rgba(76, 175, 80, 0.2)',
+                                          '&:hover': { 
+                                            backgroundColor: 'rgba(76, 175, 80, 0.3)',
+                                          }
+                                        }}
+                                        onClick={() => handleSaveEdit(worker.id)}
+                                      >
+                                        <CheckIcon fontSize="small" color="success" />
+                                      </IconButton>
+                                      <IconButton 
+                                        size="small"
+                                        sx={{
+                                          width: '26px',
+                                          height: '26px',
+                                          backgroundColor: 'rgba(244, 67, 54, 0.2)',
+                                          '&:hover': { 
+                                            backgroundColor: 'rgba(244, 67, 54, 0.3)',
+                                          }
+                                        }}
+                                        onClick={() => handleCancelEdit(worker.id)}
+                                      >
+                                        <CancelIcon fontSize="small" color="error" />
+                                      </IconButton>
+                                    </Box>
+                                  ) : (
+                                    <IconButton 
+                                      size="small" 
+                                      sx={{
+                                        width: '28px',
+                                        height: '28px',
+                                        backgroundColor: 'rgba(25, 118, 210, 0.1)',
+                                        opacity: 0.3,
+                                        '&:hover': { 
+                                          backgroundColor: 'rgba(25, 118, 210, 0.3)',
+                                          opacity: 1,
+                                        }
+                                      }}
+                                      onClick={() => handleStartEdit(worker)}
+                                    >
+                                      <EditIcon fontSize="small" color="primary" />
+                                    </IconButton>
+                                  )}
+                                </Box>
+                              </TableCell>
+                              <TableCell sx={{ width: '180px', minWidth: '180px', maxWidth: '180px', padding: '8px 16px' }}>
+                                {isEditing ? (
+                                  <TextField
+                                    value={displayWorker.workLocation}
+                                    onChange={(e) => handleEditChange(worker.id, 'workLocation', e.target.value)}
+                                    size="small"
+                                    variant="outlined"
+                                    sx={{ 
+                                      width: '160px',
+                                      '& .MuiInputBase-root': {
+                                        height: '32px',
+                                        fontSize: '0.875rem'
+                                      },
+                                      '& .MuiOutlinedInput-input': {
+                                        padding: '6px 8px'
+                                      }
+                                    }}
+                                  />
+                                ) : (
+                                  <Typography variant="body2" sx={{ 
+                                    overflow: 'hidden', 
+                                    textOverflow: 'ellipsis', 
+                                    whiteSpace: 'nowrap',
+                                    width: '160px'
+                                  }}>
+                                    {displayWorker.workLocation}
+                                  </Typography>
+                                )}
+                              </TableCell>
+                              <TableCell sx={{ width: '120px', minWidth: '120px', maxWidth: '120px', padding: '8px 16px' }}>
+                                {isEditing ? (
+                                  <FormControl size="small" sx={{ width: '100px' }}>
+                                    <Select
+                                      value={displayWorker.workType}
+                                      onChange={(e) => handleEditChange(worker.id, 'workType', e.target.value)}
+                                      sx={{
+                                        height: '32px',
+                                        fontSize: '0.875rem',
+                                        '& .MuiSelect-select': {
+                                          padding: '6px 8px'
+                                        }
+                                      }}
+                                    >
+                                      <MenuItem value="派遣">派遣</MenuItem>
+                                      <MenuItem value="業務委託">業務委託</MenuItem>
+                                    </Select>
+                                  </FormControl>
+                                ) : (
+                                  <Typography
+                                    variant="caption"
+                                    sx={{
+                                      px: 1.5,
+                                      py: 0.5,
+                                      borderRadius: '12px',
+                                      bgcolor: displayWorker.workType === '派遣' ? '#e3f2fd' : '#fff3e0',
+                                      color: displayWorker.workType === '派遣' ? '#1565c0' : '#e65100',
+                                      fontWeight: 'medium',
+                                      display: 'inline-block',
+                                      minWidth: '60px',
+                                      textAlign: 'center'
+                                    }}
+                                  >
+                                    {displayWorker.workType}
+                                  </Typography>
+                                )}
+                              </TableCell>
+                              <TableCell sx={{ fontWeight: 'medium', width: '140px', minWidth: '140px', maxWidth: '140px', padding: '8px 16px' }}>
+                                {isEditing ? (
+                                  <TextField
+                                    value={displayWorker.workerName}
+                                    onChange={(e) => handleEditChange(worker.id, 'workerName', e.target.value)}
+                                    size="small"
+                                    variant="outlined"
+                                    sx={{ 
+                                      width: '120px',
+                                      '& .MuiInputBase-root': {
+                                        height: '32px',
+                                        fontSize: '0.875rem'
+                                      },
+                                      '& .MuiOutlinedInput-input': {
+                                        padding: '6px 8px'
+                                      }
+                                    }}
+                                  />
+                                ) : (
+                                  <Typography variant="body2" sx={{ 
+                                    overflow: 'hidden', 
+                                    textOverflow: 'ellipsis', 
+                                    whiteSpace: 'nowrap',
+                                    width: '120px'
+                                  }}>
+                                    {displayWorker.workerName}
+                                  </Typography>
+                                )}
+                              </TableCell>
+                              <TableCell sx={{ textAlign: 'right', width: '120px', minWidth: '120px', maxWidth: '120px', padding: '8px 16px' }}>
+                                {isEditing ? (
+                                  <TextField
+                                    type="number"
+                                    value={displayWorker.unitPrice}
+                                    onChange={(e) => handleEditChange(worker.id, 'unitPrice', parseInt(e.target.value) || 0)}
+                                    size="small"
+                                    variant="outlined"
+                                    sx={{ 
+                                      width: '90px',
+                                      '& .MuiInputBase-root': {
+                                        height: '32px',
+                                        fontSize: '0.875rem'
+                                      },
+                                      '& .MuiOutlinedInput-input': {
+                                        padding: '6px 8px',
+                                        textAlign: 'right'
+                                      }
+                                    }}
+                                    InputProps={{
+                                      startAdornment: '¥'
+                                    }}
+                                  />
+                                ) : (
+                                  `¥${displayWorker.unitPrice.toLocaleString()}`
+                                )}
+                              </TableCell>
+                              <TableCell sx={{ textAlign: 'right', width: '150px', minWidth: '150px', maxWidth: '150px', padding: '8px 16px' }}>
+                                {isEditing ? (
+                                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, justifyContent: 'flex-end' }}>
+                                    <TextField
+                                      type="number"
+                                      value={displayWorker.quantity}
+                                      onChange={(e) => handleEditChange(worker.id, 'quantity', parseInt(e.target.value) || 0)}
+                                      size="small"
+                                      variant="outlined"
+                                      sx={{ 
+                                        width: '65px',
+                                        '& .MuiInputBase-root': {
+                                          height: '32px',
+                                          fontSize: '0.875rem'
+                                        },
+                                        '& .MuiOutlinedInput-input': {
+                                          padding: '6px 8px',
+                                          textAlign: 'right'
+                                        }
+                                      }}
+                                    />
+                                    <FormControl size="small">
+                                      <Select
+                                        value={displayWorker.unit}
+                                        onChange={(e) => handleEditChange(worker.id, 'unit', e.target.value)}
+                                        sx={{ 
+                                          width: '65px',
+                                          height: '32px',
+                                          fontSize: '0.875rem',
+                                          '& .MuiSelect-select': {
+                                            padding: '6px 8px'
+                                          }
+                                        }}
+                                      >
+                                        <MenuItem value="時間">時間</MenuItem>
+                                        <MenuItem value="日">日</MenuItem>
+                                        <MenuItem value="月">月</MenuItem>
+                                      </Select>
+                                    </FormControl>
+                                  </Box>
+                                ) : (
+                                  `${displayWorker.quantity.toLocaleString()}${displayWorker.unit}`
+                                )}
+                              </TableCell>
+                              <TableCell sx={{ textAlign: 'right', fontWeight: 'bold', width: '120px', minWidth: '120px', maxWidth: '120px', padding: '8px 16px' }}>
+                                ¥{displayWorker.totalAmount.toLocaleString()}
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                        {/* 代理店ごとの合計行 */}
+                        <TableRow sx={{ bgcolor: '#f0f0f0', borderTop: '2px solid #ddd' }}>
+                          <TableCell sx={{ width: '60px', minWidth: '60px', maxWidth: '60px' }} />
+                          <TableCell colSpan={5} sx={{ fontWeight: 'bold', textAlign: 'right' }}>
+                            {agency} 合計
+                          </TableCell>
+                          <TableCell sx={{ fontWeight: 'bold', textAlign: 'right', fontSize: '1.1rem', width: '120px', minWidth: '120px', maxWidth: '120px' }}>
+                            ¥{workers.reduce((sum, worker) => {
+                              const displayWorker = editingWorkers.has(worker.id) 
+                                ? editedWorkerData[worker.id] || worker 
+                                : worker;
+                              return sum + displayWorker.totalAmount;
+                            }, 0).toLocaleString()}
+                          </TableCell>
+                        </TableRow>
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                </Box>
+              ))}
+            </Box>
+          ) : (
+            /* 通常・帯案件ビュー：既存のカード表示 */
+            <Box>
           {Object.entries(groupedProjects).map(([agency, projects]) => (
             <Box key={agency} sx={{ mb: 5 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
@@ -769,10 +1429,6 @@ export default function ProjectsPage() {
                             <WomanIcon sx={{ color: '#f50057', mr: 0.7, fontSize: '2rem' }} />
                             <Typography variant="caption" fontSize="1.2rem">{project.girlCount}名</Typography>
                           </Box>
-                          <Box display="flex" alignItems="center">
-                            <GroupIcon sx={{ color: '#4caf50', mr: 0.7, fontSize: '2rem' }} />
-                            <Typography variant="caption" fontSize="1.2rem">{project.freeEntryCount}名</Typography>
-                          </Box>
                         </Box>
                       </Box>
                     </Card>
@@ -781,6 +1437,8 @@ export default function ProjectsPage() {
               </Grid>
             </Box>
           ))}
+            </Box>
+          )}
 
           {/* 案件詳細モーダル */}
           <ProjectDetailModal
@@ -788,7 +1446,132 @@ export default function ProjectsPage() {
             project={selectedProject}
             onClose={handleCloseModal}
             onSave={handleSaveProject}
+            onSplitCreate={handleSplitCreate}
           />
+
+          {/* 新規追加ダイアログ */}
+          <Dialog
+            open={addDialogOpen}
+            onClose={handleAddDialogClose}
+            maxWidth="sm"
+            fullWidth
+          >
+            <DialogTitle>新規常勤レコード追加</DialogTitle>
+            <DialogContent>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
+                {/* 代理店名 */}
+                <FormControl fullWidth>
+                  <Typography variant="body2" sx={{ mb: 1, fontWeight: 'medium' }}>代理店名</Typography>
+                  <Select
+                    value={newWorkerData.agencyName}
+                    onChange={(e) => handleNewWorkerChange('agencyName', e.target.value)}
+                  >
+                    <MenuItem value="株式会社ABC代理店">株式会社ABC代理店</MenuItem>
+                    <MenuItem value="DEF広告株式会社">DEF広告株式会社</MenuItem>
+                    <MenuItem value="GHIプロモーション">GHIプロモーション</MenuItem>
+                    <MenuItem value="JKLマーケティング">JKLマーケティング</MenuItem>
+                  </Select>
+                </FormControl>
+
+                {/* 稼働場所 */}
+                <Box>
+                  <Typography variant="body2" sx={{ mb: 1, fontWeight: 'medium' }}>稼働場所</Typography>
+                  <TextField
+                    fullWidth
+                    value={newWorkerData.workLocation}
+                    onChange={(e) => handleNewWorkerChange('workLocation', e.target.value)}
+                    placeholder="例: 新宿オフィス"
+                  />
+                </Box>
+
+                {/* 形態 */}
+                <FormControl fullWidth>
+                  <Typography variant="body2" sx={{ mb: 1, fontWeight: 'medium' }}>形態</Typography>
+                  <Select
+                    value={newWorkerData.workType}
+                    onChange={(e) => handleNewWorkerChange('workType', e.target.value)}
+                  >
+                    <MenuItem value="派遣">派遣</MenuItem>
+                    <MenuItem value="業務委託">業務委託</MenuItem>
+                  </Select>
+                </FormControl>
+
+                {/* 氏名 */}
+                <Box>
+                  <Typography variant="body2" sx={{ mb: 1, fontWeight: 'medium' }}>氏名</Typography>
+                  <TextField
+                    fullWidth
+                    value={newWorkerData.workerName}
+                    onChange={(e) => handleNewWorkerChange('workerName', e.target.value)}
+                    placeholder="例: 田中 太郎"
+                  />
+                </Box>
+
+                {/* 単価 */}
+                <Box>
+                  <Typography variant="body2" sx={{ mb: 1, fontWeight: 'medium' }}>単価</Typography>
+                  <TextField
+                    fullWidth
+                    type="number"
+                    value={newWorkerData.unitPrice}
+                    onChange={(e) => handleNewWorkerChange('unitPrice', parseInt(e.target.value) || 0)}
+                    InputProps={{
+                      startAdornment: '¥'
+                    }}
+                  />
+                </Box>
+
+                {/* 数量と単位 */}
+                <Box sx={{ display: 'flex', gap: 2 }}>
+                  <Box sx={{ flex: 1 }}>
+                    <Typography variant="body2" sx={{ mb: 1, fontWeight: 'medium' }}>数量</Typography>
+                    <TextField
+                      fullWidth
+                      type="number"
+                      value={newWorkerData.quantity}
+                      onChange={(e) => handleNewWorkerChange('quantity', parseInt(e.target.value) || 0)}
+                    />
+                  </Box>
+                  <Box sx={{ flex: 1 }}>
+                    <Typography variant="body2" sx={{ mb: 1, fontWeight: 'medium' }}>単位</Typography>
+                    <FormControl fullWidth>
+                      <Select
+                        value={newWorkerData.unit}
+                        onChange={(e) => handleNewWorkerChange('unit', e.target.value)}
+                      >
+                        <MenuItem value="時間">時間</MenuItem>
+                        <MenuItem value="日">日</MenuItem>
+                        <MenuItem value="月">月</MenuItem>
+                      </Select>
+                    </FormControl>
+                  </Box>
+                </Box>
+
+                {/* 合計金額（自動計算） */}
+                <Box>
+                  <Typography variant="body2" sx={{ mb: 1, fontWeight: 'medium' }}>合計金額</Typography>
+                  <Typography variant="h6" sx={{ 
+                    color: 'primary.main', 
+                    fontWeight: 'bold',
+                    p: 2,
+                    bgcolor: '#f5f5f5',
+                    borderRadius: 1,
+                    textAlign: 'right'
+                  }}>
+                    ¥{calculatedTotal.toLocaleString()}
+                  </Typography>
+                </Box>
+              </Box>
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={handleAddDialogClose} color="inherit">
+                キャンセル
+              </Button>
+              <Button onClick={handleAddWorker} variant="contained" color="primary">
+                追加
+              </Button>
+            </DialogActions>
+          </Dialog>
         </Paper>
       </Container>
     </Box>
