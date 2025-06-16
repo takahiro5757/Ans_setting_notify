@@ -3,14 +3,17 @@
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { 
   Table, TableHead, TableBody, TableRow, TableCell, Box, styled,
-  createTheme, ThemeProvider, IconButton, Tooltip
+  createTheme, ThemeProvider, IconButton, Tooltip,
+  TableContainer, Paper, TextField, Typography, Dialog, DialogTitle, DialogContent, DialogActions, Button, FormControl, InputLabel, Select, MenuItem, SelectChangeEvent, Chip
 } from '@mui/material';
 import { ShiftProvider, useShiftContext } from './context/ShiftContext';
-import { SpreadsheetGridProps, DateInfo, StaffRequest } from './types';
+import { SpreadsheetGridProps, DateInfo, StaffRequest, StaffMember, Shift } from './types';
 import DateRow from './components/DateRow';
 import CommentDialog from './components/CommentDialog';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
+import LocationCell from './components/LocationCell';
+import RequestCell from './components/RequestCell';
 
 /* ===== 定数 ===== */
 const H_HEADER = 32; const H_ROW = 36;
@@ -20,35 +23,39 @@ const TOP = {
   kana: H_HEADER+H_ROW*2, // カナ行の位置を下にずらす
   // station行をTOPから削除して固定しないようにする
 };
-// 列の幅を調整して新しい列を追加
+// 列の幅を調整して新しい列を追加 - レスポンシブ対応
 const W   = { 
-  date: 86, 
-  closerCase: 100, // 幅を調整
-  girlCase: 100,   // 幅を調整
-  closerAvailable: 100, // 幅を調整
-  girlAvailable: 100,   // 幅を調整
-  close: 100, // 幅を調整
-  girl: 100,  // 幅を調整
+  date: 70, 
+  closerCase: 80, // 幅を縮小
+  girlCase: 80,   // 幅を縮小
+  closerAvailable: 80, // 幅を縮小
+  girlAvailable: 80,   // 幅を縮小
+  close: 80, // 幅を縮小
+  girl: 80,  // 幅を縮小
+  location: 101, // 稼働場所の幅
   
   // 折りたたみ時の幅
-  closerSection: 400, // クローザーセクション全体（折りたたみ時）
+  closerSection: 320, // クローザーセクション全体（折りたたみ時）を縮小
 };
+
+// border幅を考慮した正確な位置計算
+const BORDER_WIDTH = 2;
 
 // 定数をさらに追加（固定列の正確な位置）
 const LEFT = { 
-  // 展開時の位置
+  // 展開時の位置 - border幅を考慮
   date: 0, 
-  closerCase: W.date,             // クローザー案件数位置
-  girlCase: W.date + W.closerCase, // ガール案件数位置
-  closerAvailable: W.date + W.closerCase + W.girlCase, // 新規：クローザー稼働可能数位置
-  girlAvailable: W.date + W.closerCase + W.girlCase + W.closerAvailable, // 新規：ガール稼働可能数位置
-  close: W.date + W.closerCase + W.girlCase + W.closerAvailable + W.girlAvailable, // 未決クローザー位置を更新
-  girl: W.date + W.closerCase + W.girlCase + W.closerAvailable + W.girlAvailable + W.close, // 未決ガール位置を更新
+  closerCase: W.date,             
+  girlCase: W.date + W.closerCase, 
+  closerAvailable: W.date + W.closerCase + W.girlCase, 
+  girlAvailable: W.date + W.closerCase + W.girlCase + W.closerAvailable, 
+  close: W.date + W.closerCase + W.girlCase + W.closerAvailable + W.girlAvailable, 
+  girl: W.date + W.closerCase + W.girlCase + W.closerAvailable + W.girlAvailable + W.close, 
   
   // 折りたたみ時の位置
-  closerSection: W.date, // クローザーセクション位置（折りたたみ時）
-  closeCollapsed: W.date + W.closerSection, // 未決クローザー位置（折りたたみ時）
-  girlCollapsed: W.date + W.closerSection + W.close, // 未決ガール位置（折りたたみ時）
+  closerSection: W.date, 
+  closeCollapsed: W.date + W.closerSection, 
+  girlCollapsed: W.date + W.closerSection + W.close, 
 };
 
 /* ===== 汎用セル ===== */
@@ -61,11 +68,32 @@ const Cell = styled(TableCell)(({ theme }) => ({
   height: H_ROW,
   lineHeight: 1,
   borderRight: '1px solid #000000',
+  minWidth: 'auto',
+  width: 'auto',
   '&.header':       { background:'#f5f5f5', fontWeight:700, borderBottom:'2px solid #000000' },
   '&.shift-header': { background:'#fff8e1', fontWeight:700, borderTop:'2px solid #000000', borderBottom:'2px solid #000000' },
   '&.shift-available':{ background:'#ffd54f' },
   '&.staff-section': { borderRight:'2px solid #000000' },
-  '&.location': { width: 112.5, maxWidth: 112.5 }, // 稼働場所セルのサイズを半分に
+  '&.location': { width: W.location, minWidth: W.location, maxWidth: W.location }, // 稼働場所セルの幅を固定
+  // レスポンシブ対応
+  [theme.breakpoints.down('lg')]: {
+    fontSize: 11,
+    padding: theme.spacing(0.3),
+    height: 30,
+    minWidth: 'auto'
+  },
+  [theme.breakpoints.down('md')]: {
+    fontSize: 10,
+    padding: theme.spacing(0.2),
+    height: 28,
+    minWidth: 'auto'
+  },
+  [theme.breakpoints.down('sm')]: {
+    fontSize: 9,
+    padding: theme.spacing(0.1),
+    height: 26,
+    minWidth: 'auto'
+  }
 }));
 
 /* ===== セクションヘッダー（展開時と折りたたみ時で使用） ===== */
@@ -137,7 +165,7 @@ const GirlCellFixCollapsed = styled(Cell)(({ theme }) => ({
   position: 'sticky',
   left: LEFT.girlCollapsed,
   zIndex: 400,
-  background: '#fffde7',
+  background: '#fffde7', // 未決C列と同じ色に戻す
   boxShadow: 'inset 0 -1px 0 #000000',
   borderRight: '2px solid #000000',
   width: W.girl,
@@ -209,39 +237,79 @@ const GirlBottomCollapsed = styled(Cell)(({ theme }) => ({
 }));
 
 /* ===== 左列用のスタイル付きコンポーネント ===== */
-const DateHead = styled(Cell)(() => ({
+const DateHead = styled(Cell)(({ theme }) => ({
   position: 'sticky',
   left: LEFT.date,
   top: 0,
   zIndex: 600,
   background: '#f5f5f5',
-  width: W.date,
+  width: 'auto',
+  minWidth: 50,
+  maxWidth: 'none',
   boxShadow: 'inset 0 -1px 0 #000000',
   borderRight: '2px solid #000000',
-  marginRight: -2
+  // レスポンシブ対応
+  [theme.breakpoints.down('lg')]: {
+    fontSize: 11,
+    padding: theme.spacing(0.3),
+    height: 30,
+    minWidth: 50
+  },
+  [theme.breakpoints.down('md')]: {
+    fontSize: 10,
+    padding: theme.spacing(0.2),
+    height: 28,
+    minWidth: 45
+  },
+  [theme.breakpoints.down('sm')]: {
+    fontSize: 9,
+    padding: theme.spacing(0.1),
+    height: 26,
+    minWidth: 40
+  }
 }));
 
-const DateTop = styled(Cell)<{top:number}>(({top}) => ({
+const DateTop = styled(Cell)<{top:number}>(({top, theme}) => ({
   position: 'sticky',
   left: LEFT.date,
   top,
   zIndex: 500,
   background: '#f5f5f5',
   width: W.date,
+  minWidth: W.date,
+  maxWidth: W.date,
   boxShadow: 'inset 0 -1px 0 #000000',
   borderRight: '2px solid #000000',
-  marginRight: -2
+  // モバイル対応
+  [theme.breakpoints.down('md')]: {
+    fontSize: 12,
+    padding: theme.spacing(0.25),
+    height: 32,
+    width: W.date,
+    minWidth: W.date,
+    maxWidth: W.date
+  }
 }));
 
-const DateCellFix = styled(Cell)(() => ({
+const DateCellFix = styled(Cell)(({ theme }) => ({
   position: 'sticky',
   left: LEFT.date,
   zIndex: 400,
   background: '#f5f5f5',
   width: W.date,
+  minWidth: W.date,
+  maxWidth: W.date,
   boxShadow: 'inset 0 -1px 0 #000000',
   borderRight: '2px solid #000000',
-  marginRight: -2
+  // モバイル対応
+  [theme.breakpoints.down('md')]: {
+    fontSize: 12,
+    padding: theme.spacing(0.25),
+    height: 32,
+    width: W.date,
+    minWidth: W.date,
+    maxWidth: W.date
+  }
 }));
 
 // クローザー案件数列
@@ -252,9 +320,10 @@ const CloserCaseHead = styled(Cell)(() => ({
   zIndex: 600,
   background: '#e3f2fd',
   width: W.closerCase,
+  minWidth: W.closerCase,
+  maxWidth: W.closerCase,
   boxShadow: 'inset 0 -1px 0 #000000',
   borderRight: '2px solid #000000',
-  marginRight: -2,
   cursor: 'move',
   '&.dragging': { 
     opacity: 0.8,
@@ -276,9 +345,10 @@ const CloserCaseTop = styled(Cell)<{top:number}>(({top}) => ({
   zIndex: 500,
   background: '#e3f2fd',
   width: W.closerCase,
+  minWidth: W.closerCase,
+  maxWidth: W.closerCase,
   boxShadow: 'inset 0 -1px 0 #000000',
-  borderRight: '2px solid #000000',
-  marginRight: -2
+  borderRight: '2px solid #000000'
 }));
 
 const CloserCaseCellFix = styled(Cell)(() => ({
@@ -287,9 +357,10 @@ const CloserCaseCellFix = styled(Cell)(() => ({
   zIndex: 400,
   background: '#e3f2fd',
   width: W.closerCase,
+  minWidth: W.closerCase,
+  maxWidth: W.closerCase,
   boxShadow: 'inset 0 -1px 0 #000000',
-  borderRight: '2px solid #000000',
-  marginRight: -2
+  borderRight: '2px solid #000000'
 }));
 
 // ガール案件数列
@@ -298,22 +369,22 @@ const GirlCaseHead = styled(Cell)(() => ({
   left: LEFT.girlCase,
   top: 0,
   zIndex: 600,
-  background: '#e3f2fd',
+  background: '#e3f2fd', // C案件数列と同じ色に変更
   width: W.girlCase,
   boxShadow: 'inset 0 -1px 0 #000000',
   borderRight: '2px solid #000000',
-  marginRight: -2,
+
   cursor: 'move',
   '&.dragging': { 
     opacity: 0.8,
-    background: '#bbdefb', 
-    boxShadow: '0 0 8px rgba(33, 150, 243, 0.6)', 
+    background: '#bbdefb', // C案件数列と同じドラッグ色
+    boxShadow: '0 0 8px rgba(33, 150, 243, 0.6)', // C案件数列と同じ光彩効果
     transform: 'scale(1.02)', 
     transition: 'transform 0.1s ease' 
   },
   '&.dragover': { 
     borderLeft: '4px solid #000000',
-    background: '#e8f4fd'  
+    background: '#e8f4fd' // C案件数列と同じドラッグオーバー色
   }
 }));
 
@@ -322,22 +393,22 @@ const GirlCaseTop = styled(Cell)<{top:number}>(({top}) => ({
   left: LEFT.girlCase,
   top,
   zIndex: 500,
-  background: '#e3f2fd',
+  background: '#e3f2fd', // C案件数列と同じ色に変更
   width: W.girlCase,
   boxShadow: 'inset 0 -1px 0 #000000',
   borderRight: '2px solid #000000',
-  marginRight: -2
+
 }));
 
 const GirlCaseCellFix = styled(Cell)(() => ({
   position: 'sticky',
   left: LEFT.girlCase,
   zIndex: 400,
-  background: '#e3f2fd',
+  background: '#e3f2fd', // C案件数列と同じ色に変更
   width: W.girlCase,
   boxShadow: 'inset 0 -1px 0 #000000',
   borderRight: '2px solid #000000',
-  marginRight: -2
+
 }));
 
 // 新規：クローザー稼働可能数列
@@ -350,7 +421,7 @@ const CloserAvailableHead = styled(Cell)(() => ({
   width: W.closerAvailable,
   boxShadow: 'inset 0 -1px 0 #000000',
   borderRight: '2px solid #000000',
-  marginRight: -2,
+
   cursor: 'move',
   '&.dragging': { 
     opacity: 0.8,
@@ -374,7 +445,7 @@ const CloserAvailableTop = styled(Cell)<{top:number}>(({top}) => ({
   width: W.closerAvailable,
   boxShadow: 'inset 0 -1px 0 #000000',
   borderRight: '2px solid #000000',
-  marginRight: -2
+
 }));
 
 const CloserAvailableCellFix = styled(Cell)(() => ({
@@ -385,7 +456,7 @@ const CloserAvailableCellFix = styled(Cell)(() => ({
   width: W.closerAvailable,
   boxShadow: 'inset 0 -1px 0 #000000',
   borderRight: '2px solid #000000',
-  marginRight: -2
+
 }));
 
 // 新規：ガール稼働可能数列
@@ -398,7 +469,7 @@ const GirlAvailableHead = styled(Cell)(() => ({
   width: W.girlAvailable,
   boxShadow: 'inset 0 -1px 0 #000000',
   borderRight: '2px solid #000000',
-  marginRight: -2,
+
   cursor: 'move',
   '&.dragging': { 
     opacity: 0.8,
@@ -422,7 +493,7 @@ const GirlAvailableTop = styled(Cell)<{top:number}>(({top}) => ({
   width: W.girlAvailable,
   boxShadow: 'inset 0 -1px 0 #000000',
   borderRight: '2px solid #000000',
-  marginRight: -2
+
 }));
 
 const GirlAvailableCellFix = styled(Cell)(() => ({
@@ -433,7 +504,7 @@ const GirlAvailableCellFix = styled(Cell)(() => ({
   width: W.girlAvailable,
   boxShadow: 'inset 0 -1px 0 #000000',
   borderRight: '2px solid #000000',
-  marginRight: -2
+
 }));
 
 const CloseHead = styled(Cell)(() => ({
@@ -445,7 +516,7 @@ const CloseHead = styled(Cell)(() => ({
   width: W.close,
   boxShadow: 'inset 0 -1px 0 #000000',
   borderRight: '2px solid #000000',
-  marginRight: -2
+
 }));
 
 const CloseTop = styled(Cell)<{top:number}>(({top}) => ({
@@ -457,7 +528,7 @@ const CloseTop = styled(Cell)<{top:number}>(({top}) => ({
   width: W.close,
   boxShadow: 'inset 0 -1px 0 #000000',
   borderRight: '2px solid #000000',
-  marginRight: -2
+
 }));
 
 const CloseCellFix = styled(Cell)(() => ({
@@ -468,7 +539,7 @@ const CloseCellFix = styled(Cell)(() => ({
   width: W.close,
   boxShadow: 'inset 0 -1px 0 #000000',
   borderRight: '2px solid #000000',
-  marginRight: -2
+
 }));
 
 // ガール集計列の位置も調整
@@ -481,7 +552,7 @@ const GirlHead = styled(Cell)(() => ({
   width: W.girl,
   boxShadow: 'inset 0 -1px 0 #000000',
   borderRight: '2px solid #000000',
-  marginRight: -2
+
 }));
 
 const GirlTop = styled(Cell)<{top:number}>(({top}) => ({
@@ -493,18 +564,18 @@ const GirlTop = styled(Cell)<{top:number}>(({top}) => ({
   width: W.girl,
   boxShadow: 'inset 0 -1px 0 #000000',
   borderRight: '2px solid #000000',
-  marginRight: -2
+
 }));
 
 const GirlCellFix = styled(Cell)(() => ({
   position: 'sticky',
   left: LEFT.girl,
   zIndex: 400,
-  background: '#fffde7',
+  background: '#fffde7', // 未決C列と同じ色に戻す
   width: W.girl,
   boxShadow: 'inset 0 -1px 0 #000000',
   borderRight: '2px solid #000000',
-  marginRight: -2
+
 }));
 
 /* ===== 実績行専用 bottom‑sticky セル ===== */
@@ -521,7 +592,7 @@ const DateBottom = styled(Cell)(() => ({
   color: '#e91e63',
   fontWeight: 700,
   borderRight: '2px solid #000000',
-  marginRight: -2
+
 }));
 
 // 底部固定セル
@@ -537,7 +608,7 @@ const CloserCaseBottom = styled(Cell)(() => ({
   color: '#e91e63',
   fontWeight: 700,
   borderRight: '2px solid #000000',
-  marginRight: -2
+
 }));
 
 const GirlCaseBottom = styled(Cell)(() => ({
@@ -552,7 +623,7 @@ const GirlCaseBottom = styled(Cell)(() => ({
   color: '#e91e63',
   fontWeight: 700,
   borderRight: '2px solid #000000',
-  marginRight: -2
+
 }));
 
 // 新規：稼働可能数用の底部固定セル
@@ -568,7 +639,7 @@ const CloserAvailableBottom = styled(Cell)(() => ({
   color: '#e91e63',
   fontWeight: 700,
   borderRight: '2px solid #000000',
-  marginRight: -2
+
 }));
 
 const GirlAvailableBottom = styled(Cell)(() => ({
@@ -583,7 +654,7 @@ const GirlAvailableBottom = styled(Cell)(() => ({
   color: '#e91e63',
   fontWeight: 700,
   borderRight: '2px solid #000000',
-  marginRight: -2
+
 }));
 
 const CloseBottom = styled(Cell)(() => ({
@@ -598,7 +669,7 @@ const CloseBottom = styled(Cell)(() => ({
   color: '#e91e63',
   fontWeight: 700,
   borderRight: '2px solid #000000',
-  marginRight: -2
+
 }));
 
 const GirlBottom = styled(Cell)(() => ({
@@ -613,15 +684,18 @@ const GirlBottom = styled(Cell)(() => ({
   color: '#e91e63',
   fontWeight: 700,
   borderRight: '2px solid #000000',
-  marginRight: -2
+
 }));
 
 /* ===== スタッフヘッダー (青) ===== */
-const StaffHeadSticky = styled(Cell)({
+const StaffHeadSticky = styled(Cell)(({ theme }) => ({
   position:'sticky', top:0, zIndex:550,
   background:'#e3f2fd', fontWeight:700, fontSize:16,
   borderBottom:'2px solid #000000', height:H_HEADER,
   cursor: 'move', // カーソルをmoveに変更してドラッグ可能を示す
+  width: 'auto',
+  minWidth: 'auto',
+  maxWidth: 'none',
   '&.dragging': { 
     opacity: 0.8,
     background: '#bbdefb', // より明るい青色に変更
@@ -632,13 +706,30 @@ const StaffHeadSticky = styled(Cell)({
   '&.dragover': { 
     borderLeft: '4px solid #000000',
     background: '#e8f4fd'  // ドロップ候補の背景を少し明るくする
+  },
+  // レスポンシブ対応
+  [theme.breakpoints.down('lg')]: {
+    fontSize: 13,
+    height: 28,
+    minWidth: 60
+  },
+  [theme.breakpoints.down('md')]: {
+    fontSize: 11,
+    height: 26,
+    minWidth: 50
+  },
+  [theme.breakpoints.down('sm')]: {
+    fontSize: 10,
+    height: 24,
+    minWidth: 45
   }
-});
+}));
 
 /* ===== ラッパ ===== */
-const Scroll = styled(Box)({ 
-  height:'calc(100vh - 350px)', 
+const Scroll = styled(Box)(({ theme }) => ({ 
+  height:'calc(100vh - 200px)', 
   overflow:'auto',
+  width: '100%',
   // 共通スタイル - すべてのセル境界線を黒にする
   '& .MuiTableCell-root': {
     borderBottom: '1px solid #000000',
@@ -654,16 +745,57 @@ const Scroll = styled(Box)({
   '& .MuiTableCell-root.shift-header': {
     borderTop: '2px solid #000000',
     borderBottom: '2px solid #000000'
+  },
+  // モバイル対応のレスポンシブスタイル
+  [theme.breakpoints.down('lg')]: {
+    '& .MuiTableCell-root': {
+      fontSize: '11px',
+      padding: theme.spacing(0.2),
+      minWidth: 'auto',
+      whiteSpace: 'nowrap'
+    },
+    '& .MuiTable-root': {
+      minWidth: 'fit-content',
+      width: 'auto'
+    }
+  },
+  [theme.breakpoints.down('md')]: {
+    '& .MuiTableCell-root': {
+      fontSize: '10px',
+      padding: theme.spacing(0.15),
+      minWidth: 'auto',
+      whiteSpace: 'nowrap'
+    },
+    '& .MuiTable-root': {
+      minWidth: 'fit-content',
+      width: 'auto'
+    }
   }
-});
+}));
 
-const STable = styled(Table)({ 
+const STable = styled(Table)(({ theme }) => ({ 
   borderCollapse:'separate', // 隙間制御のため
   borderSpacing: 0,  // セル間の隙間をゼロに
-  minWidth:'max-content', 
+  width: '100%',
+  minWidth:'fit-content', 
   background:'#fff',
-  border: '1px solid #000000' 
-});
+  border: '1px solid #000000',
+  tableLayout: 'auto', // テーブルレイアウトを自動に戻す
+  '& *': {
+    boxSizing: 'border-box' // すべての要素でborder-boxを適用
+  },
+  // モバイル対応
+  [theme.breakpoints.down('md')]: {
+    minWidth: 'fit-content', // 内容に合わせて幅を調整
+    tableLayout: 'auto',
+    fontSize: '10px'
+  },
+  [theme.breakpoints.down('sm')]: {
+    minWidth: 'fit-content',
+    tableLayout: 'auto',
+    fontSize: '9px'
+  }
+}));
 
 // 黒い枠線に統一したテーマを作成
 const darkBorderTheme = createTheme({
@@ -756,7 +888,7 @@ const BottomCell = styled(Cell)(() => ({
 
 /* ===== メイン ===== */
 export const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
-  year, month, staffMembers, shifts, onRateChange, onStatusChange
+  year, month, staffMembers, shifts, onRateChange, onStatusChange, onRequestTextChange, hideCaseColumns = false, hideCommentRow = false, isReadOnly = false, showSyncStatus = false, onSubmitToAnsteype, disableDoubleClick = false
 }) => {
   // コメントダイアログ用の状態
   const [commentDialogOpen, setCommentDialogOpen] = useState<boolean>(false);
@@ -988,23 +1120,46 @@ export const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
     dates.reduce((sum, {date}) => sum + getUnassigned(date, 'ガール').length, 0),
   [dates, getUnassigned]);
 
-  // スタッフの稼働要望数を生成するヘルパー関数（10〜20の範囲）
-  const getRequestCount = () => Math.floor(Math.random() * 11) + 10;
-
-  // スタッフごとの稼働要望数をステートで管理
+  // スタッフごとの稼働要望数をグローバルストアから取得
   const [staffRequests, setStaffRequests] = useState<StaffRequest[]>([]);
 
-  // クライアントサイドでのみ実行されるように useEffect 内でランダム値を生成
+  // グローバルストアから要望データを取得
   useEffect(() => {
-    setStaffRequests(
-      staffMembers.map(staff => ({
-        id: staff.id,
-        totalRequest: getRequestCount(), // 総稼働要望数
-        weekendRequest: Math.floor(getRequestCount() / 2), // 土日の稼働要望数（全体の約半分）
-        company: staff.company || '未設定' // 会社名のデフォルト値
-      }))
-    );
-  }, [staffMembers]);
+    if (typeof window !== 'undefined') {
+      // クライアントサイドでのみ実行
+      const { useShiftStore } = require('@/stores/shiftStore');
+      const store = useShiftStore.getState();
+      const requests = store.getStaffRequests(year.toString(), month.toString());
+      setStaffRequests(requests);
+      console.log(`[SpreadsheetGrid] 要望データ取得: ${year}年${month}月`, requests);
+    }
+  }, [year, month, staffMembers]);
+
+  // 外部からの要望データ変更を監視（リアルタイム更新）
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const { useShiftStore } = require('@/stores/shiftStore');
+      const store = useShiftStore.getState();
+      
+      // より頻繁にチェックして即座に反映
+      const interval = setInterval(() => {
+        const currentRequests = store.getStaffRequests(year.toString(), month.toString());
+        setStaffRequests(prev => {
+          // 変更があった場合のみ更新
+          const prevJson = JSON.stringify([...prev].sort((a: StaffRequest, b: StaffRequest) => a.id.localeCompare(b.id)));
+          const currentJson = JSON.stringify([...currentRequests].sort((a: StaffRequest, b: StaffRequest) => a.id.localeCompare(b.id)));
+          
+          if (prevJson !== currentJson) {
+            console.log(`[SpreadsheetGrid] 要望データ同期更新:`, currentRequests);
+            return currentRequests;
+          }
+          return prev;
+        });
+      }, 100); // 100msごとにチェック（より高頻度）
+
+      return () => clearInterval(interval);
+    }
+  }, [year, month]);
 
   // 稼働要望数の合計
   const totalCloserRequests = useMemo(() => 
@@ -1074,7 +1229,7 @@ export const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
   const stickyInfoExpanded = (lbl: string, fn: (m: any) => React.ReactNode, top: number) => (
     <TableRow>
       <DateTop top={top}>{lbl}</DateTop>
-      {columnOrder.map(columnId => {
+      {!hideCaseColumns && columnOrder.map(columnId => {
         if (columnId === 'closerCase') {
           return <CloserCaseTop key={columnId} top={top} />;
         } else if (columnId === 'girlCase') {
@@ -1086,8 +1241,8 @@ export const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
         }
         return null;
       })}
-      <CloseTop top={top} />
-      <GirlTop top={top} />
+      {!hideCaseColumns && <CloseTop top={top} />}
+      {!hideCaseColumns && <GirlTop top={top} />}
       {orderedStaffMembers.map(m => (
         <Cell 
           key={m.id} 
@@ -1111,11 +1266,13 @@ export const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
   const stickyInfoCollapsed = (lbl: string, fn: (m: any) => React.ReactNode, top: number) => (
     <TableRow>
       <DateTop top={top}>{lbl}</DateTop>
+      {!hideCaseColumns && (
       <CloserSectionTop top={top}>
         {lbl === '所属会社' ? 'ANSTEYPE社員' : ''}
       </CloserSectionTop>
-      <CloseTopCollapsed top={top} />
-      <GirlTopCollapsed top={top} />
+      )}
+      {!hideCaseColumns && <CloseTopCollapsed top={top} />}
+      {!hideCaseColumns && <GirlTopCollapsed top={top} />}
       {orderedStaffMembers.map(m => (
         <Cell 
           key={m.id} 
@@ -1139,7 +1296,7 @@ export const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
   const infoRowExpanded = (lbl: string, fn: (m: any) => React.ReactNode) => (
     <TableRow>
       <DateCellFix>{lbl}</DateCellFix>
-      {columnOrder.map(columnId => {
+      {!hideCaseColumns && columnOrder.map(columnId => {
         if (columnId === 'closerCase') {
           return <CloserCaseCellFix key={columnId} />;
         } else if (columnId === 'girlCase') {
@@ -1151,8 +1308,8 @@ export const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
         }
         return null;
       })}
-      <CloseCellFix />
-      <GirlCellFix />
+      {!hideCaseColumns && <CloseCellFix />}
+      {!hideCaseColumns && <GirlCellFix />}
       {orderedStaffMembers.map(m => <Cell key={m.id} colSpan={3} className="staff-section">{fn(m)}</Cell>)}
     </TableRow>
   );
@@ -1161,6 +1318,7 @@ export const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
   const infoRowCollapsed = (lbl: string, fn: (m: any) => React.ReactNode) => (
     <TableRow>
       <DateCellFix>{lbl}</DateCellFix>
+      {!hideCaseColumns && (
       <Cell sx={{ 
         width: W.closerSection,
         backgroundColor: '#e3f2fd',
@@ -1171,8 +1329,9 @@ export const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
       }}>
         {lbl === '平日' ? '¥20,000' : lbl === '土日' ? '¥25,000' : ''}
       </Cell>
-      <CloseCellFixCollapsed />
-      <GirlCellFixCollapsed />
+      )}
+      {!hideCaseColumns && <CloseCellFixCollapsed />}
+      {!hideCaseColumns && <GirlCellFixCollapsed />}
       {orderedStaffMembers.map(m => <Cell key={m.id} colSpan={3} className="staff-section">{fn(m)}</Cell>)}
     </TableRow>
   );
@@ -1227,6 +1386,91 @@ export const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
     dateGirlAvailable.reduce((sum, count) => sum + count, 0),
   [dateGirlAvailable]);
 
+  const handleStatusClick = (staffId: string, date: Date) => {
+    if (isReadOnly) return; // 読み取り専用モードでは変更不可
+    
+    const dateStr = date.toISOString().split('T')[0];
+    const currentShift = shifts.find(s => s.staffId === staffId && s.date === dateStr);
+    let newStatus: '○' | '×' | '-';
+
+    // ... existing code ...
+  };
+
+  const handleRateChange = (staffId: string, date: Date, newRate: number) => {
+    if (isReadOnly) return; // 読み取り専用モードでは変更不可
+    
+    const dateStr = date.toISOString().split('T')[0];
+    onRateChange?.(staffId, dateStr, newRate);
+  };
+
+  // 要望数変更ハンドラー
+  const handleRequestChange = (staffId: string, field: 'totalRequest' | 'weekendRequest', value: number) => {
+    if (isReadOnly) return; // 読み取り専用モードでは変更不可
+    
+    const updatedRequests = staffRequests.map(req => 
+      req.id === staffId 
+        ? { ...req, [field]: Math.max(0, Math.min(30, value)) } // 0-30の範囲で制限
+        : req
+    );
+    
+    setStaffRequests(updatedRequests);
+    
+    // グローバルストアに保存
+    if (typeof window !== 'undefined') {
+      const { useShiftStore } = require('@/stores/shiftStore');
+      const store = useShiftStore.getState();
+      store.updateStaffRequests(year.toString(), month.toString(), updatedRequests);
+    }
+  };
+
+  // フリーテキスト要望変更ハンドラー
+  const handleRequestTextChange = (staffId: string, text: string) => {
+    if (isReadOnly) return; // 読み取り専用モードでは変更不可
+    
+    // まずローカル状態を更新
+    const updatedRequests = staffRequests.map(req => 
+      req.id === staffId 
+        ? { ...req, requestText: text }
+        : req
+    );
+    
+    setStaffRequests(updatedRequests);
+    
+    // グローバルストアに保存
+    if (typeof window !== 'undefined') {
+      const { useShiftStore } = require('@/stores/shiftStore');
+      const store = useShiftStore.getState();
+      store.updateStaffRequests(year.toString(), month.toString(), updatedRequests);
+    }
+    
+    // 外部コールバックがあれば呼び出し（管理ページ用）
+    if (onRequestTextChange) {
+      onRequestTextChange(staffId, text);
+    }
+    
+    console.log(`[SpreadsheetGrid] 要望テキスト更新: staffId=${staffId}, text=${text}`);
+  };
+
+  // 前月引継関数は削除
+
+  // 同期状態のアイコンを取得
+  const getSyncStatusIcon = (shift?: Shift) => {
+    if (!showSyncStatus || !shift?.syncStatus) return null;
+    
+    switch (shift.syncStatus) {
+      case 'synced':
+        return <span className="text-green-500 text-xs">✓</span>;
+      case 'pending':
+        return <span className="text-yellow-500 text-xs">⏳</span>;
+      case 'conflict':
+        return <span className="text-red-500 text-xs">⚠</span>;
+      case 'error':
+        return <span className="text-red-500 text-xs">✗</span>;
+      default:
+        return null;
+    }
+  };
+
   /* ===== JSX ===== */
   return(
   <ShiftProvider
@@ -1263,7 +1507,7 @@ export const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
               </DateHead>
               
               {/* 展開時のヘッダー */}
-              {isExpanded ? (
+              {!hideCaseColumns && (isExpanded ? (
                 <>
                   {columnOrder.map(columnId => {
                     if (columnId === 'closerCase') {
@@ -1337,7 +1581,7 @@ export const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
                   <CloseHeadCollapsed className="header">未決C</CloseHeadCollapsed>
                   <GirlHeadCollapsed className="header">未決G</GirlHeadCollapsed>
                 </>
-              )}
+              ))}
               
               {/* スタッフヘッダー - 常に表示 */}
               {orderedStaffMembers.map(s => (
@@ -1349,6 +1593,9 @@ export const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
                   onDragStart={(e) => handleDragStart(e, s.id)}
                   onDragOver={(e) => handleDragOver(e, s.id)}
                   onDragEnd={handleDragEnd}
+                  sx={{
+                    background: s.role === 'ガール' ? '#fce4ec !important' : '#e3f2fd'
+                  }}
                 >
                   <Box sx={{ 
                     display: 'flex', 
@@ -1382,7 +1629,7 @@ export const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
             {/* 非固定情報行 */}
             <TableRow>
               <DateCellFix>最寄駅</DateCellFix>
-              {isExpanded ? (
+              {!hideCaseColumns && (isExpanded ? (
                 <>
                   {columnOrder.map(columnId => {
                     if (columnId === 'closerCase') {
@@ -1405,7 +1652,7 @@ export const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
                   <CloseCellFixCollapsed />
                   <GirlCellFixCollapsed />
                 </>
-              )}
+              ))}
               {orderedStaffMembers.map(m => <Cell key={m.id} colSpan={3} className="staff-section">{m.station}</Cell>)}
             </TableRow>
 
@@ -1429,7 +1676,7 @@ export const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
             {/* シフトヘッダー */}
             <TableRow>
               <DateCellFix className="shift-header">日付</DateCellFix>
-              {isExpanded ? (
+              {!hideCaseColumns && (isExpanded ? (
                 <>
                   {columnOrder.map(columnId => {
                     if (columnId === 'closerCase') {
@@ -1460,7 +1707,7 @@ export const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
                   <CloseCellFixCollapsed className="shift-header">未決C</CloseCellFixCollapsed>
                   <GirlCellFixCollapsed className="shift-header">未決G</GirlCellFixCollapsed>
                 </>
-              )}
+              ))}
               {orderedStaffMembers.map(staff => (
                 <React.Fragment key={staff.id}>
                   <Cell className="shift-header">希望</Cell>
@@ -1487,13 +1734,21 @@ export const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
                 onCommentClick={handleOpenCommentDialog}
                 columnOrder={columnOrder}
                 isExpanded={isExpanded}
+                hideCaseColumns={hideCaseColumns}
+                isReadOnly={isReadOnly}
+                onRateChange={onRateChange}
+                disableDoubleClick={disableDoubleClick}
               />
             ))}
             
             {/* 要望行 */}
             <TableRow>
-              <DateCellFix sx={{background:'#f3e5f5',borderTop:'2px solid #000000',color:'#9c27b0'}}>要望</DateCellFix>
-              {isExpanded ? (
+              <DateCellFix sx={{background:'#f3e5f5',borderTop:'2px solid #000000',color:'#9c27b0'}}>
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%' }}>
+                  <Typography variant="body2" sx={{ fontWeight: 'bold' }}>要望</Typography>
+                </Box>
+              </DateCellFix>
+              {!hideCaseColumns && (isExpanded ? (
                 <>
                   {columnOrder.map(columnId => {
                     if (columnId === 'closerCase') {
@@ -1561,24 +1816,18 @@ export const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
                     -
                   </GirlCellFixCollapsed>
                 </>
-              )}
+              ))}
               {orderedStaffMembers.map(s => {
                 // そのスタッフの要望データを取得
                 const request = staffRequests.find(req => req.id === s.id);
                 return (
-                  <Cell 
+                  <RequestCell 
                     key={s.id} 
-                    colSpan={3}
-                    className="staff-section"
-                    sx={{
-                      background:'#f3e5f5',
-                      borderTop:'2px solid #000000',
-                      color:'#9c27b0',
-                      fontWeight:700
-                    }}
-                  >
-                    {request ? `${request.totalRequest}回 (土日${request.weekendRequest})` : '-'}
-                  </Cell>
+                    staffId={s.id}
+                    request={request}
+                    isReadOnly={isReadOnly}
+                    onRequestTextChange={handleRequestTextChange}
+                  />
                 );
               })}
             </TableRow>
@@ -1586,7 +1835,7 @@ export const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
             {/* 稼働数 */}
             <TableRow>
               <DateCellFix sx={{background:'#e8eaf6',borderTop:'2px solid #000000',color:'#3f51b5'}}>稼働数</DateCellFix>
-              {isExpanded ? (
+              {!hideCaseColumns && (isExpanded ? (
                 <>
                   {columnOrder.map(columnId => {
                     if (columnId === 'closerCase') {
@@ -1629,10 +1878,10 @@ export const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
                     return null;
                   })}
                   <CloseCellFix sx={{background:'#e8eaf6',borderTop:'2px solid #000000',color:'#3f51b5'}}>
-                    {totalUnassignedClosers}
+                    {totalUnassignedClosers}件
                   </CloseCellFix>
                   <GirlCellFix sx={{background:'#e8eaf6',borderTop:'2px solid #000000',color:'#3f51b5'}}>
-                    {totalUnassignedGirls}
+                    {totalUnassignedGirls}件
                   </GirlCellFix>
                 </>
               ) : (
@@ -1648,13 +1897,13 @@ export const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
                     {totalCloserCases}
                   </Cell>
                   <CloseCellFixCollapsed sx={{background:'#e8eaf6',borderTop:'2px solid #000000',color:'#3f51b5'}}>
-                    {totalUnassignedClosers}
+                    {totalUnassignedClosers}件
                   </CloseCellFixCollapsed>
                   <GirlCellFixCollapsed sx={{background:'#e8eaf6',borderTop:'2px solid #000000',color:'#3f51b5'}}>
-                    {totalUnassignedGirls}
+                    {totalUnassignedGirls}件
                   </GirlCellFixCollapsed>
                 </>
-              )}
+              ))}
               {orderedStaffMembers.map(s => (
                 <Cell 
                   key={s.id} 
@@ -1675,7 +1924,7 @@ export const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
             {/* ===== 実績 (セル単位で bottom‑sticky) ===== */}
             <TableRow>
               <DateBottom>実績</DateBottom>
-              {isExpanded ? (
+              {!hideCaseColumns && (isExpanded ? (
                 <>
                   {columnOrder.map(columnId => {
                     if (columnId === 'closerCase') {
@@ -1706,10 +1955,10 @@ export const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
                     return null;
                   })}
                   <CloseBottom>
-                    ¥{roleTotals['クローザー'].toLocaleString()}
+                    {totalUnassignedClosers}件
                   </CloseBottom>
                   <GirlBottom>
-                    ¥{roleTotals['ガール'].toLocaleString()}
+                    {totalUnassignedGirls}件
                   </GirlBottom>
                 </>
               ) : (
@@ -1718,19 +1967,207 @@ export const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
                     ¥{roleTotals['クローザー'].toLocaleString()}
                   </CloserSectionBottom>
                   <CloseBottomCollapsed>
-                    ¥{roleTotals['クローザー'].toLocaleString()}
+                    {totalUnassignedClosers}件
                   </CloseBottomCollapsed>
                   <GirlBottomCollapsed>
-                    ¥{roleTotals['ガール'].toLocaleString()}
+                    {totalUnassignedGirls}件
                   </GirlBottomCollapsed>
                 </>
-              )}
+              ))}
               {orderedStaffMembers.map(s => (
                 <BottomCell key={s.id} colSpan={3} className="staff-section">
                   ¥{staffTotals[s.id]?.amount.toLocaleString() || '0'}
                 </BottomCell>
               ))}
             </TableRow>
+
+            {/* ===== コメント行 ===== */}
+            {!hideCommentRow && (
+            <TableRow>
+              <DateCellFix sx={{
+                background: '#f3e5f5',
+                borderTop: '1px solid #000000',
+                color: '#9c27b0',
+                fontWeight: 600,
+                minHeight: '40px',
+                height: 'auto',
+                verticalAlign: 'top',
+                padding: '8px'
+              }}>
+                コメント
+              </DateCellFix>
+              {!hideCaseColumns && (isExpanded ? (
+                <>
+                  {columnOrder.map(columnId => {
+                    if (columnId === 'closerCase') {
+                      return (
+                        <CloserCaseCellFix 
+                          key={columnId}
+                          sx={{
+                            background: '#f3e5f5',
+                            borderTop: '1px solid #000000',
+                            color: '#9c27b0',
+                            minHeight: '40px',
+                            height: 'auto',
+                            verticalAlign: 'top',
+                            padding: '8px'
+                          }}
+                        >
+                          -
+                        </CloserCaseCellFix>
+                      );
+                    } else if (columnId === 'girlCase') {
+                      return (
+                        <GirlCaseCellFix 
+                          key={columnId}
+                          sx={{
+                            background: '#f3e5f5',
+                            borderTop: '1px solid #000000',
+                            color: '#9c27b0',
+                            minHeight: '40px',
+                            height: 'auto',
+                            verticalAlign: 'top',
+                            padding: '8px'
+                          }}
+                        >
+                          -
+                        </GirlCaseCellFix>
+                      );
+                    } else if (columnId === 'closerAvailable') {
+                      return (
+                        <CloserAvailableCellFix 
+                          key={columnId}
+                          sx={{
+                            background: '#f3e5f5',
+                            borderTop: '1px solid #000000',
+                            color: '#9c27b0',
+                            minHeight: '40px',
+                            height: 'auto',
+                            verticalAlign: 'top',
+                            padding: '8px'
+                          }}
+                        >
+                          -
+                        </CloserAvailableCellFix>
+                      );
+                    } else if (columnId === 'girlAvailable') {
+                      return (
+                        <GirlAvailableCellFix 
+                          key={columnId}
+                          sx={{
+                            background: '#f3e5f5',
+                            borderTop: '1px solid #000000',
+                            color: '#9c27b0',
+                            minHeight: '40px',
+                            height: 'auto',
+                            verticalAlign: 'top',
+                            padding: '8px'
+                          }}
+                        >
+                          -
+                        </GirlAvailableCellFix>
+                      );
+                    }
+                    return null;
+                  })}
+                  <CloseCellFix sx={{
+                    background: '#f3e5f5',
+                    borderTop: '1px solid #000000',
+                    color: '#9c27b0',
+                    minHeight: '40px',
+                    height: 'auto',
+                    verticalAlign: 'top',
+                    padding: '8px'
+                  }}>
+                    -
+                  </CloseCellFix>
+                  <GirlCellFix sx={{
+                    background: '#f3e5f5',
+                    borderTop: '1px solid #000000',
+                    color: '#9c27b0',
+                    minHeight: '40px',
+                    height: 'auto',
+                    verticalAlign: 'top',
+                    padding: '8px'
+                  }}>
+                    -
+                  </GirlCellFix>
+                </>
+              ) : (
+                <>
+                  <Cell 
+                    sx={{
+                      width: W.closerSection,
+                      background: '#f3e5f5',
+                      borderTop: '1px solid #000000',
+                      color: '#9c27b0',
+                      minHeight: '40px',
+                      height: 'auto',
+                      verticalAlign: 'top',
+                      padding: '8px'
+                    }}
+                  >
+                    -
+                  </Cell>
+                  <CloseCellFixCollapsed sx={{
+                    background: '#f3e5f5',
+                    borderTop: '1px solid #000000',
+                    color: '#9c27b0',
+                    minHeight: '40px',
+                    height: 'auto',
+                    verticalAlign: 'top',
+                    padding: '8px'
+                  }}>
+                    -
+                  </CloseCellFixCollapsed>
+                  <GirlCellFixCollapsed sx={{
+                    background: '#f3e5f5',
+                    borderTop: '1px solid #000000',
+                    color: '#9c27b0',
+                    minHeight: '40px',
+                    height: 'auto',
+                    verticalAlign: 'top',
+                    padding: '8px'
+                  }}>
+                    -
+                  </GirlCellFixCollapsed>
+                </>
+              ))}
+              {orderedStaffMembers.map(s => {
+                // そのスタッフの最新のコメントを取得
+                const staffShifts = shifts.filter(shift => shift.staffId === s.id);
+                const latestComment = staffShifts.find(shift => shift.comment)?.comment || '';
+                
+                // デバッグログ追加
+                console.log(`スタッフ ${s.name} (${s.id}): シフト数=${staffShifts.length}, コメント="${latestComment}"`);
+                
+                return (
+                  <Cell 
+                    key={s.id} 
+                    colSpan={3}
+                    className="staff-section"
+                    sx={{
+                      background: '#f3e5f5',
+                      borderTop: '1px solid #000000',
+                      color: '#9c27b0',
+                      fontSize: '0.75rem',
+                      textAlign: 'left',
+                      padding: '8px',
+                      maxWidth: '200px',
+                      minHeight: '40px',
+                      height: 'auto',
+                      whiteSpace: 'pre-wrap',
+                      wordBreak: 'break-word',
+                      lineHeight: 1.4,
+                      verticalAlign: 'top'
+                    }}
+                  >
+                    {latestComment || '（コメントなし）'}
+                  </Cell>
+                );
+              })}
+            </TableRow>
+            )}
           </TableBody>
         </STable>
       </Scroll>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { 
   Box, Container, Typography, Paper, SelectChangeEvent, 
   FormControl, InputLabel, Select, MenuItem, TextField,
@@ -9,8 +9,9 @@ import {
 import YearMonthSelector from '@/components/YearMonthSelector';
 import WeeklySummary from '@/components/WeeklySummary';
 import { SpreadsheetGrid } from '@/components/shifts/SpreadsheetGrid';
-import { Shift } from '@/components/shifts/SpreadsheetGrid/types';
+import { Shift, StaffRequest } from '@/components/shifts/SpreadsheetGrid/types';
 import { getWeeks, generateDummySummary } from '@/utils/dateUtils';
+import { useShiftStore, staffMembers } from '@/stores/shiftStore';
 
 // ダミーのスタッフデータ
 const dummyStaffMembers = [
@@ -403,6 +404,12 @@ const dummyStaffMembers = [
   }
 ];
 
+// 決定論的な疑似ランダム関数
+const seedRandom = (seed: number): number => {
+  const x = Math.sin(seed) * 10000;
+  return x - Math.floor(x);
+};
+
 // ダミーのシフトデータを生成する関数
 const generateDummyShifts = (year: number, month: number): Shift[] => {
   const shifts: Shift[] = [];
@@ -454,38 +461,43 @@ const generateDummyShifts = (year: number, month: number): Shift[] => {
       
       // 疑似ランダム値を生成（決定論的な方法）
       // スタッフIDと日付から一貫した値を生成
-      const staffIdNum = parseInt(staff.id.replace(/[^0-9]/g, ''));
+      const staffIdNum = parseInt(staff.id.replace(/[^0-9]/g, '')) || 1;
       const dateNum = day + month * 100 + year * 10000;
-      const pseudoRandom = (staffIdNum * 123 + dateNum * 456) % 100 / 100;
+      const pseudoRandom = seedRandom(staffIdNum * 123 + dateNum * 456);
       
       let status: '○' | '×' | '-' = '-';
       
-      // ガールとクローザーで出勤確率を変える
-      if (staff.role === 'ガール') {
-        // ガールは確率が少し高め
-        if (pseudoRandom < 0.7) {
-          status = '○';
-        } else if (pseudoRandom < 0.9) {
-          status = '×';
-        }
+      // 2025年5月以降のデータは全て「-」に設定
+      if (year >= 2025 && month >= 5) {
+        status = '-';
       } else {
-        // クローザー
-        if (pseudoRandom < 0.6) {
-          status = '○';
-        } else if (pseudoRandom < 0.9) {
-          status = '×';
+        // ガールとクローザーで出勤確率を変える
+        if (staff.role === 'ガール') {
+          // ガールは確率が少し高め
+          if (pseudoRandom < 0.7) {
+            status = '○';
+          } else if (pseudoRandom < 0.9) {
+            status = '×';
+          }
+        } else {
+          // クローザー
+          if (pseudoRandom < 0.6) {
+            status = '○';
+          } else if (pseudoRandom < 0.9) {
+            status = '×';
+          }
         }
-      }
-      
-      // 土日は出勤率を下げる
-      if ((dayOfWeek === 0 || dayOfWeek === 6) && status === '○') {
-        // ガールは土日の出勤率を低くする
-        if (staff.role === 'ガール' && ((staffIdNum + day) % 10) < 5) {
-          status = '×';
-        }
-        // クローザーも土日の調整
-        else if (staff.role !== 'ガール' && ((staffIdNum + day) % 10) < 3) {
-          status = '×';
+        
+        // 土日は出勤率を下げる
+        if ((dayOfWeek === 0 || dayOfWeek === 6) && status === '○') {
+          // ガールは土日の出勤率を低くする
+          if (staff.role === 'ガール' && ((staffIdNum + day) % 10) < 5) {
+            status = '×';
+          }
+          // クローザーも土日の調整
+          else if (staff.role !== 'ガール' && ((staffIdNum + day) % 10) < 3) {
+            status = '×';
+          }
         }
       }
       
@@ -502,8 +514,8 @@ const generateDummyShifts = (year: number, month: number): Shift[] => {
           (staff.id >= 'girl1' && staff.id <= 'girl10')     // ガール（佐々木美月〜内田莉子）
         ) {
           // 約40%のシフトで稼働場所を未確定にする
-          const unassignedRandom = (staffIdNum * day * 31 + dateNum) % 100;
-          if (unassignedRandom >= 40) {
+          const unassignedRandom = seedRandom(staffIdNum * day * 31 + dateNum);
+          if (unassignedRandom >= 0.4) {
             location = locations[locationIndex]; // 60%は場所を設定
           }
           // 残り40%は未確定（locationはundefinedのまま）
@@ -527,37 +539,124 @@ const generateDummyShifts = (year: number, month: number): Shift[] => {
 };
 
 export default function ManagementPage() {
-  // 状態管理
-  const [year, setYear] = useState<string>('2024');
-  const [month, setMonth] = useState<string>('4');
+  // グローバルストアの利用
+  const {
+    currentYear: storeYear,
+    currentMonth: storeMonth,
+    getShifts,
+    syncFromAnsteype,
+    setCurrentDate,
+    lastSyncTime,
+    isLoading,
+    notifications,
+    markNotificationAsRead,
+    clearAllNotifications,
+    startAutoSync,
+    stopAutoSync,
+    staffMembers
+  } = useShiftStore();
+  
+  // 初期化時に自動同期を開始
+  useEffect(() => {
+    startAutoSync();
+    
+    // 初期データ同期
+    const initializeData = async () => {
+      try {
+        console.log('=== ANSTEYPE管理画面 初期化開始 ===');
+        await syncFromAnsteype();
+        console.log('初期データ同期完了');
+      } catch (error) {
+        console.error('初期データ同期エラー:', error);
+      }
+    };
+    
+    initializeData();
+    
+    return () => {
+      stopAutoSync();
+    };
+  }, [startAutoSync, stopAutoSync, syncFromAnsteype]);
   
   // フィルター用の状態管理を追加
   const [companyFilter, setCompanyFilter] = useState<string[]>([]);
   const [roleFilter, setRoleFilter] = useState<string>('');
-  
+
   // 週情報を取得
-  const weeks = getWeeks(year, month);
+  const weeks = getWeeks(storeYear, storeMonth);
   
   // ダミーのサマリーデータ
   const summary = generateDummySummary();
   
-  // ダミーのシフトデータ
-  const dummyShifts = generateDummyShifts(parseInt(year), parseInt(month));
+  // スタッフデータは全体を統合（ローカルダミー + グローバルストア）
+  const allStaffMembers = useMemo(() => {
+    // グローバルストアのスタッフとローカルダミースタッフを統合
+    const globalStaff = staffMembers || [];
+    const localStaff = dummyStaffMembers;
+    
+    // 重複排除（IDベース）
+    const staffMap = new Map();
+    [...localStaff, ...globalStaff].forEach(staff => {
+      staffMap.set(staff.id, staff);
+    });
+    
+    return Array.from(staffMap.values());
+  }, [staffMembers]);
+
+  // グローバルストアからシフトデータを取得
+  const dummyShifts = useMemo(() => {
+    const shifts = getShifts(storeYear, storeMonth);
+    
+    // デバッグ: データ連携状況をより詳細にログ出力
+    const fetalStaff = shifts.filter(shift => {
+      const staff = allStaffMembers.find(s => s.id === shift.staffId);
+      return staff?.company === 'Festal';
+    });
+    
+    const submittedFetalShifts = fetalStaff.filter(shift => shift.submissionStatus === 'submitted');
+    const approvedFetalShifts = fetalStaff.filter(shift => shift.submissionStatus === 'approved');
+    const draftFetalShifts = fetalStaff.filter(shift => shift.submissionStatus === 'draft');
+    
+    // 提出済みシフトの中で実際に勤務予定（○）のもの
+    const workingShifts = submittedFetalShifts.filter(shift => shift.status === '○');
+    
+    if (fetalStaff.length > 0) {
+      console.log(`=== ANSTEYPE管理画面 データ連携状況 ===`);
+      console.log(`対象月: ${storeYear}年${storeMonth}月`);
+      console.log(`Festalスタッフシフト総数: ${fetalStaff.length}件`);
+      console.log(`├─ 提出済み: ${submittedFetalShifts.length}件`);
+      console.log(`├─ 承認済み: ${approvedFetalShifts.length}件`);
+      console.log(`├─ 未提出: ${draftFetalShifts.length}件`);
+      console.log(`└─ 勤務予定（○）: ${workingShifts.length}件`);
+      
+      // Festalスタッフの提出状況を詳細表示
+      const fetalStaffMembers = allStaffMembers.filter(s => s.company === 'Festal');
+      console.log(`Festalスタッフ提出状況:`);
+      fetalStaffMembers.forEach(staff => {
+        const staffShifts = fetalStaff.filter(s => s.staffId === staff.id);
+        const staffSubmittedShifts = staffShifts.filter(s => s.submissionStatus === 'submitted');
+        console.log(`  ${staff.name} (${staff.id}): ${staffSubmittedShifts.length}/${staffShifts.length}件提出済み (status: ${staff.submissionStatus || 'unknown'})`);
+      });
+      console.log(`=======================================`);
+    }
+    
+    return shifts;
+  }, [storeYear, storeMonth, getShifts, allStaffMembers]);
 
   // 会社の一覧を動的に取得（重複を排除）
   const companies = useMemo(() => {
     const companySet = new Set<string>();
-    dummyStaffMembers.forEach(staff => {
+    allStaffMembers.forEach(staff => {
       if (staff.company) {
         companySet.add(staff.company);
       }
     });
     return Array.from(companySet).sort();
-  }, []);
+  }, [allStaffMembers]);
 
   // フィルタリングされたスタッフメンバー
   const filteredStaffMembers = useMemo(() => {
-    return dummyStaffMembers.filter(staff => {
+    return allStaffMembers.filter(staff => {
       // 所属会社フィルター
       if (companyFilter.length > 0 && !companyFilter.includes(staff.company || '')) {
         return false;
@@ -570,12 +669,12 @@ export default function ManagementPage() {
       
       return true;
     });
-  }, [dummyStaffMembers, companyFilter, roleFilter]);
+  }, [companyFilter, roleFilter]);
 
   // スタッフ統計情報
   const staffStats = useMemo(() => {
-    const totalClosers = dummyStaffMembers.filter(s => s.role === 'クローザー').length;
-    const totalGirls = dummyStaffMembers.filter(s => s.role === 'ガール').length;
+    const totalClosers = allStaffMembers.filter(s => s.role === 'クローザー').length;
+    const totalGirls = allStaffMembers.filter(s => s.role === 'ガール').length;
     
     const filteredClosers = filteredStaffMembers.filter(s => s.role === 'クローザー').length;
     const filteredGirls = filteredStaffMembers.filter(s => s.role === 'ガール').length;
@@ -588,7 +687,7 @@ export default function ManagementPage() {
       totalStaff: totalClosers + totalGirls,
       filteredStaff: filteredClosers + filteredGirls
     };
-  }, [dummyStaffMembers, filteredStaffMembers]);
+  }, [filteredStaffMembers]);
 
   // フィルタリングされたシフト
   const filteredShifts = useMemo(() => {
@@ -596,14 +695,21 @@ export default function ManagementPage() {
     return dummyShifts.filter(shift => filteredStaffIds.includes(shift.staffId));
   }, [dummyShifts, filteredStaffMembers]);
 
+  // 現在のユーザー情報を取得
+  const currentUser = useMemo(() => {
+    const userId = typeof window !== 'undefined' ? localStorage.getItem('user_id') : null;
+    if (!userId) return null;
+    return staffMembers.find(staff => staff.id === userId);
+  }, [staffMembers]);
+
   // 年の変更ハンドラ
   const handleYearChange = (year: string) => {
-    setYear(year);
+    setCurrentDate(year, storeMonth);
   };
 
   // 月の変更ハンドラ
   const handleMonthChange = (month: string) => {
-    setMonth(month);
+    setCurrentDate(storeYear, month);
   };
 
   // 会社フィルターの変更ハンドラ
@@ -622,6 +728,59 @@ export default function ManagementPage() {
   const handleResetFilters = () => {
     setCompanyFilter([]);
     setRoleFilter('');
+  };
+
+  // 要望テキスト変更ハンドラー
+  const handleRequestTextChange = (staffId: string, text: string) => {
+    console.log(`[ManagementPage] 要望テキスト変更: staffId=${staffId}, text=${text}`);
+    
+    if (typeof window !== 'undefined') {
+      const { useShiftStore } = require('@/stores/shiftStore');
+      const store = useShiftStore.getState();
+      
+      // 現在の要望データを取得
+      const requests = store.getStaffRequests(storeYear, storeMonth);
+      console.log(`[ManagementPage] 現在の要望データ:`, requests);
+      
+      // 更新されたデータを作成
+      const updatedRequests = requests.map((req: StaffRequest) => 
+        req.id === staffId ? { ...req, requestText: text } : req
+      );
+      
+      // 更新を保存
+      store.updateStaffRequests(storeYear, storeMonth, updatedRequests);
+      console.log(`[ManagementPage] 更新後の要望データ:`, updatedRequests);
+      
+      // 強制的にコンポーネントを再レンダリングするためのトリガー
+      setTimeout(() => {
+        const latestRequests = store.getStaffRequests(storeYear, storeMonth);
+        console.log(`[ManagementPage] 最終確認データ:`, latestRequests);
+      }, 50);
+    }
+  };
+
+  // 単価変更ハンドラー
+  const handleRateChange = (staffId: string, date: string, rate: number) => {
+    console.log(`[ManagementPage] 単価変更: staffId=${staffId}, date=${date}, rate=${rate}`);
+    
+    if (typeof window !== 'undefined') {
+      const { useShiftStore } = require('@/stores/shiftStore');
+      const store = useShiftStore.getState();
+      
+      // 現在のシフトデータを取得
+      const shifts = store.getShifts(storeYear, storeMonth);
+      
+      // 更新されたシフトデータを作成
+      const updatedShifts = shifts.map((shift: Shift) => 
+        shift.staffId === staffId && shift.date === date 
+          ? { ...shift, rate: rate }
+          : shift
+      );
+      
+      // 更新を保存
+      store.updateShifts(storeYear, storeMonth, updatedShifts);
+      console.log(`[ManagementPage] 単価更新完了: staffId=${staffId}, date=${date}, rate=${rate}`);
+    }
   };
 
   return (
@@ -652,8 +811,8 @@ export default function ManagementPage() {
         <Box>
           {/* 年月選択 */}
           <YearMonthSelector
-            year={year}
-            month={month}
+            year={storeYear}
+            month={storeMonth}
             onYearChange={handleYearChange}
             onMonthChange={handleMonthChange}
             years={['2023', '2024', '2025']}
@@ -759,10 +918,13 @@ export default function ManagementPage() {
           {/* SpreadsheetGridコンポーネント */}
           <Box sx={{ mt: 2 }}>
             <SpreadsheetGrid
-              year={parseInt(year)}
-              month={parseInt(month)}
+              year={parseInt(storeYear)}
+              month={parseInt(storeMonth)}
               staffMembers={filteredStaffMembers}
               shifts={filteredShifts}
+              onRequestTextChange={handleRequestTextChange}
+              onRateChange={handleRateChange}
+              hideCommentRow={true}
             />
           </Box>
         </Box>
