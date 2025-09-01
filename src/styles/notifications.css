@@ -1,0 +1,161 @@
+/* 通知関連のカスタムスタイル */
+
+/* 通知ドロワーアニメーション */
+.notification-drawer-enter {
+  transform: translateX(100%);
+  opacity: 0;
+}
+
+.notification-drawer-enter-active {
+  transform: translateX(0);
+  opacity: 1;
+  transition: transform 300ms ease-out, opacity 300ms ease-out;
+}
+
+.notification-drawer-exit {
+  transform: translateX(0);
+  opacity: 1;
+}
+
+.notification-drawer-exit-active {
+  transform: translateX(100%);
+  opacity: 0;
+  transition: transform 300ms ease-in, opacity 300ms ease-in;
+}
+
+/* 新着通知アニメーション */
+@keyframes notification-pulse {
+  0% { background-color: rgba(25, 118, 210, 0.1); }
+  50% { background-color: rgba(25, 118, 210, 0.2); }
+  100% { background-color: rgba(25, 118, 210, 0.1); }
+}
+
+.notification-new {
+  animation: notification-pulse 2s ease-in-out infinite;
+}
+
+/* ホバー・フォーカス効果 */
+.notification-item:hover {
+  background-color: rgba(0, 0, 0, 0.04);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: all 200ms ease-out;
+}
+
+.notification-trigger:hover {
+  background-color: rgba(0, 0, 0, 0.04);
+  transform: scale(1.1);
+  transition: all 200ms ease-out;
+}
+
+/* バッジアニメーション */
+@keyframes badge-pulse {
+  0% { 
+    background-color: #f44336;
+    transform: scale(1);
+  }
+  50% { 
+    background-color: #d32f2f;
+    transform: scale(1.1);
+  }
+  100% { 
+    background-color: #f44336;
+    transform: scale(1);
+  }
+}
+
+.notification-badge.urgent {
+  animation: badge-pulse 2s ease-in-out infinite;
+}
+
+/* レスポンシブ対応 */
+@media (max-width: 767px) {
+  .notification-drawer {
+    width: 100vw !important;
+    height: 100vh;
+  }
+  
+  .notification-detail-dialog {
+    width: 100vw !important;
+    height: 100vh !important;
+    max-width: none !important;
+    max-height: none !important;
+    margin: 0 !important;
+    border-radius: 0 !important;
+  }
+  
+  .shift-calendar {
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+  
+  .notification-filter-chips {
+    flex-wrap: wrap;
+    gap: 4px !important;
+  }
+  
+  .notification-actions {
+    flex-direction: column;
+    gap: 8px !important;
+  }
+}
+
+@media (max-width: 959px) and (min-width: 768px) {
+  .notification-drawer {
+    width: 350px !important;
+  }
+}
+
+/* スクロールバーカスタマイズ */
+.notification-list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.notification-list::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.notification-list::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+.notification-list::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* アクセシビリティ対応 */
+.notification-item:focus-visible {
+  outline: 2px solid #1976d2;
+  outline-offset: 2px;
+}
+
+.notification-trigger:focus-visible {
+  outline: 2px solid white;
+  outline-offset: 2px;
+}
+
+/* ハイコントラストモード対応 */
+@media (prefers-contrast: high) {
+  .notification-item {
+    border: 2px solid;
+  }
+  
+  .notification-badge {
+    border: 2px solid white;
+  }
+}
+
+/* 動きを減らすアクセシビリティ設定 */
+@media (prefers-reduced-motion: reduce) {
+  .notification-drawer-enter-active,
+  .notification-drawer-exit-active,
+  .notification-item,
+  .notification-trigger,
+  .notification-new,
+  .notification-badge.urgent {
+    animation: none !important;
+    transition: none !important;
+  }
+}

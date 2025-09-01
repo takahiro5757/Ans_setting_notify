@@ -7,12 +7,32 @@ import HomeIcon from '@mui/icons-material/Home';
 import BusinessIcon from '@mui/icons-material/Business';
 import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
 import EventIcon from '@mui/icons-material/Event';
-import { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
+import { useShiftStore } from '@/stores/shiftStore';
+import NotificationIcon from './notifications/NotificationIcon';
+import NotificationDrawer from './notifications/NotificationDrawer';
 
 export default function Header() {
   const router = useRouter();
   const pathname = usePathname();
+  
+  // 通知ストアから必要な値を取得
+  const {
+    getUnreadCount,
+    getFilteredNotifications,
+    notificationFilter,
+    setNotificationFilter,
+    markNotificationAsRead,
+    clearAllNotifications
+  } = useShiftStore();
+  
+  // 通知関連の状態管理
+  const [notificationDrawerOpen, setNotificationDrawerOpen] = useState(false);
+  const unreadCount = getUnreadCount();
+  const filteredNotifications = getFilteredNotifications();
+  
+
   
   // シフト管理メニューの状態管理
   const [shiftsMenuOpen, setShiftsMenuOpen] = useState(false);
@@ -75,6 +95,39 @@ export default function Header() {
     router.push(path);
     setAccountingMenuOpen(false);
   };
+
+  // 通知関連のハンドラー
+  const handleNotificationIconClick = () => {
+    setNotificationDrawerOpen(true);
+  };
+
+  const handleNotificationDrawerClose = () => {
+    setNotificationDrawerOpen(false);
+  };
+
+
+
+  const handleNotificationClick = (notification: any) => {
+    // 変更依頼の場合はダイアログ表示のため遷移しない
+    if (notification.type === 'change_request') {
+      return; // ダイアログはNotificationDrawerで管理
+    }
+    
+    // シフト提出通知の場合も遷移しない（既読マークのみ）
+    if (notification.type === 'shift_submission') {
+      return; // 画面遷移は不要
+    }
+    
+    // その他の通知の場合は指定されたページに遷移
+    if (notification.actions?.primaryAction?.path) {
+      router.push(notification.actions.primaryAction.path);
+    }
+  };
+
+  // 緊急通知があるかどうかを確認
+  const hasUrgentNotifications = filteredNotifications.some(
+    notification => !notification.read && notification.shiftDetails.priority === 'urgent'
+  );
 
   // シフト関連ページかどうかをチェック
   const isShiftsActive = pathname === '/shifts' || 
@@ -298,7 +351,13 @@ export default function Header() {
             >
               設定
             </Button>
-            <Box sx={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Box sx={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 1 }}>
+              {/* 通知アイコン */}
+              <NotificationIcon
+                unreadCount={unreadCount}
+                hasUrgent={hasUrgentNotifications}
+                onClick={handleNotificationIconClick}
+              />
               <Avatar sx={{ width: 32, height: 32 }} />
               <Typography sx={{ fontSize: '0.9rem', color: 'white' }}>
                 モック 管理者
@@ -320,6 +379,18 @@ export default function Header() {
           </Box>
         </Toolbar>
       </AppBar>
+      
+      {/* 通知ドロワー */}
+      <NotificationDrawer
+        open={notificationDrawerOpen}
+        notifications={filteredNotifications}
+        filter={notificationFilter}
+        unreadCount={unreadCount}
+        onClose={handleNotificationDrawerClose}
+        onFilterChange={setNotificationFilter}
+        onMarkAsRead={markNotificationAsRead}
+        onNotificationClick={handleNotificationClick}
+      />
     </Box>
   );
 } 

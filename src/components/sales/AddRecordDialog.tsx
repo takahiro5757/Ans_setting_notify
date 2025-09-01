@@ -23,6 +23,7 @@ import {
   LocationOn as LocationIcon,
   Business as BusinessIcon,
   Flag as FlagIcon,
+  SupervisorAccount as SupervisorAccountIcon,
   Delete as DeleteIcon,
 } from '@mui/icons-material';
 
@@ -34,6 +35,7 @@ interface NewRecordForm {
   isBandProject: boolean;
   bandWorkDays: number;
   eventLocation: string;
+  locationDetail: string;
   managerName: string;
   managerPhone: string;
   hostStore: string;
@@ -49,6 +51,8 @@ interface NewRecordForm {
   }[];
   isExternalVenue: boolean;
   hasBusinessTrip: boolean;
+  requiresDirector: boolean;
+  eventType: 'mall' | 'external_sales' | 'in_store';
   closerCount: number;
   closerUnitPrice: number;
   closerTransportFee: number;
@@ -121,6 +125,27 @@ const AddRecordDialog: React.FC<AddRecordDialogProps> = ({
   const assignedUserOptions = ['田中', '佐藤', '鈴木', '高橋', '渡辺', '伊藤', '山本', '中村'];
   const agencyOptions = ['ピーアップ', 'ラネット', 'CS', 'エージェントA', 'マーケティング会社B'];
   const eventLocationOptions = ['東京ビッグサイト', '幕張メッセ', 'パシフィコ横浜', 'インテックス大阪', '京都国際会館', 'ポートメッセなごや'];
+  
+  // 場所詳細のオプション（イベント実施場所に応じて変更）
+  const getLocationDetailOptions = (eventLocation: string) => {
+    switch (eventLocation) {
+      case '東京ビッグサイト':
+        return ['東1ホール', '東2ホール', '東3ホール', '西1ホール', '西2ホール', '南1ホール', '南2ホール'];
+      case '幕張メッセ':
+        return ['1ホール', '2ホール', '3ホール', '4ホール', '5ホール', '6ホール', '7ホール', '8ホール'];
+      case 'パシフィコ横浜':
+        return ['展示ホールA', '展示ホールB', '展示ホールC', '展示ホールD', 'アネックスホール'];
+      case 'インテックス大阪':
+        return ['1号館', '2号館', '3号館', '4号館', '5号館', '6号館'];
+      case '京都国際会館':
+        return ['メインホール', '第1会議場', '第2会議場', '第3会議場', 'イベントホール'];
+      case 'ポートメッセなごや':
+        return ['第1展示館', '第2展示館', '第3展示館', 'イベント館'];
+      default:
+        return ['詳細未設定'];
+    }
+  };
+
   const managerOptions = [
     { name: '山田太郎', phone: '090-1234-5678' },
     { name: '佐藤花子', phone: '090-2345-6789' },
@@ -429,11 +454,35 @@ const AddRecordDialog: React.FC<AddRecordDialogProps> = ({
                   </Typography>
                   <Select
                     value={form.eventLocation}
-                    onChange={(e) => onFormChange('eventLocation', e.target.value)}
+                    onChange={(e) => {
+                      onFormChange('eventLocation', e.target.value);
+                      // イベント実施場所が変更されたら場所詳細をリセット
+                      onFormChange('locationDetail', '');
+                    }}
                     size="small"
                   >
                     {eventLocationOptions.map((location) => (
                       <MenuItem key={location} value={location}>{location}</MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+
+                {/* 場所詳細選択 */}
+                <FormControl fullWidth>
+                  <Typography variant="subtitle2" sx={{ 
+                    mb: 1, 
+                    fontWeight: 'bold'
+                  }}>
+                    場所詳細
+                  </Typography>
+                  <Select
+                    value={form.locationDetail}
+                    onChange={(e) => onFormChange('locationDetail', e.target.value)}
+                    size="small"
+                    disabled={!form.eventLocation}
+                  >
+                    {getLocationDetailOptions(form.eventLocation).map((detail) => (
+                      <MenuItem key={detail} value={detail}>{detail}</MenuItem>
                     ))}
                   </Select>
                 </FormControl>
@@ -952,6 +1001,32 @@ const AddRecordDialog: React.FC<AddRecordDialogProps> = ({
                     />
                     <FlagIcon sx={{ mr: 1, color: '#2196f3' }} />
                     <Typography variant="body2">出張あり</Typography>
+                  </Box>
+
+                  {/* ディレクター必須 */}
+                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                    <Checkbox
+                      checked={form.requiresDirector}
+                      onChange={(e) => onFormChange('requiresDirector', e.target.checked)}
+                    />
+                    <SupervisorAccountIcon sx={{ mr: 1, color: '#9c27b0' }} />
+                    <Typography variant="body2">Dir必須</Typography>
+                  </Box>
+
+                  {/* イベント特性 */}
+                  <Box sx={{ mt: 2 }}>
+                    <FormControl fullWidth size="small">
+                      <InputLabel>イベント特性</InputLabel>
+                      <Select
+                        value={form.eventType}
+                        label="イベント特性"
+                        onChange={(e) => onFormChange('eventType', e.target.value)}
+                      >
+                        <MenuItem value="mall">モール</MenuItem>
+                        <MenuItem value="external_sales">外販</MenuItem>
+                        <MenuItem value="in_store">店内</MenuItem>
+                      </Select>
+                    </FormControl>
                   </Box>
                 </Box>
               </Box>

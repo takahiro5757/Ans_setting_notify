@@ -34,6 +34,7 @@ import {
   LocationOn as LocationIcon,
   Business as BusinessIcon,
   Flag as FlagIcon,
+  SupervisorAccount as SupervisorAccountIcon,
   Delete as DeleteIcon,
   Person as PersonIcon,
   Woman as WomanIcon,
@@ -60,10 +61,12 @@ interface SalesRecord {
   managerPhone: string;
   hostStore: string[];
   partnerStores: string[];
+  eventType: 'mall' | 'external_sales' | 'in_store';
   flags: {
     hasLocationReservation: boolean;
     isExternalVenue: boolean;
     hasBusinessTrip: boolean;
+    requiresDirector: boolean;
   };
   quotaTable: {
     closer: {
@@ -741,82 +744,156 @@ const SalesSummaryView: React.FC<SalesSummaryViewProps> = ({ records, selectedWe
                     </Box>
                     
                     {/* フラグエリア（固定位置） */}
-                    <Box sx={{ position: 'absolute', left: '170px', width: '200px', display: 'flex', gap: 1 }}>
-                      <Box 
-                        sx={{ 
-                          display: 'flex', 
-                          alignItems: 'center', 
-                          gap: 0.5,
-                          cursor: editingRecord === record.id ? 'pointer' : 'default',
-                          '&:hover': editingRecord === record.id ? { backgroundColor: 'rgba(76, 175, 80, 0.1)', borderRadius: '4px' } : {},
-                          padding: editingRecord === record.id ? '2px 4px' : '0',
-                          borderRadius: '4px'
-                        }}
-                        onClick={() => {
-                          if (editingRecord === record.id) {
-                            onRecordUpdate(record.id, { 
-                              flags: { ...record.flags, hasLocationReservation: !record.flags.hasLocationReservation }
-                            });
-                          }
-                        }}
-                      >
-                        <LocationIcon fontSize="small" sx={{ color: record.flags.hasLocationReservation ? '#4caf50' : (editingRecord === record.id ? '#ccc' : '#4caf50') }} />
-                        <Typography variant="caption" sx={{ fontSize: '0.7rem', color: record.flags.hasLocationReservation ? '#4caf50' : (editingRecord === record.id ? '#ccc' : '#4caf50') }}>
-                          場所取り
-                        </Typography>
+                    <Box sx={{ position: 'absolute', left: '170px', width: '220px', display: 'flex', alignItems: 'start' }}>
+                      {/* 左側: 2×2フラググリッド */}
+                      <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gridTemplateRows: 'auto auto', gap: 0.3, alignItems: 'start', width: '160px' }}>
+                        {/* 第1行左: 場所取り */}
+                        <Box 
+                          sx={{ 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            gap: 0.5,
+                            cursor: editingRecord === record.id ? 'pointer' : 'default',
+                            '&:hover': editingRecord === record.id ? { backgroundColor: 'rgba(76, 175, 80, 0.1)', borderRadius: '4px' } : {},
+                            padding: editingRecord === record.id ? '2px 4px' : '0',
+                            borderRadius: '4px'
+                          }}
+                          onClick={() => {
+                            if (editingRecord === record.id) {
+                              onRecordUpdate(record.id, { 
+                                flags: { ...record.flags, hasLocationReservation: !record.flags.hasLocationReservation }
+                              });
+                            }
+                          }}
+                        >
+                          <LocationIcon fontSize="small" sx={{ color: record.flags.hasLocationReservation ? '#4caf50' : (editingRecord === record.id ? '#ccc' : '#4caf50') }} />
+                          <Typography variant="caption" sx={{ fontSize: '0.7rem', color: record.flags.hasLocationReservation ? '#4caf50' : (editingRecord === record.id ? '#ccc' : '#4caf50') }}>
+                            場所取り
+                          </Typography>
+                        </Box>
+                        
+                        {/* 第1行右: 外現場 */}
+                        <Box 
+                          sx={{ 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            gap: 0.5,
+                            cursor: editingRecord === record.id ? 'pointer' : 'default',
+                            '&:hover': editingRecord === record.id ? { backgroundColor: 'rgba(255, 152, 0, 0.1)', borderRadius: '4px' } : {},
+                            padding: editingRecord === record.id ? '2px 4px' : '0',
+                            borderRadius: '4px'
+                          }}
+                          onClick={() => {
+                            if (editingRecord === record.id) {
+                              onRecordUpdate(record.id, { 
+                                flags: { ...record.flags, isExternalVenue: !record.flags.isExternalVenue }
+                              });
+                            }
+                          }}
+                        >
+                          <BusinessIcon fontSize="small" sx={{ color: record.flags.isExternalVenue ? '#ff9800' : (editingRecord === record.id ? '#ccc' : '#ff9800') }} />
+                          <Typography variant="caption" sx={{ fontSize: '0.7rem', color: record.flags.isExternalVenue ? '#ff9800' : (editingRecord === record.id ? '#ccc' : '#ff9800') }}>
+                            外現場
+                          </Typography>
+                        </Box>
+
+                        {/* 第2行左: 出張 */}
+                        <Box 
+                          sx={{ 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            gap: 0.5,
+                            cursor: editingRecord === record.id ? 'pointer' : 'default',
+                            '&:hover': editingRecord === record.id ? { backgroundColor: 'rgba(33, 150, 243, 0.1)', borderRadius: '4px' } : {},
+                            padding: editingRecord === record.id ? '2px 4px' : '0',
+                            borderRadius: '4px'
+                          }}
+                          onClick={() => {
+                            if (editingRecord === record.id) {
+                              onRecordUpdate(record.id, { 
+                                flags: { ...record.flags, hasBusinessTrip: !record.flags.hasBusinessTrip }
+                              });
+                            }
+                          }}
+                        >
+                          <FlagIcon fontSize="small" sx={{ color: record.flags.hasBusinessTrip ? '#2196f3' : (editingRecord === record.id ? '#ccc' : '#2196f3') }} />
+                          <Typography variant="caption" sx={{ fontSize: '0.7rem', color: record.flags.hasBusinessTrip ? '#2196f3' : (editingRecord === record.id ? '#ccc' : '#2196f3') }}>
+                            出張
+                          </Typography>
+                        </Box>
+
+                        {/* 第2行右: ディレクター必須 */}
+                        <Box 
+                          sx={{ 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            gap: 0.5,
+                            cursor: editingRecord === record.id ? 'pointer' : 'default',
+                            '&:hover': editingRecord === record.id ? { backgroundColor: 'rgba(156, 39, 176, 0.1)', borderRadius: '4px' } : {},
+                            padding: editingRecord === record.id ? '2px 4px' : '0',
+                            borderRadius: '4px'
+                          }}
+                          onClick={() => {
+                            if (editingRecord === record.id) {
+                              onRecordUpdate(record.id, { 
+                                flags: { ...record.flags, requiresDirector: !record.flags.requiresDirector }
+                              });
+                            }
+                          }}
+                        >
+                          <SupervisorAccountIcon fontSize="small" sx={{ color: record.flags.requiresDirector ? '#9c27b0' : (editingRecord === record.id ? '#ccc' : '#9c27b0') }} />
+                          <Typography variant="caption" sx={{ fontSize: '0.7rem', color: record.flags.requiresDirector ? '#9c27b0' : (editingRecord === record.id ? '#ccc' : '#9c27b0') }}>
+                            Dir必須
+                          </Typography>
+                        </Box>
                       </Box>
-                      
-                      <Box 
-                        sx={{ 
-                          display: 'flex', 
-                          alignItems: 'center', 
-                          gap: 0.5,
-                          cursor: editingRecord === record.id ? 'pointer' : 'default',
-                          '&:hover': editingRecord === record.id ? { backgroundColor: 'rgba(255, 152, 0, 0.1)', borderRadius: '4px' } : {},
-                          padding: editingRecord === record.id ? '2px 4px' : '0',
-                          borderRadius: '4px'
-                        }}
-                        onClick={() => {
-                          if (editingRecord === record.id) {
-                            onRecordUpdate(record.id, { 
-                              flags: { ...record.flags, isExternalVenue: !record.flags.isExternalVenue }
-                            });
-                          }
-                        }}
-                      >
-                        <BusinessIcon fontSize="small" sx={{ color: record.flags.isExternalVenue ? '#ff9800' : (editingRecord === record.id ? '#ccc' : '#ff9800') }} />
-                        <Typography variant="caption" sx={{ fontSize: '0.7rem', color: record.flags.isExternalVenue ? '#ff9800' : (editingRecord === record.id ? '#ccc' : '#ff9800') }}>
-                          外現場
-                        </Typography>
-                      </Box>
-                      
-                      <Box 
-                        sx={{ 
-                          display: 'flex', 
-                          alignItems: 'center', 
-                          gap: 0.5,
-                          cursor: editingRecord === record.id ? 'pointer' : 'default',
-                          '&:hover': editingRecord === record.id ? { backgroundColor: 'rgba(33, 150, 243, 0.1)', borderRadius: '4px' } : {},
-                          padding: editingRecord === record.id ? '2px 4px' : '0',
-                          borderRadius: '4px'
-                        }}
-                        onClick={() => {
-                          if (editingRecord === record.id) {
-                            onRecordUpdate(record.id, { 
-                              flags: { ...record.flags, hasBusinessTrip: !record.flags.hasBusinessTrip }
-                            });
-                          }
-                        }}
-                      >
-                        <FlagIcon fontSize="small" sx={{ color: record.flags.hasBusinessTrip ? '#2196f3' : (editingRecord === record.id ? '#ccc' : '#2196f3') }} />
-                        <Typography variant="caption" sx={{ fontSize: '0.7rem', color: record.flags.hasBusinessTrip ? '#2196f3' : (editingRecord === record.id ? '#ccc' : '#2196f3') }}>
-                          出張
-                        </Typography>
+
+                      {/* 右側: イベント特性（1.5行目の位置） */}
+                      <Box sx={{ 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        justifyContent: 'center',
+                        height: '100%',
+                        ml: 0.5,
+                        alignSelf: 'center'
+                      }}>
+                        {editingRecord === record.id ? (
+                          <FormControl size="small" sx={{ minWidth: 80 }}>
+                            <Select
+                              value={record.eventType}
+                              onChange={(e) => onRecordUpdate(record.id, {
+                                eventType: e.target.value as 'mall' | 'external_sales' | 'in_store'
+                              })}
+                              sx={{ 
+                                height: '20px',
+                                fontSize: '0.65rem',
+                                '& .MuiOutlinedInput-input': {
+                                  padding: '1px 4px'
+                                }
+                              }}
+                            >
+                              <MenuItem value="mall">モール</MenuItem>
+                              <MenuItem value="external_sales">外販</MenuItem>
+                              <MenuItem value="in_store">店内</MenuItem>
+                            </Select>
+                          </FormControl>
+                        ) : (
+                          <Chip 
+                            label={
+                              record.eventType === 'mall' ? 'モール' :
+                              record.eventType === 'external_sales' ? '外販' : '店内'
+                            }
+                            size="small"
+                            color="primary"
+                            variant="outlined"
+                            sx={{ fontSize: '0.6rem', height: '16px' }}
+                          />
+                        )}
                       </Box>
                     </Box>
                     
                     {/* クローザー人数（固定位置） */}
-                    <Box sx={{ position: 'absolute', left: '380px', width: '60px', display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                    <Box sx={{ position: 'absolute', left: '400px', width: '60px', display: 'flex', alignItems: 'center', gap: 0.5 }}>
                       <PersonIcon fontSize="small" sx={{ color: '#1976d2' }} />
                       {editingRecord === record.id ? (
                         <TextField
@@ -857,7 +934,7 @@ const SalesSummaryView: React.FC<SalesSummaryViewProps> = ({ records, selectedWe
                     </Box>
                     
                     {/* ガール人数（固定位置） */}
-                    <Box sx={{ position: 'absolute', left: '450px', width: '60px', display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                    <Box sx={{ position: 'absolute', left: '470px', width: '60px', display: 'flex', alignItems: 'center', gap: 0.5 }}>
                       <WomanIcon fontSize="small" sx={{ color: '#e91e63' }} />
                       {editingRecord === record.id ? (
                         <TextField

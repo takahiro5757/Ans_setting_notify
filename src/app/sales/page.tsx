@@ -37,14 +37,17 @@ const generateDummySalesRecords = () => [
     dayType: '平日' as const,
     isBandProject: false,
     eventLocation: '東京ビッグサイト',
+    locationDetail: '東1ホール',
     managerName: '山田太郎',
     managerPhone: '090-1234-5678',
     hostStore: ['新宿店'],
     partnerStores: ['渋谷店', '浦和店'],
+    eventType: 'mall' as const, // 🆕 イベント特性
     flags: {
       hasLocationReservation: true,
       isExternalVenue: false,
       hasBusinessTrip: true,
+      requiresDirector: true, // 🆕 ディレクター必須フラグ
     },
     quotaTable: {
       closer: { count: 2, unitPrice: 15000, transportFee: 1000 },
@@ -84,14 +87,17 @@ const generateDummySalesRecords = () => [
     isBandProject: true,
     bandWorkDays: 20,
     eventLocation: '幕張メッセ',
+    locationDetail: '1ホール',
     managerName: '佐々木花子',
     managerPhone: '080-9876-5432',
     hostStore: ['池袋店'],
     partnerStores: [],
+    eventType: 'external_sales' as const, // 🆕 イベント特性
     flags: {
       hasLocationReservation: false,
       isExternalVenue: true,
       hasBusinessTrip: false,
+      requiresDirector: false, // 🆕 ディレクター必須フラグ
     },
     quotaTable: {
       closer: { count: 1, unitPrice: 18000, transportFee: 1200 },
@@ -112,14 +118,17 @@ const generateDummySalesRecords = () => [
     dayType: '平日' as const,
     isBandProject: false,
     eventLocation: '横浜アリーナ',
+    locationDetail: 'メインアリーナ',
     managerName: '伊藤次郎',
     managerPhone: '070-1111-2222',
     hostStore: ['横浜店'],
     partnerStores: ['川崎店'],
+    eventType: 'in_store' as const, // 🆕 イベント特性
     flags: {
       hasLocationReservation: true,
       isExternalVenue: false,
       hasBusinessTrip: false,
+      requiresDirector: true, // 🆕 ディレクター必須フラグ
     },
     quotaTable: {
       closer: { count: 3, unitPrice: 16000, transportFee: 800 },

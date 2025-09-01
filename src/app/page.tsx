@@ -2,6 +2,7 @@
 
 import { Box, Container, Typography, Paper } from '@mui/material';
 import { useRouter } from 'next/navigation';
+import AddNotificationButton from '@/components/notifications/AddNotificationButton';
 
 export default function Home() {
   const router = useRouter();
@@ -27,6 +28,9 @@ export default function Home() {
           </Typography>
         </Box>
       </Paper>
+      
+      {/* 通知テスト用ボタン */}
+      <AddNotificationButton />
     </Container>
   );
 } 

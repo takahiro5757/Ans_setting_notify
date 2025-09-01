@@ -560,12 +560,13 @@ export default function ManagementPage() {
   useEffect(() => {
     startAutoSync();
     
-    // 初期データ同期
+    // 初期データ同期（通知データ含む）
     const initializeData = async () => {
       try {
         console.log('=== ANSTEYPE管理画面 初期化開始 ===');
+        console.log('通知システム初期化中...');
         await syncFromAnsteype();
-        console.log('初期データ同期完了');
+        console.log('初期データ同期完了（通知データ含む）');
       } catch (error) {
         console.error('初期データ同期エラー:', error);
       }
@@ -583,7 +584,7 @@ export default function ManagementPage() {
   const [roleFilter, setRoleFilter] = useState<string>('');
 
   // 週情報を取得
-  const weeks = getWeeks(storeYear, storeMonth);
+  const weeks = getWeeks(storeYear.toString(), storeMonth.toString());
   
   // ダミーのサマリーデータ
   const summary = generateDummySummary();
@@ -641,7 +642,7 @@ export default function ManagementPage() {
     }
     
     return shifts;
-  }, [storeYear, storeMonth, getShifts, allStaffMembers]);
+  }, [storeYear, storeMonth, allStaffMembers]);
 
   // 会社の一覧を動的に取得（重複を排除）
   const companies = useMemo(() => {
@@ -704,12 +705,12 @@ export default function ManagementPage() {
 
   // 年の変更ハンドラ
   const handleYearChange = (year: string) => {
-    setCurrentDate(year, storeMonth);
+    setCurrentDate(parseInt(year), storeMonth);
   };
 
   // 月の変更ハンドラ
   const handleMonthChange = (month: string) => {
-    setCurrentDate(storeYear, month);
+    setCurrentDate(storeYear, parseInt(month));
   };
 
   // 会社フィルターの変更ハンドラ
@@ -811,8 +812,8 @@ export default function ManagementPage() {
         <Box>
           {/* 年月選択 */}
           <YearMonthSelector
-            year={storeYear}
-            month={storeMonth}
+            year={storeYear.toString()}
+            month={storeMonth.toString()}
             onYearChange={handleYearChange}
             onMonthChange={handleMonthChange}
             years={['2023', '2024', '2025']}
@@ -918,8 +919,8 @@ export default function ManagementPage() {
           {/* SpreadsheetGridコンポーネント */}
           <Box sx={{ mt: 2 }}>
             <SpreadsheetGrid
-              year={parseInt(storeYear)}
-              month={parseInt(storeMonth)}
+              year={storeYear}
+              month={storeMonth}
               staffMembers={filteredStaffMembers}
               shifts={filteredShifts}
               onRequestTextChange={handleRequestTextChange}
