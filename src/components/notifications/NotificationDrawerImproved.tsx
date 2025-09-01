@@ -105,8 +105,8 @@ const NotificationDrawerImproved: React.FC<NotificationDrawerImprovedProps> = ({
       unread: notifications.filter(n => !n.read).length,
       submission: notifications.filter(n => n.type === 'shift_submission').length,
       change: notifications.filter(n => n.type === 'change_request').length,
-      pending: notifications.filter(n => n.type === 'change_request' && n.status === 'pending').length,
-      approved: notifications.filter(n => n.type === 'change_request' && n.status === 'approved').length,
+      pending: notifications.filter(n => n.type === 'change_request' && !n.read).length,
+      approved: notifications.filter(n => n.type === 'approval').length,
     };
     return counts;
   }, [notifications]);

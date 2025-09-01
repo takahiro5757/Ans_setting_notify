@@ -27,7 +27,7 @@ export interface EventLocationData {
   locationName: string;
   locationDetails: string;
   nearestStation?: string;
-  locationDetailList?: LocationDetail[];
+  locationDetailList?: any[];
   pricing?: {
     tuesday: { closer: number; girl: number; };
     wednesday: { closer: number; girl: number; };

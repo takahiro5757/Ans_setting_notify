@@ -137,6 +137,7 @@ interface SalesRecord {
     hasLocationReservation: boolean;
     isExternalVenue: boolean;
     hasBusinessTrip: boolean;
+    requiresDirector: boolean;
   };
   quotaTable: {
     closer: {

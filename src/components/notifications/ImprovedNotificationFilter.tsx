@@ -183,7 +183,7 @@ const ImprovedNotificationFilter: React.FC<ImprovedNotificationFilterProps> = ({
     <FormControl fullWidth size="small">
       <DropdownSelect
         value={filter}
-        onChange={(e: SelectChangeEvent) => onFilterChange(e.target.value as NotificationFilter)}
+        onChange={(e: SelectChangeEvent<unknown>) => onFilterChange(e.target.value as NotificationFilter)}
         displayEmpty
         startAdornment={<FilterIcon sx={{ color: 'text.secondary', mr: 1 }} />}
       >
@@ -229,7 +229,7 @@ const ImprovedNotificationFilter: React.FC<ImprovedNotificationFilterProps> = ({
               {options.map((option) => (
                 <Chip
                   key={option.key}
-                  icon={option.icon}
+                  icon={React.isValidElement(option.icon) ? option.icon : undefined}
                   label={
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                       {option.label}

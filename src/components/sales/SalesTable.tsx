@@ -281,7 +281,7 @@ const SalesTable: React.FC<SalesTableProps> = ({ records, selectedWeek, onRecord
     isExternalVenue: false,
     hasBusinessTrip: false,
     requiresDirector: false,
-    eventType: 'mall' as const,
+    eventType: 'mall' as EventType,
     
     // 枠集計表
     closerCount: 0,
@@ -1543,6 +1543,8 @@ const SalesTable: React.FC<SalesTableProps> = ({ records, selectedWeek, onRecord
       locationReservationDetails: [],
       isExternalVenue: false,
       hasBusinessTrip: false,
+      requiresDirector: false,
+      eventType: 'mall' as EventType,
       closerCount: 0,
       closerUnitPrice: 15000,
       closerTransportFee: 1000,

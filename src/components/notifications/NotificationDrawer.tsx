@@ -260,7 +260,7 @@ const NotificationDrawer: React.FC<NotificationDrawerProps> = ({
               <FormControl fullWidth size="small">
                 <DropdownSelect
                   value={filter}
-                  onChange={(e: SelectChangeEvent) => onFilterChange(e.target.value as NotificationFilter)}
+                  onChange={(e: SelectChangeEvent<unknown>) => onFilterChange(e.target.value as NotificationFilter)}
                   displayEmpty
                   startAdornment={<FilterIcon sx={{ color: 'text.secondary', mr: 1 }} />}
                 >

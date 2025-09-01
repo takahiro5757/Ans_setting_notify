@@ -237,6 +237,10 @@ interface DateRowProps {
   onCommentClick: (staffId: string, date: Date) => void;
   columnOrder: string[];
   isExpanded: boolean;
+  hideCaseColumns?: boolean;
+  isReadOnly?: boolean;
+  onRateChange?: (staffId: string, date: string, rate: number) => void;
+  disableDoubleClick?: boolean;
 }
 
 const DateRow: React.FC<DateRowProps> = ({ 

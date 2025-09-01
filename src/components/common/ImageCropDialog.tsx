@@ -152,14 +152,14 @@ const ImageCropDialog: React.FC<ImageCropDialogProps> = ({
   }, [zoom, crop, getActualScale]);
 
   // 2点間の距離を計算
-  const getTouchDistance = useCallback((touch1: Touch, touch2: Touch) => {
+  const getTouchDistance = useCallback((touch1: React.Touch, touch2: React.Touch) => {
     const dx = touch1.clientX - touch2.clientX;
     const dy = touch1.clientY - touch2.clientY;
     return Math.sqrt(dx * dx + dy * dy);
   }, []);
 
   // 2点の中心点を計算
-  const getTouchCenter = useCallback((touch1: Touch, touch2: Touch) => {
+  const getTouchCenter = useCallback((touch1: React.Touch, touch2: React.Touch) => {
     return {
       x: (touch1.clientX + touch2.clientX) / 2,
       y: (touch1.clientY + touch2.clientY) / 2

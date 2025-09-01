@@ -143,8 +143,14 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
     switch (type) {
       case 'shift_submission':
         return <AssignmentIcon color="primary" {...iconProps} />;
+      case 'shift_bulk_submission':
+        return <AssignmentIcon color="info" {...iconProps} />;
       case 'change_request':
         return <ScheduleIcon color="warning" {...iconProps} />;
+      case 'approval':
+        return <AssignmentIcon color="success" {...iconProps} />;
+      case 'rejection':
+        return <AssignmentIcon color="error" {...iconProps} />;
       default:
         return <DefaultIcon {...iconProps} />;
     }
@@ -155,8 +161,14 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
     switch (type) {
       case 'shift_submission':
         return '#1976d2'; // 青色
+      case 'shift_bulk_submission':
+        return '#0288d1'; // 水色
       case 'change_request':
         return '#ed6c02'; // オレンジ色
+      case 'approval':
+        return '#2e7d32'; // 緑色
+      case 'rejection':
+        return '#d32f2f'; // 赤色
       default:
         return '#757575'; // グレー
     }
@@ -167,8 +179,14 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
     switch (type) {
       case 'shift_submission':
         return 'シフトの提出';
+      case 'shift_bulk_submission':
+        return 'シフト一括提出';
       case 'change_request':
         return 'シフト変更依頼';
+      case 'approval':
+        return '承認';
+      case 'rejection':
+        return '却下';
       default:
         return '';
     }

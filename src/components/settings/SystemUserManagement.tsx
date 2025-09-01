@@ -155,8 +155,8 @@ export const SystemUserManagement: React.FC = () => {
   const handleEditUser = (user: SystemUser) => {
     setEditingUser(user);
     setUserData({
+      name: user.name,
       email: user.email,
-      password: user.password,
       role: user.role,
       isActive: user.isActive,
     });

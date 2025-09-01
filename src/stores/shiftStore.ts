@@ -27,7 +27,7 @@ interface ShiftNotificationDetails {
 
 // シフト通知拡張型
 interface ShiftNotification extends Omit<Notification, 'type'> {
-  type: 'shift_submission' | 'change_request';
+  type: 'shift_submission' | 'shift_bulk_submission' | 'change_request' | 'approval' | 'rejection';
   shiftDetails: ShiftNotificationDetails;
   actions: {
     primaryAction: {

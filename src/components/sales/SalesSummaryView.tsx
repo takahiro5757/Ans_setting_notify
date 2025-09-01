@@ -57,6 +57,7 @@ interface SalesRecord {
   isBandProject: boolean;
   bandWorkDays?: number;
   eventLocation: string;
+  locationDetail: string;
   managerName: string;
   managerPhone: string;
   hostStore: string[];
@@ -200,6 +201,7 @@ const SalesSummaryView: React.FC<SalesSummaryViewProps> = ({ records, selectedWe
     isBandProject: false,
     bandWorkDays: 0,
     eventLocation: '',
+    locationDetail: '',
     managerName: '',
     managerPhone: '',
     hostStore: '',
@@ -208,6 +210,8 @@ const SalesSummaryView: React.FC<SalesSummaryViewProps> = ({ records, selectedWe
     locationReservationDetails: [],
     isExternalVenue: false,
     hasBusinessTrip: false,
+    requiresDirector: false,
+    eventType: 'external_sales' as const,
     closerCount: 0,
     closerUnitPrice: 15000,
     closerTransportFee: 1000,
@@ -249,6 +253,7 @@ const SalesSummaryView: React.FC<SalesSummaryViewProps> = ({ records, selectedWe
       isBandProject: false,
       bandWorkDays: 0,
       eventLocation: '',
+      locationDetail: '',
       managerName: '',
       managerPhone: '',
       hostStore: '',
@@ -257,6 +262,8 @@ const SalesSummaryView: React.FC<SalesSummaryViewProps> = ({ records, selectedWe
       locationReservationDetails: [],
       isExternalVenue: false,
       hasBusinessTrip: false,
+      requiresDirector: false,
+      eventType: 'external_sales' as const,
       closerCount: 0,
       closerUnitPrice: 15000,
       closerTransportFee: 1000,
@@ -297,9 +304,11 @@ const SalesSummaryView: React.FC<SalesSummaryViewProps> = ({ records, selectedWe
       detailStatus: newRecordForm.detailStatus,
       schedule: [false, false, false, false, false, false, false],
       dayType: newRecordForm.dayType,
+      eventType: newRecordForm.eventType,
       isBandProject: newRecordForm.isBandProject,
       bandWorkDays: newRecordForm.isBandProject ? newRecordForm.bandWorkDays : undefined,
       eventLocation: newRecordForm.eventLocation,
+      locationDetail: newRecordForm.locationDetail,
       managerName: newRecordForm.managerName,
       managerPhone: newRecordForm.managerPhone,
       hostStore: newRecordForm.hostStore ? [newRecordForm.hostStore] : [],
@@ -308,6 +317,7 @@ const SalesSummaryView: React.FC<SalesSummaryViewProps> = ({ records, selectedWe
         hasLocationReservation: newRecordForm.hasLocationReservation,
         isExternalVenue: newRecordForm.isExternalVenue,
         hasBusinessTrip: newRecordForm.hasBusinessTrip,
+        requiresDirector: newRecordForm.requiresDirector,
       },
       quotaTable: {
         closer: {
