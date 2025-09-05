@@ -485,11 +485,16 @@ export const ProjectManagement: React.FC = () => {
   };
 
   const handleSaveLocation = () => {
-    // 場所詳細を処理
-    const finalLocationDetailList = processLocationDetails();
+    // 残っている未確定の入力フィールドを自動確定
+    locationDetailInputs.forEach(input => {
+      if (input.name.trim()) {
+        handleConfirmLocationDetail(input.tempId);
+      }
+    });
+
+    // 現在のlocationDataをそのまま使用（確定済みの詳細が含まれている）
     const finalLocationData = {
       ...locationData,
-      locationDetailList: finalLocationDetailList,
     };
 
     if (editingLocation) {
@@ -508,6 +513,7 @@ export const ProjectManagement: React.FC = () => {
     
     // フォームをリセット
     setLocationDetailInputs([]);
+    setEditingLocation(null);
     setLocationDialogOpen(false);
     setTimeout(() => setSaveMessage(''), 3000);
   };
@@ -558,6 +564,30 @@ export const ProjectManagement: React.FC = () => {
     }));
   };
 
+  // 場所詳細の確定（Enterキーまたはフォーカス離脱時）
+  const handleConfirmLocationDetail = (tempId: string) => {
+    const inputToConfirm = locationDetailInputs.find(input => input.tempId === tempId);
+    if (!inputToConfirm || !inputToConfirm.name.trim()) {
+      // 空の場合は削除
+      handleRemoveLocationDetailInput(tempId);
+      return;
+    }
+
+    // 新しい詳細を既存リストに追加
+    const newDetail = {
+      id: `detail_${Date.now()}_${Math.random()}`,
+      name: inputToConfirm.name.trim(),
+    };
+
+    setLocationData(prev => ({
+      ...prev,
+      locationDetailList: [...(prev.locationDetailList || []), newDetail]
+    }));
+
+    // 入力フィールドから削除
+    setLocationDetailInputs(prev => prev.filter(input => input.tempId !== tempId));
+  };
+
   // 特定の人がどのレイヤーに所属しているかを見つける関数
   const findPersonLayer = (agency: AgencyData, personId: string): string | null => {
     const layers = ['layer1', 'layer2', 'layer3', 'layer4'] as const;
@@ -568,6 +598,45 @@ export const ProjectManagement: React.FC = () => {
       }
     }
     return null;
+  };
+
+  // 下位レイヤーを取得するヘルパー関数
+  const getSubordinateLayers = (layerKey: string): string[] => {
+    switch (layerKey) {
+      case 'layer1': return ['layer2', 'layer3', 'layer4'];
+      case 'layer2': return ['layer3', 'layer4'];
+      case 'layer3': return ['layer4'];
+      case 'layer4': return [];
+      default: return [];
+    }
+  };
+
+  // 階層的な店舗管理のヘルパー関数
+  const getHierarchicalStores = (person: LayerPerson, layerKey: string, agency: AgencyData): { directStores: string[], indirectStores: string[] } => {
+    // レイヤー4のみ直接担当店舗を持つ
+    const directStores = layerKey === 'layer4' ? (person.assignedStores || []) : [];
+    const indirectStores: string[] = [];
+
+    // 部下の担当店舗を集約（レイヤー4以外の場合）
+    if (layerKey !== 'layer4') {
+      const subordinateLayers = getSubordinateLayers(layerKey);
+      subordinateLayers.forEach(subLayerKey => {
+        const subLayerPersons = agency.layers[subLayerKey as keyof typeof agency.layers] || [];
+        subLayerPersons.forEach((subPerson: LayerPerson) => {
+          if (subPerson.parentLayerPersonId === person.id) {
+            const subPersonStores = getHierarchicalStores(subPerson, subLayerKey, agency);
+            // 部下の直接担当店舗と間接担当店舗を全て間接担当として追加
+            [...subPersonStores.directStores, ...subPersonStores.indirectStores].forEach(storeId => {
+              if (!indirectStores.includes(storeId)) {
+                indirectStores.push(storeId);
+              }
+            });
+          }
+        });
+      });
+    }
+
+    return { directStores, indirectStores };
   };
 
   // レイヤー人員保存ハンドラー
@@ -584,7 +653,8 @@ export const ProjectManagement: React.FC = () => {
       position: layerPersonData.position.trim(),
       phone: layerPersonData.phone.trim(),
       email: layerPersonData.email?.trim() || undefined,
-      assignedStores: layerPersonData.assignedStores,
+      // レイヤー4のみ店舗を担当、レイヤー1-3は空配列
+      assignedStores: editingLayer === 'layer4' ? layerPersonData.assignedStores : [],
       parentLayerPersonId: layerPersonData.parentLayerPersonId
     };
 
@@ -962,21 +1032,33 @@ export const ProjectManagement: React.FC = () => {
                     </Grid>
                     <Grid item xs={12} md={6}>
                       <Typography variant="subtitle1" gutterBottom>料金設定</Typography>
-                      <TableContainer component={Paper} variant="outlined">
+                      <TableContainer component={Paper} variant="outlined" sx={{ maxWidth: 400 }}>
                         <Table size="small">
                           <TableHead>
                             <TableRow>
-                              <TableCell>曜日</TableCell>
-                              <TableCell align="right">クローザー</TableCell>
-                              <TableCell align="right">ガール</TableCell>
+                              <TableCell sx={{ width: '60px', padding: '8px' }}>曜日</TableCell>
+                              <TableCell align="right" sx={{ width: '80px', padding: '8px' }}>クローザー</TableCell>
+                              <TableCell align="right" sx={{ width: '80px', padding: '8px' }}>ガール</TableCell>
                             </TableRow>
                           </TableHead>
                           <TableBody>
                             {Object.entries(location.pricing || {}).map(([day, pricing]) => (
                               <TableRow key={day}>
-                                <TableCell>{dayLabels[day]}</TableCell>
-                                <TableCell align="right">¥{pricing.closer.toLocaleString()}</TableCell>
-                                <TableCell align="right">¥{pricing.girl.toLocaleString()}</TableCell>
+                                <TableCell sx={{ padding: '6px 8px' }}>
+                                  <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                                    {dayLabels[day]}
+                                  </Typography>
+                                </TableCell>
+                                <TableCell align="right" sx={{ padding: '6px 8px' }}>
+                                  <Typography variant="body2">
+                                    ¥{pricing.closer.toLocaleString()}
+                                  </Typography>
+                                </TableCell>
+                                <TableCell align="right" sx={{ padding: '6px 8px' }}>
+                                  <Typography variant="body2">
+                                    ¥{pricing.girl.toLocaleString()}
+                                  </Typography>
+                                </TableCell>
                               </TableRow>
                             ))}
                           </TableBody>
@@ -1114,17 +1196,45 @@ export const ProjectManagement: React.FC = () => {
                         )}
                       </Grid>
                       <Grid item xs={12} md={6}>
-                        <Typography variant="body2"><strong>担当店舗数:</strong> {person.assignedStores.length}店舗</Typography>
-                        {person.assignedStores.length > 0 && (
-                          <Box sx={{ mt: 1 }}>
-                            <Typography variant="caption" color="text.secondary">
-                              担当店舗: {person.assignedStores.map(storeId => {
-                                const store = selectedAgency.stores.find(s => s.id === storeId);
-                                return store ? store.name : storeId;
-                              }).join(', ')}
-                            </Typography>
-                          </Box>
-                        )}
+                        {(() => {
+                          const currentLayer = findPersonLayer(selectedAgency, person.id);
+                          if (!currentLayer) return null;
+                          
+                          const { directStores, indirectStores } = getHierarchicalStores(person, currentLayer, selectedAgency);
+                          const totalStores = directStores.length + indirectStores.length;
+                          
+                          return (
+                            <>
+                              <Typography variant="body2">
+                                <strong>
+                                  {currentLayer === 'layer4' ? '担当店舗数:' : '管理下店舗数:'}
+                                </strong> {totalStores}店舗
+                              </Typography>
+                              
+                              {directStores.length > 0 && (
+                                <Box sx={{ mt: 1 }}>
+                                  <Typography variant="caption" color="primary.main" sx={{ fontWeight: 500 }}>
+                                    担当店舗: {directStores.map(storeId => {
+                                      const store = selectedAgency.stores.find(s => s.id === storeId);
+                                      return store ? store.name : storeId;
+                                    }).join(', ')}
+                                  </Typography>
+                                </Box>
+                              )}
+                              
+                              {indirectStores.length > 0 && (
+                                <Box sx={{ mt: directStores.length > 0 ? 0.5 : 1 }}>
+                                  <Typography variant="caption" color="text.secondary">
+                                    管理下店舗: {indirectStores.map(storeId => {
+                                      const store = selectedAgency.stores.find(s => s.id === storeId);
+                                      return store ? store.name : storeId;
+                                    }).join(', ')}
+                                  </Typography>
+                                </Box>
+                              )}
+                            </>
+                          );
+                        })()}
                       </Grid>
                     </Grid>
                   </AccordionDetails>
@@ -1443,12 +1553,13 @@ export const ProjectManagement: React.FC = () => {
                 <Box sx={{ mb: 5 }}>
                   <Box sx={{ display: 'flex', justifyContent: 'center', gap: 5 }}>
                     {layer4People.map(person => {
+                      const { directStores } = getHierarchicalStores(person, 'layer4', selectedAgency);
                       const personStores = selectedAgency.stores.filter(store => 
-                        person.assignedStores.includes(store.id)
+                        directStores.includes(store.id)
                       );
                       
                       return (
-                        <Box key={person.id} sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+                        <Box key={person.id} sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
                           {renderPersonCard(person, 3)}
                           {personStores.length > 0 && (
                             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
@@ -1819,160 +1930,170 @@ export const ProjectManagement: React.FC = () => {
       </Dialog>
 
       {/* イベント場所編集ダイアログ */}
-      <Dialog open={locationDialogOpen} onClose={() => setLocationDialogOpen(false)} maxWidth="lg" fullWidth>
+      <Dialog open={locationDialogOpen} onClose={() => {
+        setLocationDetailInputs([]);
+        setEditingLocation(null);
+        setLocationDialogOpen(false);
+      }} maxWidth="lg" fullWidth>
         <DialogTitle>{editingLocation ? 'イベント場所編集' : 'イベント場所追加'}</DialogTitle>
         <DialogContent>
           <Grid container spacing={3} sx={{ mt: 1 }}>
-            <Grid item xs={12} md={6}>
-              <FormControl fullWidth required>
-                <InputLabel>代理店</InputLabel>
-                <Select
-                  value={locationData.agencyId}
-                  onChange={(e) => setLocationData({...locationData, agencyId: e.target.value})}
-                >
-                  {agencies.map(agency => (
-                    <MenuItem key={agency.id} value={agency.id}>
-                      {agency.companyName}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={12} md={6}>
-              <TextField
-                label="イベント実施場所"
-                value={locationData.locationName}
-                onChange={(e) => setLocationData({...locationData, locationName: e.target.value})}
-                required
-                fullWidth
-              />
-            </Grid>
-            <Grid item xs={12} md={6}>
-              <TextField
-                label="住所"
-                value={locationData.address}
-                onChange={(e) => setLocationData({...locationData, address: e.target.value})}
-                required
-                fullWidth
-              />
-            </Grid>
-            <Grid item xs={12} md={6}>
-              <TextField
-                label="最寄駅"
-                value={locationData.nearestStation || ''}
-                onChange={(e) => setLocationData({...locationData, nearestStation: e.target.value})}
-                fullWidth
-              />
+            {/* 基本情報セクション */}
+            <Grid item xs={12}>
+              <Card sx={{ p: 2, mb: 2 }}>
+                <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                  <LocationIcon sx={{ mr: 1, color: 'primary.main' }} />
+                  基本情報
+                </Typography>
+                <Grid container spacing={2}>
+                  <Grid item xs={12} md={4.8}>
+                    <TextField
+                      label="イベント実施場所"
+                      value={locationData.locationName}
+                      onChange={(e) => setLocationData({...locationData, locationName: e.target.value})}
+                      required
+                      fullWidth
+                      variant="outlined"
+                    />
+                  </Grid>
+                  <Grid item xs={12} md={4.8}>
+                    <TextField
+                      label="住所"
+                      value={locationData.address}
+                      onChange={(e) => setLocationData({...locationData, address: e.target.value})}
+                      required
+                      fullWidth
+                      variant="outlined"
+                    />
+                  </Grid>
+                  <Grid item xs={12} md={2.4}>
+                    <TextField
+                      label="最寄駅"
+                      value={locationData.nearestStation || ''}
+                      onChange={(e) => setLocationData({...locationData, nearestStation: e.target.value})}
+                      fullWidth
+                      variant="outlined"
+                    />
+                  </Grid>
+                </Grid>
+              </Card>
             </Grid>
 
             {/* 場所詳細管理セクション */}
             <Grid item xs={12}>
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mt: 2 }}>
-                <Box>
-                  <Typography variant="h6" gutterBottom>
-                    場所詳細管理
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    このイベント場所に紐づく詳細な場所情報を登録できます
-                  </Typography>
+              <Card sx={{ p: 2, mb: 2 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+                  <Box>
+                    <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                      <StoreIcon sx={{ mr: 1, color: 'primary.main' }} />
+                      場所詳細管理
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      このイベント場所に紐づく詳細な場所情報を登録できます
+                    </Typography>
+                  </Box>
+                  <Button
+                    variant="contained"
+                    startIcon={<AddIcon />}
+                    onClick={handleAddLocationDetailInput}
+                    size="small"
+                  >
+                    詳細追加
+                  </Button>
                 </Box>
-                <Button
-                  variant="outlined"
-                  startIcon={<AddIcon />}
-                  onClick={handleAddLocationDetailInput}
-                  size="small"
-                >
-                  詳細追加
-                </Button>
-              </Box>
-            </Grid>
-            
-            {/* 場所詳細一覧 */}
-            <Grid item xs={12}>
-              <Typography variant="subtitle2" gutterBottom>場所詳細一覧</Typography>
-              <TableContainer component={Paper} variant="outlined" sx={{ mb: 2 }}>
-                <Table size="small">
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>場所詳細名</TableCell>
-                      <TableCell align="center">操作</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {/* 既存の場所詳細（読み取り専用） */}
-                    {locationData.locationDetailList && locationData.locationDetailList.map((detail) => (
-                      <TableRow key={detail.id}>
-                        <TableCell>
-                          <Typography variant="body2">{detail.name}</Typography>
-                        </TableCell>
-                        <TableCell align="center">
-                          <IconButton
-                            size="small"
-                            onClick={() => handleRemoveExistingLocationDetail(detail.id)}
-                            color="error"
-                          >
-                            <DeleteIcon fontSize="small" />
-                          </IconButton>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                    {/* 新規追加フィールド（編集可能） */}
-                    {locationDetailInputs.map((input, index) => (
-                      <TableRow key={input.tempId} sx={{ bgcolor: 'action.hover' }}>
-                        <TableCell>
-                          <TextField
-                            value={input.name}
-                            onChange={(e) => handleLocationDetailInputChange(input.tempId, 'name', e.target.value)}
-                            placeholder="場所詳細名を入力"
-                            size="small"
-                            fullWidth
-                            variant="outlined"
-                          />
-                        </TableCell>
-                        <TableCell align="center">
-                          <IconButton
-                            size="small"
-                            onClick={() => handleRemoveLocationDetailInput(input.tempId)}
-                            color="error"
-                          >
-                            <DeleteIcon fontSize="small" />
-                          </IconButton>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                    {/* 場所詳細がない場合 */}
-                    {(!locationData.locationDetailList || locationData.locationDetailList.length === 0) && 
-                     locationDetailInputs.length === 0 && (
+                
+                <TableContainer component={Paper} variant="outlined" sx={{ mt: 2 }}>
+                  <Table size="small">
+                    <TableHead>
                       <TableRow>
-                        <TableCell colSpan={2} align="center">
-                          <Typography variant="body2" color="text.secondary">
-                            場所詳細が登録されていません。「詳細追加」ボタンで追加してください。
-                          </Typography>
-                        </TableCell>
+                        <TableCell sx={{ fontWeight: 'bold' }}>場所詳細名</TableCell>
+                        <TableCell align="center" sx={{ fontWeight: 'bold', width: '80px' }}>操作</TableCell>
                       </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-              </TableContainer>
+                    </TableHead>
+                    <TableBody>
+                      {/* 既存の場所詳細（読み取り専用） */}
+                      {locationData.locationDetailList && locationData.locationDetailList.map((detail) => (
+                        <TableRow key={detail.id}>
+                          <TableCell>
+                            <Typography variant="body2">{detail.name}</Typography>
+                          </TableCell>
+                          <TableCell align="center">
+                            <IconButton
+                              size="small"
+                              onClick={() => handleRemoveExistingLocationDetail(detail.id)}
+                              color="error"
+                            >
+                              <DeleteIcon fontSize="small" />
+                            </IconButton>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                      {/* 新規追加フィールド（編集可能） */}
+                      {locationDetailInputs.map((input, index) => (
+                        <TableRow key={input.tempId} sx={{ bgcolor: 'action.hover' }}>
+                          <TableCell>
+                            <TextField
+                              value={input.name}
+                              onChange={(e) => handleLocationDetailInputChange(input.tempId, 'name', e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  e.preventDefault();
+                                  handleConfirmLocationDetail(input.tempId);
+                                }
+                              }}
+                              onBlur={() => handleConfirmLocationDetail(input.tempId)}
+                              placeholder="場所詳細名を入力してEnterキーで確定"
+                              size="small"
+                              fullWidth
+                              variant="outlined"
+                              autoFocus
+                            />
+                          </TableCell>
+                          <TableCell align="center">
+                            <IconButton
+                              size="small"
+                              onClick={() => handleRemoveLocationDetailInput(input.tempId)}
+                              color="error"
+                            >
+                              <DeleteIcon fontSize="small" />
+                            </IconButton>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                      {/* 場所詳細がない場合 */}
+                      {(!locationData.locationDetailList || locationData.locationDetailList.length === 0) && 
+                       locationDetailInputs.length === 0 && (
+                        <TableRow>
+                          <TableCell colSpan={2} align="center" sx={{ py: 3 }}>
+                            <Typography variant="body2" color="text.secondary">
+                              場所詳細が登録されていません。「詳細追加」ボタンで追加してください。
+                            </Typography>
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              </Card>
             </Grid>
             
+            {/* 料金設定セクション */}
             <Grid item xs={12}>
-              <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>
-                <MoneyIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
-                曜日別請求単価設定
-              </Typography>
-            </Grid>
+              <Card sx={{ p: 2 }}>
+                <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+                  <MoneyIcon sx={{ mr: 1, color: 'primary.main' }} />
+                  曜日別請求単価設定
+                </Typography>
+                <Grid container spacing={2}>
             
             {weekdays.map((day) => (
-              <Fragment key={day.key}>
-                <Grid item xs={12} md={2}>
-                  <Typography variant="subtitle2" sx={{ mt: 2 }}>
+              <Grid item xs={12} key={day.key}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, py: 1 }}>
+                  <Typography variant="subtitle2" sx={{ minWidth: '60px', fontWeight: 'bold' }}>
                     {day.label}
                   </Typography>
-                </Grid>
-                <Grid item xs={12} md={5}>
                   <TextField
-                    label="クローザー請求単価"
+                    label="クローザー請求単価/日"
                     type="number"
                     value={locationData.pricing?.[day.key as keyof typeof locationData.pricing]?.closer || 0}
                     onChange={(e) => {
@@ -1995,16 +2116,26 @@ export const ProjectManagement: React.FC = () => {
                         pricing: newPricing
                       });
                     }}
-                    fullWidth
+                    sx={{ 
+                      flex: 1,
+                      '& input[type=number]': {
+                        '-moz-appearance': 'textfield'
+                      },
+                      '& input[type=number]::-webkit-outer-spin-button': {
+                        '-webkit-appearance': 'none',
+                        margin: 0
+                      },
+                      '& input[type=number]::-webkit-inner-spin-button': {
+                        '-webkit-appearance': 'none',
+                        margin: 0
+                      }
+                    }}
                     InputProps={{
                       startAdornment: <InputAdornment position="start">¥</InputAdornment>,
-                      endAdornment: <InputAdornment position="end">/ 日</InputAdornment>,
                     }}
                   />
-                </Grid>
-                <Grid item xs={12} md={5}>
                   <TextField
-                    label="ガール請求単価"
+                    label="ガール請求単価/日"
                     type="number"
                     value={locationData.pricing?.[day.key as keyof typeof locationData.pricing]?.girl || 0}
                     onChange={(e) => {
@@ -2027,19 +2158,38 @@ export const ProjectManagement: React.FC = () => {
                         pricing: newPricing
                       });
                     }}
-                    fullWidth
+                    sx={{ 
+                      flex: 1,
+                      '& input[type=number]': {
+                        '-moz-appearance': 'textfield'
+                      },
+                      '& input[type=number]::-webkit-outer-spin-button': {
+                        '-webkit-appearance': 'none',
+                        margin: 0
+                      },
+                      '& input[type=number]::-webkit-inner-spin-button': {
+                        '-webkit-appearance': 'none',
+                        margin: 0
+                      }
+                    }}
                     InputProps={{
                       startAdornment: <InputAdornment position="start">¥</InputAdornment>,
-                      endAdornment: <InputAdornment position="end">/ 日</InputAdornment>,
                     }}
                   />
-                </Grid>
-              </Fragment>
+                </Box>
+              </Grid>
             ))}
+                </Grid>
+              </Card>
+            </Grid>
           </Grid>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setLocationDialogOpen(false)}>キャンセル</Button>
+          <Button onClick={() => {
+            setLocationDetailInputs([]);
+            setEditingLocation(null);
+            setLocationDialogOpen(false);
+          }}>キャンセル</Button>
           <Button onClick={handleSaveLocation} variant="contained">
             {editingLocation ? '更新' : '追加'}
           </Button>

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import {
   Box,
   Card,
@@ -91,7 +91,7 @@ import {
 
 export const StaffManagement: React.FC = () => {
   // タブ関連
-  const [tabValue, setTabValue] = useState<StaffTabValue>('basic');
+  const [tabValue, setTabValue] = useState<StaffTabValue>(0);
   
   // スタッフ管理関連
   const [staffList, setStaffList] = useState<StaffData[]>(sampleStaff);
@@ -282,7 +282,7 @@ export const StaffManagement: React.FC = () => {
     }).sort((a, b) => a.label.localeCompare(b.label));
   };
 
-  const getFilteredStaffList = () => {
+  const filteredStaffList = useMemo(() => {
     return staffList.filter(staff => {
       // 所属フィルター
       if (affiliationFilter.length > 0 && !affiliationFilter.includes(staff.affiliation)) {
@@ -370,7 +370,19 @@ export const StaffManagement: React.FC = () => {
       
       return true;
     });
-  };
+  }, [
+    staffList,
+    affiliationFilter,
+    nameFilter,
+    positionFilter,
+    businessTripFilter,
+    genderFilter,
+    stationFilter,
+    carOwnershipFilter,
+    outdoorWorkNGFilter,
+    directorCapabilityFilter,
+    priceRangeFilter
+  ]);
 
   // フィルターがアクティブかどうかを判定
   const isFilterActive = (filterValues: string[], totalOptions: number) => {
@@ -818,7 +830,7 @@ export const StaffManagement: React.FC = () => {
               自社・2次請スタッフの統合管理（基本情報・スキル評価含む）
             </Typography>
             <Typography variant="body2" color="primary" sx={{ mt: 0.5 }}>
-              表示中: {getFilteredStaffList().length}件 / 全{staffList.length}件
+              表示中: {filteredStaffList.length}件 / 全{staffList.length}件
             </Typography>
           </Box>
         }
@@ -865,10 +877,10 @@ export const StaffManagement: React.FC = () => {
           }
         />
         <CardContent sx={{ padding: '8px !important' }}>
-          <TableContainer component={Paper} variant="outlined" sx={{ overflowX: 'auto', minWidth: '100%' }}>
+          <TableContainer component={Paper} variant="outlined" sx={{ overflowX: 'auto', maxWidth: '100%' }}>
             <Table sx={{ 
-              minWidth: 1400, 
-              tableLayout: 'fixed',
+              minWidth: 600, 
+              tableLayout: 'auto',
               '& .MuiTableCell-root': {
                 padding: '4px 8px',
                 fontSize: '0.875rem'
@@ -888,7 +900,7 @@ export const StaffManagement: React.FC = () => {
                       />
                     </Box>
                   </TableCell>
-                  <TableCell sx={{ minWidth: 200, whiteSpace: 'nowrap' }}>
+                  <TableCell sx={{ minWidth: 150, whiteSpace: 'nowrap' }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                       氏名
                       <ExcelLikeFilter
@@ -912,7 +924,7 @@ export const StaffManagement: React.FC = () => {
                       />
                     </Box>
                   </TableCell>
-                                    <TableCell sx={{ minWidth: 180, whiteSpace: 'nowrap', textAlign: 'center' }}>獲得力評価</TableCell>
+                                    <TableCell sx={{ minWidth: 120, whiteSpace: 'nowrap', textAlign: 'center' }}>獲得力評価</TableCell>
                 <TableCell sx={{ minWidth: 70, whiteSpace: 'nowrap', textAlign: 'center' }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                       最寄駅
@@ -978,7 +990,7 @@ export const StaffManagement: React.FC = () => {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {getFilteredStaffList().map((staff) => (
+                {filteredStaffList.map((staff) => (
                   <TableRow key={staff.id} sx={{ 
                     '& > *': { borderBottom: 'unset' },
                     height: '40px'
@@ -991,7 +1003,7 @@ export const StaffManagement: React.FC = () => {
                       />
                     </TableCell>
                     <TableCell sx={{ whiteSpace: 'nowrap' }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, minWidth: 380 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, minWidth: 250 }}>
                         <AvatarWithPreview
                           imageUrl={staff.profileImage}
                           altText={`${staff.name}のプロフィール画像`}
@@ -1008,7 +1020,7 @@ export const StaffManagement: React.FC = () => {
                     </TableCell>
                     <TableCell sx={{ whiteSpace: 'nowrap', textAlign: 'center' }}>{getPositionLabel(staff.position)}                    </TableCell>
                     <TableCell sx={{ whiteSpace: 'nowrap' }}>
-                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, minWidth: 180 }}>
+                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, minWidth: 120 }}>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                           <Typography variant="caption" color="primary" sx={{ minWidth: 40, fontSize: '0.7rem', fontFamily: 'monospace' }}>モール：</Typography>
                           <Rating value={staff.mallAcquisitionPower} max={5} size="small" readOnly />
@@ -1274,27 +1286,20 @@ export const StaffManagement: React.FC = () => {
         </Alert>
       )}
 
-      {/* タブ */}
+      {/* タブナビゲーション */}
       <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
-        <Tabs 
-          value={tabValue} 
-          onChange={(e, newValue) => setTabValue(newValue)}
-          sx={{ '& .MuiTab-root': { minHeight: 48 } }}
-        >
+        <Tabs value={tabValue} onChange={(e, newValue) => setTabValue(newValue)}>
           <Tab 
-            value="basic" 
             label="スタッフ管理" 
             icon={<PeopleIcon />} 
             iconPosition="start"
           />
           <Tab 
-            value="ng-relations" 
             label="NG要員管理" 
             icon={<BlockIcon />} 
             iconPosition="start"
           />
           <Tab 
-            value="ng-agencies" 
             label="NG代理店管理" 
             icon={<BusinessIcon />} 
             iconPosition="start"
@@ -1303,9 +1308,21 @@ export const StaffManagement: React.FC = () => {
       </Box>
 
       {/* タブコンテンツ */}
-      {tabValue === 'basic' && renderBasicManagement()}
-      {tabValue === 'ng-relations' && renderNGManagement()}
-      {tabValue === 'ng-agencies' && renderNGAgencyManagement()}
+      {tabValue === 0 && renderBasicManagement()}
+      {tabValue === 1 && (
+        <Card>
+          <CardContent>
+            <Typography>NG要員管理コンテンツ</Typography>
+          </CardContent>
+        </Card>
+      )}
+      {tabValue === 2 && (
+        <Card>
+          <CardContent>
+            <Typography>NG代理店管理コンテンツ</Typography>
+          </CardContent>
+        </Card>
+      )}
 
       {/* 基本情報編集ダイアログ */}
       <Dialog 

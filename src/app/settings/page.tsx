@@ -59,7 +59,9 @@ export default function SettingsPage() {
               flex: 1, 
               p: 4, 
               borderRadius: 2,
-              backgroundColor: 'white'
+              backgroundColor: 'white',
+              maxWidth: 'calc(100vw - 350px)', // サイドナビ幅を考慮
+              overflow: 'hidden'
             }}
           >
             {renderSettingsContent()}

@@ -135,6 +135,7 @@ const rolePermissions: RolePermission[] = [
     permissions: [
       'ユーザー情報管理',
       '経理管理',
+      '案件管理',
     ],
   },
 ];
@@ -220,7 +221,7 @@ export const SystemUserManagement: React.FC = () => {
 
       <Grid container spacing={3}>
         {/* ユーザー一覧 */}
-        <Grid item xs={12} md={8}>
+        <Grid item xs={12} md={9}>
           <Card>
             <CardHeader 
               title="システム利用者一覧"
@@ -317,7 +318,7 @@ export const SystemUserManagement: React.FC = () => {
         </Grid>
 
         {/* 権限ロール説明 */}
-        <Grid item xs={12} md={4}>
+        <Grid item xs={12} md={3}>
           <Card>
             <CardHeader 
               title="権限ロール一覧"
@@ -334,27 +335,30 @@ export const SystemUserManagement: React.FC = () => {
             />
             <CardContent sx={{ padding: '8px !important' }}>
               {rolePermissions.map((role) => (
-                <Box key={role.id} sx={{ mb: 3 }}>
-                  <Typography variant="subtitle1" fontWeight="bold" color="primary">
+                <Box key={role.id} sx={{ mb: 2 }}>
+                  <Typography variant="subtitle2" fontWeight="bold" color="primary" sx={{ mb: 0.5 }}>
                     {role.name}
                   </Typography>
-                  <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                  <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block' }}>
                     {role.description}
                   </Typography>
-                  <List dense>
+                  <List dense sx={{ py: 0 }}>
                     {role.permissions.map((permission) => (
-                      <ListItem key={permission} sx={{ py: 0 }}>
-                        <ListItemIcon sx={{ minWidth: 32 }}>
-                          <CheckIcon color="success" fontSize="small" />
+                      <ListItem key={permission} sx={{ py: 0, px: 0 }}>
+                        <ListItemIcon sx={{ minWidth: 20 }}>
+                          <CheckIcon color="success" sx={{ fontSize: '0.75rem' }} />
                         </ListItemIcon>
                         <ListItemText 
                           primary={permission}
-                          primaryTypographyProps={{ fontSize: '0.875rem' }}
+                          primaryTypographyProps={{ 
+                            fontSize: '0.75rem',
+                            lineHeight: 1.2
+                          }}
                         />
                       </ListItem>
                     ))}
                   </List>
-                  {role.id !== rolePermissions[rolePermissions.length - 1].id && <Divider sx={{ mt: 2 }} />}
+                  {role.id !== rolePermissions[rolePermissions.length - 1].id && <Divider sx={{ mt: 1 }} />}
                 </Box>
               ))}
             </CardContent>

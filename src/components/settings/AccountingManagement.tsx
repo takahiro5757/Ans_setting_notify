@@ -27,6 +27,16 @@ import {
   IconButton,
   Chip,
   Avatar,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from '@mui/material';
 import {
   AccountBalance as AccountingIcon,
@@ -42,6 +52,7 @@ import {
   Settings as SettingsIcon,
   Business as BusinessIcon,
   Upload as UploadIcon,
+  Close as CloseIcon,
   Delete as DeleteIcon,
 } from '@mui/icons-material';
 
@@ -51,6 +62,9 @@ interface CompanyBasicSettings {
   postalCode: string;
   address: string;
   invoiceNumber: string;
+  phone?: string;
+  email?: string;
+  url?: string;
 }
 
 // 会社基本設定の初期データ
@@ -60,6 +74,9 @@ const initialCompanySettings: CompanyBasicSettings = {
   postalCode: '334-0067',
   address: '埼玉県春日部市中央1丁目2-2 7F',
   invoiceNumber: 'T－8030001135891',
+  phone: '048-123-4567',
+  email: 'info@ansteype.com',
+  url: 'ansteype.com',
 };
 
 interface EmailTemplate {
@@ -99,66 +116,33 @@ const initialTemplates: EmailTemplate[] = [
     id: '1',
     type: 'estimate_subject',
     label: '見積メール件名テンプレート',
-    content: '【見積書】{代理店名}様_案件名_{日付}',
+    content: '【見積書】${c_company}様_${yyyy}年${mm}月分',
     lastUpdated: '2024-01-15',
   },
   {
     id: '2',
     type: 'estimate_body',
     label: '見積メール本文テンプレート',
-    content: `いつもお世話になっております。
-{代理店名}様
-
-下記の件につきまして、見積書をお送りいたします。
-
-案件名: {案件名}
-期間: {開始日} ～ {終了日}
-場所: {実施場所}
-
-ご確認のほど、よろしくお願いいたします。
-
-株式会社Ansteype
-営業部 {担当者名}`,
+    content: '\${c_company}\${space}\${c_name,1}様\${/r}\n\${/r}\nお世話になっております。\${/r}\n\${m_company}の\${c_name,1}です。\${/r}\n\${/r}\n\${mm,-1}月分の見積書を送付いたします。\${/r}\n\${list,\${item},●}\n\${/r}\n何卒ご査収のほどよろしくお願いいたします。\n\${/r}\n\${/r}\n------------------------\${/r}\n\${m_company}\${/r}\n\${c_name,0}\${/r}\nTEL：\${m_tel}\${/r}\nEMAIL：\${u_mail}\${/r}\nURL：\${m_url}\${/r}\n------------------------',
     lastUpdated: '2024-01-15',
   },
   {
     id: '3',
     type: 'invoice_subject',
     label: '請求メール件名テンプレート',
-    content: '【請求書】{代理店名}様_{年月}分',
+    content: '【請求書】${c_company}様_${yyyy}年${mm}月分',
     lastUpdated: '2024-01-15',
   },
   {
     id: '4',
     type: 'invoice_body',
     label: '請求メール本文テンプレート',
-    content: `いつもお世話になっております。
-{代理店名}様
-
-{年月}分の請求書をお送りいたします。
-
-請求金額: {請求金額}円（税込）
-お支払い期日: {支払期日}
-
-振込先:
-{振込先情報}
-
-何かご不明な点がございましたら、お気軽にお問い合わせください。
-
-株式会社Ansteype
-経理部 {担当者名}`,
+    content: '\${c_company}\${space}\${c_name,1}様\${/r}\n\${/r}\nお世話になっております。\${/r}\n\${m_company}の\${c_name,1}です。\${/r}\n\${/r}\n\${mm,-1}月分の請求書を送付いたします。\${/r}\n\${list,\${item},●}\n\${/r}\n何卒ご査収のほどよろしくお願いいたします。\n\${/r}\n\${/r}\n------------------------\${/r}\n\${m_company}\${/r}\n\${c_name,0}\${/r}\nTEL：\${m_tel}\${/r}\nEMAIL：\${u_mail}\${/r}\nURL：\${m_url}\${/r}\n------------------------',
     lastUpdated: '2024-01-15',
   },
 ];
 
 const initialRules: AccountingRule[] = [
-  {
-    id: '1',
-    type: 'item_naming',
-    label: '品目名設定ルール',
-    value: '{代理店名}_{場所名}_{役職}_{期間}',
-    lastUpdated: '2024-01-15',
-  },
   {
     id: '3',
     type: 'tax_rate',
@@ -175,7 +159,7 @@ const initialEstimateSettings: DocumentSetting[] = [
     id: 'est_1',
     type: 'file_naming',
     label: '見積書ファイル命名規則',
-    content: '\\${c_company}御中_見積書_\\${c_store}\\${c_place}\\${c_mm,0}\\${w_opt}\\${week_opt}\\${extno}',
+    content: '【${c_company}御中】御見積書_${yyyy,0}${mm,0}',
     description: 'ファイル名の自動生成ルール',
     lastUpdated: '2024-01-15',
   },
@@ -183,7 +167,7 @@ const initialEstimateSettings: DocumentSetting[] = [
     id: 'est_2',
     type: 'number_rule',
     label: '見積書番号発番ルール',
-    content: 'Q-\\${yyyy}\\${mm}\\${dd}-\\${number,5}',
+    content: 'Q-${yyyy}${mm}${dd}-${number,5,1}',
     description: '見積書番号の自動生成パターン',
     lastUpdated: '2024-01-15',
   },
@@ -191,7 +175,7 @@ const initialEstimateSettings: DocumentSetting[] = [
     id: 'est_3',
     type: 'item_rule',
     label: '品目名記載ルール',
-    content: '\\${column,開催店舗}\\${space}\\${column,オーダー}\\${space}\\${column,人数名}',
+    content: '${column,イベント実施場所}${space}${column,オーダー}${space}${column,人数}名',
     description: '品目欄の表示形式',
     lastUpdated: '2024-01-15',
   },
@@ -199,14 +183,7 @@ const initialEstimateSettings: DocumentSetting[] = [
     id: 'est_4',
     type: 'mail_template',
     label: 'メール作成ルール',
-    content: `\${c_company}\${space}\${c_name,1}様\${cr}
-お世話になっております。\${cr}
-\${m_company}の\${m_name}です。\${cr}
-この度は貴重なお時間をいただき、ありがとうございます。\${cr}
-\${list,\${item}.●}
-\${cr}
-何卒ご査収のほどよろしくお願いいたします。
-\${cr}`,
+    content: '\${c_company}\${space}\${c_name,1}様\${/r}\n\${/r}\nお世話になっております。\${/r}\n\${m_company}の\${c_name,1}です。\${/r}\n\${/r}\n\${mm,-1}月分の見積書を送付いたします。\${/r}\n\${list,\${item},●}\n\${/r}\n何卒ご査収のほどよろしくお願いいたします。\n\${/r}\n\${/r}\n------------------------\${/r}\n\${m_company}\${/r}\n\${c_name,0}\${/r}\nTEL：\${m_tel}\${/r}\nEMAIL：\${u_mail}\${/r}\nURL：\${m_url}\${/r}\n------------------------',
     description: 'メール本文テンプレート',
     lastUpdated: '2024-01-15',
   },
@@ -226,7 +203,7 @@ const initialInvoiceSettings: DocumentSetting[] = [
     id: 'inv_1',
     type: 'file_naming',
     label: '請求書ファイル命名規則',
-    content: '\\${c_company}御中_請求書_\\${c_store}\\${c_place}\\${c_mm,0}\\${w_opt}\\${week_opt}\\${extno}',
+    content: '【${c_company}御中】御請求書_${yyyy,0}${mm,0}',
     description: 'ファイル名の自動生成ルール',
     lastUpdated: '2024-01-15',
   },
@@ -234,7 +211,7 @@ const initialInvoiceSettings: DocumentSetting[] = [
     id: 'inv_2',
     type: 'number_rule',
     label: '請求書番号発番ルール',
-    content: 'I-\\${yyyy}\\${mm}\\${dd}-\\${number,5}',
+    content: 'I-${yyyy}${mm}${dd}-${number,5,1}',
     description: '請求書番号の自動生成パターン',
     lastUpdated: '2024-01-15',
   },
@@ -242,7 +219,7 @@ const initialInvoiceSettings: DocumentSetting[] = [
     id: 'inv_3',
     type: 'item_rule',
     label: '品目名記載ルール',
-    content: '\\${column,開催店舗}\\${space}\\${column,オーダー}\\${space}\\${column,人数名}',
+    content: '${column,イベント実施場所}${space}${column,オーダー}${space}${column,人数}名',
     description: '品目欄の表示形式',
     lastUpdated: '2024-01-15',
   },
@@ -250,14 +227,7 @@ const initialInvoiceSettings: DocumentSetting[] = [
     id: 'inv_4',
     type: 'mail_template',
     label: 'メール作成ルール',
-    content: `\${c_company}\${space}\${c_name,1}様\${cr}
-お世話になっております。\${cr}
-\${m_company}の\${m_name}です。\${cr}
-\${c_mm}月分の請求書をお送りいたします。\${cr}
-\${list,\${item}.●}
-\${cr}
-お支払期日までにご確認のほどよろしくお願いいたします。
-\${cr}`,
+    content: '\${c_company}\${space}\${c_name,1}様\${/r}\n\${/r}\nお世話になっております。\${/r}\n\${m_company}の\${c_name,1}です。\${/r}\n\${/r}\n\${mm,-1}月分の請求書を送付いたします。\${/r}\n\${list,\${item},●}\n\${/r}\n何卒ご査収のほどよろしくお願いいたします。\n\${/r}\n\${/r}\n------------------------\${/r}\n\${m_company}\${/r}\n\${c_name,0}\${/r}\nTEL：\${m_tel}\${/r}\nEMAIL：\${u_mail}\${/r}\nURL：\${m_url}\${/r}\n------------------------',
     description: 'メール本文テンプレート',
     lastUpdated: '2024-01-15',
   },
@@ -278,6 +248,19 @@ const initialPaymentDue: PaymentDueSetting = {
   businessDayRule: 'before'
 };
 
+// ユーザー情報取得関数（実際の実装では認証システムから取得）
+const getCurrentUser = () => {
+  return {
+    firstName: '太郎',
+    lastName: '田中',
+    name: '田中太郎',
+    email: 'tanaka@ansteype.com',
+    phone: '090-1234-5678',
+    department: '営業部',
+    position: '主任'
+  };
+};
+
 export const AccountingManagement: React.FC = () => {
   const [tabValue, setTabValue] = useState(0);
   const [templates, setTemplates] = useState<EmailTemplate[]>(initialTemplates);
@@ -292,6 +275,8 @@ export const AccountingManagement: React.FC = () => {
   const [paymentDue, setPaymentDue] = useState<PaymentDueSetting>(initialPaymentDue);
   const [editingSetting, setEditingSetting] = useState<string | null>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewType, setPreviewType] = useState<'estimate' | 'invoice'>('estimate');
+  const [previewContent, setPreviewContent] = useState({ subject: '', body: '' });
   const [companySettings, setCompanySettings] = useState<CompanyBasicSettings>(initialCompanySettings);
   const [editingCompany, setEditingCompany] = useState(false);
 
@@ -361,6 +346,165 @@ export const AccountingManagement: React.FC = () => {
       setSaveMessage('テンプレートをリセットしました');
       setTimeout(() => setSaveMessage(''), 3000);
     }
+  };
+
+  // 変数をサンプル値に置き換える関数
+  const replaceVariablesWithSamples = (text: string): string => {
+    let result = text;
+    
+    // エスケープされた変数を通常の変数に戻す
+    result = result.replace(/\\?\\\$/g, '$');
+    
+    // 実際のユーザー情報を取得
+    const currentUser = getCurrentUser();
+
+    // 基本変数のサンプル値定義
+    const sampleData: { [key: string]: string } = {
+      // 会社情報
+      'c_company': 'ABC株式会社',
+      'c_name': currentUser.name,        // 実データ使用（担当者名）
+      'c_tel': '03-1234-5678',
+      'c_mail': 'tanaka@abc-corp.com',
+      
+      // 自社情報（実データ使用）
+      'm_company': companySettings.companyName,
+      'm_tel': companySettings.phone || '048-123-4567',
+      'm_mail': companySettings.email || 'info@ansteype.com',
+      'm_url': companySettings.url || 'ansteype.com',
+      
+      // ユーザー情報（実データ使用）
+      'u_mail': currentUser.email,
+      
+      // 日付情報（現在日付ベース）
+      'yyyy': '2024',
+      'mm': '03',
+      'dd': '15',
+      'yy': '24',
+      
+      // 品目
+      'item': 'イオンモール上尾店　クローザー　3名',
+      
+      // その他
+      'space': '　',
+      '/r': '\n',
+    };
+
+    // 1. 名前系変数（番号指定あり）の処理
+    result = result.replace(/\$\{c_name,(\d+)\}/g, (match, num) => {
+      const nameMap: { [key: string]: string } = {
+        '0': currentUser.name,      // フルネーム（実データ）
+        '1': currentUser.lastName,  // 姓のみ（実データ）
+        '2': currentUser.firstName, // 名のみ（実データ）
+        '3': currentUser.name       // フルネーム（実データ）
+      };
+      return nameMap[num] || currentUser.name;
+    });
+
+    // 2. 日付系変数（加減計算あり）の処理
+    result = result.replace(/\$\{(yyyy|mm|dd|yy),([-+]?\d+)\}/g, (match, type, offset) => {
+      const baseValues: { [key: string]: number } = {
+        'yyyy': 2024,
+        'mm': 3,
+        'dd': 15,
+        'yy': 24
+      };
+      
+      const base = baseValues[type] || 0;
+      const offsetNum = parseInt(offset, 10) || 0;
+      let result = base + offsetNum;
+      
+      // 月の場合は1-12の範囲に調整
+      if (type === 'mm') {
+        while (result < 1) result += 12;
+        while (result > 12) result -= 12;
+        return result.toString().padStart(2, '0');
+      }
+      
+      // 日の場合は1-31の範囲に調整
+      if (type === 'dd') {
+        while (result < 1) result += 30;
+        while (result > 31) result -= 30;
+        return result.toString().padStart(2, '0');
+      }
+      
+      // 年の場合
+      if (type === 'yy') {
+        return (result % 100).toString().padStart(2, '0');
+      }
+      
+      return result.toString();
+    });
+
+    // 3. 箇条書き変数の処理
+    result = result.replace(/\$\{list,([^,]+),([^}]+)\}/g, (match, value, listChar) => {
+      // ${item}が含まれている場合は品目のリストを展開
+      if (value.includes('${item}') || value === '${item}') {
+        const items = [
+          'イオンモール上尾店　クローザー　3名',
+          'イオンモール上尾店　ガール　1名'
+        ];
+        return items.map(item => `${listChar}${item}`).join('\n');
+      }
+      // その他の場合はサンプル項目
+      const items = ['項目1', '項目2', '項目3'];
+      return items.map(item => `${listChar}${item}`).join('\n');
+    });
+
+    // 4. column変数の処理
+    result = result.replace(/\$\{column,([^}]+)\}/g, (match, columnName) => {
+      return 'イオンモール上尾'; // サンプル値
+    });
+
+    // 5. 基本変数の処理（単純な変数名）
+    Object.entries(sampleData).forEach(([variable, replacement]) => {
+      const patterns = [
+        new RegExp(`\\$\\{${variable}\\}`, 'g'),           // ${variable}
+        new RegExp(`\\$\\{${variable},0\\}`, 'g'),         // ${variable,0}
+      ];
+      
+      patterns.forEach(pattern => {
+        result = result.replace(pattern, replacement);
+      });
+    });
+
+    // 6. 残った未処理の変数パターンを汎用的に処理
+    result = result.replace(/\$\{([^}]+)\}/g, (match, variable) => {
+      // 変数名に基づいてサンプル値を推測
+      if (variable.includes('company')) return 'サンプル会社';
+      if (variable.includes('name')) return 'サンプル太郎';
+      if (variable.includes('tel')) return '03-0000-0000';
+      if (variable.includes('mail')) return 'sample@example.com';
+      if (variable.includes('date')) return '2024-03-15';
+      if (variable.includes('time')) return '14:30';
+      if (variable.includes('amount')) return '100,000';
+      if (variable.includes('price')) return '50,000';
+
+      if (variable.includes('item')) return 'イオンモール上尾店　クローザー　3名';
+      
+      // その他の場合は変数名をそのまま表示値として使用
+      return `[${variable}]`;
+    });
+
+    return result;
+  };
+
+  // プレビューを開く関数
+  const handlePreview = (type: 'estimate' | 'invoice') => {
+    const subjectTemplate = getTemplateByType(type === 'estimate' ? 'estimate_subject' : 'invoice_subject');
+    const bodyTemplate = getTemplateByType(type === 'estimate' ? 'estimate_body' : 'invoice_body');
+    
+    console.log('Original subject:', subjectTemplate?.content);
+    console.log('Original body:', bodyTemplate?.content);
+    
+    const subject = subjectTemplate ? replaceVariablesWithSamples(subjectTemplate.content) : '';
+    const body = bodyTemplate ? replaceVariablesWithSamples(bodyTemplate.content) : '';
+    
+    console.log('Processed subject:', subject);
+    console.log('Processed body:', body);
+    
+    setPreviewType(type);
+    setPreviewContent({ subject, body });
+    setPreviewOpen(true);
   };
 
   const getTemplateByType = (type: string) => {
@@ -501,6 +645,42 @@ export const AccountingManagement: React.FC = () => {
                     />
                   </Grid>
 
+                  {/* 電話番号 */}
+                  <Grid item xs={12} md={6}>
+                    <TextField
+                      fullWidth
+                      label="会社電話番号"
+                      value={companySettings.phone || ''}
+                      onChange={(e) => handleCompanySettingChange('phone', e.target.value)}
+                      disabled={!editingCompany}
+                      placeholder="03-0000-0000"
+                    />
+                  </Grid>
+
+                  {/* メールアドレス */}
+                  <Grid item xs={12} md={6}>
+                    <TextField
+                      fullWidth
+                      label="会社メールアドレス"
+                      value={companySettings.email || ''}
+                      onChange={(e) => handleCompanySettingChange('email', e.target.value)}
+                      disabled={!editingCompany}
+                      placeholder="info@company.com"
+                    />
+                  </Grid>
+
+                  {/* URL */}
+                  <Grid item xs={12} md={6}>
+                    <TextField
+                      fullWidth
+                      label="会社URL"
+                      value={companySettings.url || ''}
+                      onChange={(e) => handleCompanySettingChange('url', e.target.value)}
+                      disabled={!editingCompany}
+                      placeholder="company.com"
+                    />
+                  </Grid>
+
                   {/* 会社ロゴ */}
                   <Grid item xs={12}>
                     <Divider sx={{ my: 2 }} />
@@ -569,7 +749,7 @@ export const AccountingManagement: React.FC = () => {
                   <Button
                     variant="outlined"
                     startIcon={<PreviewIcon />}
-                    onClick={() => setPreviewOpen(true)}
+                    onClick={() => handlePreview('estimate')}
                     size="small"
                   >
                     プレビュー
@@ -616,7 +796,14 @@ export const AccountingManagement: React.FC = () => {
                     />
                   ) : (
                     <Paper variant="outlined" sx={{ p: 2, bgcolor: 'grey.50' }}>
-                      <Typography variant="body2">
+                      <Typography 
+                        variant="body2"
+                        sx={{ 
+                          wordBreak: 'break-all',
+                          whiteSpace: 'pre-wrap',
+                          overflowWrap: 'anywhere'
+                        }}
+                      >
                         {getTemplateByType('estimate_subject')?.content}
                       </Typography>
                     </Paper>
@@ -667,7 +854,14 @@ export const AccountingManagement: React.FC = () => {
                     />
                   ) : (
                     <Paper variant="outlined" sx={{ p: 2, bgcolor: 'grey.50' }}>
-                      <Typography variant="body2" sx={{ whiteSpace: 'pre-line' }}>
+                      <Typography 
+                        variant="body2" 
+                        sx={{ 
+                          whiteSpace: 'pre-line',
+                          wordBreak: 'break-all',
+                          overflowWrap: 'anywhere'
+                        }}
+                      >
                         {getTemplateByType('estimate_body')?.content}
                       </Typography>
                     </Paper>
@@ -688,6 +882,16 @@ export const AccountingManagement: React.FC = () => {
                 title="請求書送付メール"
                 subheader="請求書送付時のメールテンプレート"
                 avatar={<ReceiptIcon color="primary" />}
+                action={
+                  <Button
+                    variant="outlined"
+                    startIcon={<PreviewIcon />}
+                    onClick={() => handlePreview('invoice')}
+                    size="small"
+                  >
+                    プレビュー
+                  </Button>
+                }
               />
               <CardContent>
                 <Box sx={{ mb: 3 }}>
@@ -729,7 +933,14 @@ export const AccountingManagement: React.FC = () => {
                     />
                   ) : (
                     <Paper variant="outlined" sx={{ p: 2, bgcolor: 'grey.50' }}>
-                      <Typography variant="body2">
+                      <Typography 
+                        variant="body2"
+                        sx={{ 
+                          wordBreak: 'break-all',
+                          whiteSpace: 'pre-wrap',
+                          overflowWrap: 'anywhere'
+                        }}
+                      >
                         {getTemplateByType('invoice_subject')?.content}
                       </Typography>
                     </Paper>
@@ -780,7 +991,14 @@ export const AccountingManagement: React.FC = () => {
                     />
                   ) : (
                     <Paper variant="outlined" sx={{ p: 2, bgcolor: 'grey.50' }}>
-                      <Typography variant="body2" sx={{ whiteSpace: 'pre-line' }}>
+                      <Typography 
+                        variant="body2" 
+                        sx={{ 
+                          whiteSpace: 'pre-line',
+                          wordBreak: 'break-all',
+                          overflowWrap: 'anywhere'
+                        }}
+                      >
                         {getTemplateByType('invoice_body')?.content}
                       </Typography>
                     </Paper>
@@ -802,30 +1020,85 @@ export const AccountingManagement: React.FC = () => {
                 <Typography variant="subtitle2" gutterBottom>
                   基本変数:
                 </Typography>
-                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 2 }}>
-                  {[
-                    '{代理店名}', '{案件名}', '{開始日}', '{終了日}', '{実施場所}',
-                    '{担当者名}', '{年月}', '{請求金額}', '{支払期日}', '{振込先情報}', '{日付}'
-                  ].map((variable) => (
-                    <Chip key={variable} label={variable} variant="outlined" size="small" />
-                  ))}
-                </Box>
+                <TableContainer component={Paper} variant="outlined" sx={{ mb: 3 }}>
+                  <Table size="small">
+                    <TableHead>
+                      <TableRow>
+                        <TableCell sx={{ width: '35%' }}>変数名</TableCell>
+                        <TableCell sx={{ width: '40%' }}>説明</TableCell>
+                        <TableCell sx={{ width: '25%' }}>例</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {[
+                        { variable: '${yyyy,【加減】}', description: 'メール送信日の西暦年（加減可能）', example: '2024' },
+                        { variable: '${mm,【加減】}', description: 'メール送信日の月（2桁、加減可能）', example: '01' },
+                        { variable: '${dd,【加減】}', description: 'メール送信日の日（2桁、加減可能）', example: '15' },
+                        { variable: '${item}', description: '品目名をすべて挿入', example: 'イオンモール上尾店 クローザー 3名' },
+                        { variable: '${c_company}', description: '取引先の会社名', example: '株式会社ABC' },
+                        { variable: '${c_name,0or1}', description: '担当者名（0:フルネーム、1:姓のみ）※ユーザー情報設定から取得', example: '田中太郎 / 田中' },
+                        { variable: '${m_company}', description: '自社の会社名※会社基本設定から取得', example: '株式会社ANSTEYPE' },
+
+                        { variable: '${m_tel}', description: '自社の電話番号※会社基本設定から取得', example: '048-123-4567' },
+                        { variable: '${m_mail}', description: '自社のメールアドレス※会社基本設定から取得', example: 'info@ansteype.com' },
+                        { variable: '${m_url}', description: '自社のURL※会社基本設定から取得', example: 'ansteype.com' },
+                        { variable: '${u_mail}', description: 'ユーザーのメールアドレス', example: 'user@sample-corp.com' },
+                        { variable: '${/r}', description: '改行を挿入', example: '\\n' },
+                        { variable: '${space}', description: '空白文字を挿入', example: '　' }
+                      ].map((item) => (
+                        <TableRow key={item.variable}>
+                          <TableCell sx={{ fontFamily: 'monospace', fontSize: '0.75rem' }}>{item.variable}</TableCell>
+                          <TableCell>{item.description}</TableCell>
+                          <TableCell sx={{ fontFamily: 'monospace', fontSize: '0.75rem' }}>{item.example}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
 
                 <Typography variant="subtitle2" gutterBottom>
-                  文書作成用変数:
+                  箇条書き変数:
                 </Typography>
-                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 2 }}>
-                  {[
-                    '\\${c_company}', '\\${c_store}', '\\${c_place}', '\\${c_name,1}', '\\${cr}',
-                    '\\${m_company}', '\\${m_name}', '\\${space}', '\\${list,\\${item}.●}'
-                  ].map((variable) => (
-                    <Chip key={variable} label={variable} variant="outlined" size="small" />
-                  ))}
-                </Box>
+                <TableContainer component={Paper} variant="outlined" sx={{ mb: 3 }}>
+                  <Table size="small">
+                    <TableHead>
+                      <TableRow>
+                        <TableCell sx={{ width: '35%' }}>変数名</TableCell>
+                        <TableCell sx={{ width: '40%' }}>説明</TableCell>
+                        <TableCell sx={{ width: '25%' }}>例</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      <TableRow>
+                        <TableCell sx={{ fontFamily: 'monospace', fontSize: '0.75rem' }}>${'{list,${item},●}'}</TableCell>
+                        <TableCell>箇条書きを挿入（値、リスト文字指定）</TableCell>
+                        <TableCell sx={{ fontFamily: 'monospace', fontSize: '0.75rem' }}>●項目1</TableCell>
+                      </TableRow>
+                    </TableBody>
+                  </Table>
+                </TableContainer>
 
                 <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
-                  変数をクリックするとクリップボードにコピーされます。
+                  表の変数名をクリックするとクリップボードにコピーされます。
                 </Typography>
+                
+                <Box sx={{ mt: 3, p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
+                  <Typography variant="subtitle2" gutterBottom>
+                    使用例:
+                  </Typography>
+                  <Typography variant="body2" sx={{ fontFamily: 'monospace', mb: 1 }}>
+                    {'宛先: ${c_company}${space}${c_name,1}様${/r}'}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
+                    → ABC株式会社 田中様（改行）
+                  </Typography>
+                  <Typography variant="body2" sx={{ fontFamily: 'monospace', mb: 1 }}>
+                    {'署名: ------------------------${/r}${m_company}${/r}${c_name,0}${/r}TEL：${m_tel}${/r}EMAIL：${u_mail}${/r}URL：${m_url}${/r}------------------------'}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    → ------------------------<br/>株式会社ANSTEYPE<br/>田中太郎<br/>TEL：048-123-4567<br/>EMAIL：tanaka@ansteype.com<br/>URL：ansteype.com<br/>------------------------
+                  </Typography>
+                </Box>
               </CardContent>
             </Card>
           </Grid>
@@ -861,10 +1134,20 @@ export const AccountingManagement: React.FC = () => {
                                   value={setting.content}
                                   onChange={(e) => handleSettingChange(setting.id, e.target.value, true)}
                                   size="small"
+                                  multiline
+                                  rows={setting.type === 'save_location' ? 2 : 1}
                                 />
                               ) : (
                                 <Paper variant="outlined" sx={{ p: 2, bgcolor: 'grey.50' }}>
-                                  <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>
+                                  <Typography 
+                                    variant="body2" 
+                                    sx={{ 
+                                      fontFamily: 'monospace',
+                                      wordBreak: 'break-all',
+                                      whiteSpace: 'pre-wrap',
+                                      overflowWrap: 'anywhere'
+                                    }}
+                                  >
                                     {setting.content}
                                   </Typography>
                                 </Paper>
@@ -927,10 +1210,20 @@ export const AccountingManagement: React.FC = () => {
                                   value={setting.content}
                                   onChange={(e) => handleSettingChange(setting.id, e.target.value, false)}
                                   size="small"
+                                  multiline
+                                  rows={setting.type === 'save_location' ? 2 : 1}
                                 />
                               ) : (
                                 <Paper variant="outlined" sx={{ p: 2, bgcolor: 'grey.50' }}>
-                                  <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>
+                                  <Typography 
+                                    variant="body2" 
+                                    sx={{ 
+                                      fontFamily: 'monospace',
+                                      wordBreak: 'break-all',
+                                      whiteSpace: 'pre-wrap',
+                                      overflowWrap: 'anywhere'
+                                    }}
+                                  >
                                     {setting.content}
                                   </Typography>
                                 </Paper>
@@ -973,31 +1266,118 @@ export const AccountingManagement: React.FC = () => {
               <CardHeader title="利用可能な変数" subheader="文書設定内で使用できる変数一覧" />
               <CardContent>
                 <Typography variant="subtitle2" gutterBottom>
-                  基本変数:
+                  発番ルール変数:
                 </Typography>
-                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 2 }}>
-                  {[
-                    '\\${c_company}', '\\${c_store}', '\\${c_place}', '\\${c_mm,0}', '\\${w_opt}',
-                    '\\${week_opt}', '\\${extno}', '\\${yyyy}', '\\${mm}', '\\${dd}', '\\${number,5}'
-                  ].map((variable) => (
-                    <Chip key={variable} label={variable} variant="outlined" size="small" />
-                  ))}
-                </Box>
+                <TableContainer component={Paper} variant="outlined" sx={{ mb: 3 }}>
+                  <Table size="small">
+                    <TableHead>
+                      <TableRow>
+                        <TableCell sx={{ width: '35%' }}>変数名</TableCell>
+                        <TableCell sx={{ width: '40%' }}>説明</TableCell>
+                        <TableCell sx={{ width: '25%' }}>例</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {[
+                        { variable: '${yyyy}', description: '書類作成日の西暦年', example: '2024' },
+                        { variable: '${mm}', description: '書類作成日の月（2桁）', example: '01' },
+                        { variable: '${dd}', description: '書類作成日の日（2桁）', example: '15' },
+                        { variable: '${number,【桁数】,【初期値】}', description: '連番値（桁数・初期値指定）', example: '00001' }
+                      ].map((item) => (
+                        <TableRow key={item.variable}>
+                          <TableCell sx={{ fontFamily: 'monospace', fontSize: '0.75rem' }}>{item.variable}</TableCell>
+                          <TableCell>{item.description}</TableCell>
+                          <TableCell sx={{ fontFamily: 'monospace', fontSize: '0.75rem' }}>{item.example}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
 
                 <Typography variant="subtitle2" gutterBottom>
-                  表示用変数:
+                  ファイル命名規則変数:
                 </Typography>
-                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 2 }}>
-                  {[
-                    '\\${column,開催店舗}', '\\${space}', '\\${column,オーダー}', '\\${column,人数名}'
-                  ].map((variable) => (
-                    <Chip key={variable} label={variable} variant="outlined" size="small" />
-                  ))}
-                </Box>
+                <TableContainer component={Paper} variant="outlined" sx={{ mb: 3 }}>
+                  <Table size="small">
+                    <TableHead>
+                      <TableRow>
+                        <TableCell sx={{ width: '35%' }}>変数名</TableCell>
+                        <TableCell sx={{ width: '40%' }}>説明</TableCell>
+                        <TableCell sx={{ width: '25%' }}>例</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {[
+                        { variable: '${yyyy,【加減】}', description: '書類作成日の西暦年（加減可能）', example: '2024' },
+                        { variable: '${mm,【加減】}', description: '書類作成日の月（2桁、加減可能）', example: '01' },
+                        { variable: '${dd,【加減】}', description: '書類作成日の日（2桁、加減可能）', example: '15' },
+                        { variable: '${c_company}', description: '取引先の会社名', example: '株式会社ABC' }
+                      ].map((item) => (
+                        <TableRow key={item.variable}>
+                          <TableCell sx={{ fontFamily: 'monospace', fontSize: '0.75rem' }}>{item.variable}</TableCell>
+                          <TableCell>{item.description}</TableCell>
+                          <TableCell sx={{ fontFamily: 'monospace', fontSize: '0.75rem' }}>{item.example}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+
+                <Typography variant="subtitle2" gutterBottom>
+                  品目名記載ルール変数:
+                </Typography>
+                <TableContainer component={Paper} variant="outlined" sx={{ mb: 3 }}>
+                  <Table size="small">
+                    <TableHead>
+                      <TableRow>
+                        <TableCell sx={{ width: '35%' }}>変数名</TableCell>
+                        <TableCell sx={{ width: '40%' }}>説明</TableCell>
+                        <TableCell sx={{ width: '25%' }}>例</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {[
+                        { variable: '${column,【対象の列名】}', description: '対象の列名から取得した値', example: 'イオンモール上尾' },
+                        { variable: '${space}', description: '空白文字', example: '　' }
+                      ].map((item) => (
+                        <TableRow key={item.variable}>
+                          <TableCell sx={{ fontFamily: 'monospace', fontSize: '0.75rem' }}>{item.variable}</TableCell>
+                          <TableCell>{item.description}</TableCell>
+                          <TableCell sx={{ fontFamily: 'monospace', fontSize: '0.75rem' }}>{item.example}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+
 
                 <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
-                  変数をクリックするとクリップボードにコピーされます。
+                  表の変数名をクリックするとクリップボードにコピーされます。
                 </Typography>
+                
+                <Box sx={{ mt: 3, p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
+                  <Typography variant="subtitle2" gutterBottom>
+                    使用例:
+                  </Typography>
+                  <Typography variant="body2" sx={{ fontFamily: 'monospace', mb: 1 }}>
+                    {'発番ルール: Q-${yyyy}${mm}${dd}-${number,5,1}'}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
+                    → Q-20240115-00001
+                  </Typography>
+                  <Typography variant="body2" sx={{ fontFamily: 'monospace', mb: 1 }}>
+                    {'ファイル名: 【${c_company}御中】御見積書_${yyyy,0}${mm,0}'}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
+                    → 【ABC株式会社御中】御見積書_202401
+                  </Typography>
+                  <Typography variant="body2" sx={{ fontFamily: 'monospace', mb: 1 }}>
+                    {'品目名: ${column,イベント実施場所}${space}${column,オーダー}${space}${column,人数}名'}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    → イオンモール上尾 クローザー 3名
+                  </Typography>
+                </Box>
               </CardContent>
             </Card>
           </Grid>
@@ -1145,10 +1525,6 @@ export const AccountingManagement: React.FC = () => {
               <CardHeader title="ルール説明" />
               <CardContent>
                 <Typography variant="body2" paragraph>
-                  <strong>品目名設定ルール:</strong><br />
-                  請求書の品目名の自動生成ルールを設定します。
-                </Typography>
-                <Typography variant="body2" paragraph>
                   <strong>消費税率:</strong><br />
                   請求書に適用する消費税率を設定します。
                 </Typography>
@@ -1161,6 +1537,79 @@ export const AccountingManagement: React.FC = () => {
           </Grid>
         </Grid>
       )}
+
+      {/* メールプレビューダイアログ */}
+      <Dialog
+        open={previewOpen}
+        onClose={() => setPreviewOpen(false)}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <PreviewIcon color="primary" />
+              <Typography variant="h6">
+                {previewType === 'estimate' ? '見積書' : '請求書'}送付メールプレビュー
+              </Typography>
+            </Box>
+            <IconButton onClick={() => setPreviewOpen(false)} size="small">
+              <CloseIcon />
+            </IconButton>
+          </Box>
+        </DialogTitle>
+        <DialogContent dividers>
+          <Box sx={{ mb: 3 }}>
+            <Typography variant="subtitle2" sx={{ mb: 1, color: 'primary.main' }}>
+              件名
+            </Typography>
+            <Paper variant="outlined" sx={{ p: 2, bgcolor: 'grey.50' }}>
+              <Typography 
+                variant="body2" 
+                sx={{ 
+                  fontFamily: 'monospace',
+                  whiteSpace: 'pre-wrap',
+                  wordBreak: 'break-all',
+                  lineHeight: 1.2
+                }}
+              >
+                {previewContent.subject}
+              </Typography>
+            </Paper>
+          </Box>
+          
+          <Box>
+            <Typography variant="subtitle2" sx={{ mb: 1, color: 'primary.main' }}>
+              本文
+            </Typography>
+            <Paper variant="outlined" sx={{ p: 2, bgcolor: 'grey.50' }}>
+              <Typography 
+                variant="body2" 
+                sx={{ 
+                  fontFamily: 'monospace',
+                  whiteSpace: 'pre-wrap',
+                  wordBreak: 'break-all',
+                  lineHeight: 1.2
+                }}
+              >
+                {previewContent.body}
+              </Typography>
+            </Paper>
+          </Box>
+          
+          <Alert severity="info" sx={{ mt: 2 }}>
+            <Typography variant="body2">
+              このプレビューでは変数がサンプル値に置き換えて表示されています。
+              実際の送信時には、対応する実データが挿入されます。
+            </Typography>
+          </Alert>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setPreviewOpen(false)} variant="outlined">
+            閉じる
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };

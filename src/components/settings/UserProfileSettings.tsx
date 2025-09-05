@@ -23,7 +23,9 @@ import {
 } from '@mui/icons-material';
 
 interface UserProfileData {
-  name: string;
+  firstName: string;    // 名
+  lastName: string;     // 姓
+  name: string;         // フルネーム（互換性のため残す）
   nameKana: string;
   nearestStation: string;
   phone: string;
@@ -38,6 +40,8 @@ interface PasswordChangeData {
 
 export const UserProfileSettings: React.FC = () => {
   const [profileData, setProfileData] = useState<UserProfileData>({
+    firstName: '太郎',
+    lastName: '田中',
     name: '田中太郎',
     nameKana: 'タナカタロウ',
     nearestStation: '新宿駅',
@@ -52,6 +56,15 @@ export const UserProfileSettings: React.FC = () => {
   });
 
   const [saveMessage, setSaveMessage] = useState<string>('');
+
+  // 姓名変更時のフルネーム自動更新
+  const handleNameChange = (field: 'firstName' | 'lastName', value: string) => {
+    setProfileData(prev => {
+      const updated = { ...prev, [field]: value };
+      updated.name = updated.lastName + updated.firstName;
+      return updated;
+    });
+  };
 
   const handleProfileSave = () => {
     // TODO: API呼び出しで保存処理
@@ -101,9 +114,9 @@ export const UserProfileSettings: React.FC = () => {
           <Grid container spacing={3}>
             <Grid item xs={12} md={6}>
               <TextField
-                label="氏名"
-                value={profileData.name}
-                onChange={(e) => setProfileData({...profileData, name: e.target.value})}
+                label="姓"
+                value={profileData.lastName}
+                onChange={(e) => handleNameChange('lastName', e.target.value)}
                 required
                 fullWidth
                 InputProps={{
@@ -113,6 +126,27 @@ export const UserProfileSettings: React.FC = () => {
                     </InputAdornment>
                   ),
                 }}
+              />
+            </Grid>
+            
+            <Grid item xs={12} md={6}>
+              <TextField
+                label="名"
+                value={profileData.firstName}
+                onChange={(e) => handleNameChange('firstName', e.target.value)}
+                required
+                fullWidth
+              />
+            </Grid>
+            
+            <Grid item xs={12} md={6}>
+              <TextField
+                label="氏名（フルネーム）"
+                value={profileData.name}
+                disabled
+                fullWidth
+                helperText="姓・名から自動生成されます"
+                sx={{ '& .MuiInputBase-input.Mui-disabled': { color: 'text.primary' } }}
               />
             </Grid>
             

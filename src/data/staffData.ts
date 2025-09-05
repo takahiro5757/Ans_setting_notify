@@ -50,7 +50,7 @@ export interface NGAgencyRelation {
 }
 
 // タブの型定義
-export type StaffTabValue = 'basic' | 'ng-relations' | 'ng-agencies';
+export type StaffTabValue = number;
 
 // シンプルなパスワード生成（8文字英数字）
 export const generateSimplePassword = (): string => {
