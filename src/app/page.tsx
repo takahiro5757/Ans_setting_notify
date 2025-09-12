@@ -119,6 +119,13 @@ export default function Home() {
   const router = useRouter();
   const { notifications, markNotificationAsRead } = useShiftStore();
   
+  // クライアントサイドでのみ相対時間を表示するためのフラグ
+  const [isClient, setIsClient] = React.useState(false);
+  
+  React.useEffect(() => {
+    setIsClient(true);
+  }, []);
+  
   // 詳細ダイアログの状態管理
   const [selectedNotification, setSelectedNotification] = React.useState<any>(null);
   
@@ -127,11 +134,16 @@ export default function Home() {
   const [shrinkingNotifications, setShrinkingNotifications] = React.useState<Set<string>>(new Set());
   const [animatingNotifications, setAnimatingNotifications] = React.useState<Set<string>>(new Set());
 
-  // 新規通知（未読）のみを取得 + アニメーション中の通知は継続表示
+  // 新規通知（未読）のみを取得
+  const unreadNotifications = notifications
+    .filter(n => !n.read)
+    .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+  
+  // 表示用通知（最新5件 + アニメーション中の通知は継続表示）
   const newNotifications = notifications
     .filter(n => !n.read || animatingNotifications.has(n.id))
     .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
-    .slice(0, 5); // 最新5件まで
+    .slice(0, 5);
   
   console.log('📊 新規通知一覧:', newNotifications.map(n => ({ type: n.type, id: n.id, message: n.message })));
 
@@ -299,7 +311,7 @@ export default function Home() {
             新着通知
           </Typography>
           <Typography variant="body1" color="text.secondary">
-            未読の通知が {newNotifications.length} 件あります
+            未読の通知が {unreadNotifications.length} 件あります
           </Typography>
         </Box>
 
@@ -371,7 +383,7 @@ export default function Home() {
                               {display.title}
                             </NotificationTypeChip>
                             <TimeStamp>
-                              {getRelativeTime(notification.timestamp)}
+                              {isClient ? getRelativeTime(notification.timestamp) : '読み込み中...'}
                             </TimeStamp>
                           </Box>
 
@@ -472,6 +484,20 @@ export default function Home() {
                 </Collapse>
               );
             })}
+            
+            {/* 5件を超える場合の表示 */}
+            {unreadNotifications.length > 5 && (
+              <Box sx={{ textAlign: 'center', mt: 3, mb: 2 }}>
+                <Typography variant="body2" color="text.secondary" sx={{ 
+                  padding: '12px 24px', 
+                  backgroundColor: '#f5f5f5', 
+                  borderRadius: '8px',
+                  display: 'inline-block'
+                }}>
+                  他に {unreadNotifications.length - 5} 件の未読通知があります
+                </Typography>
+              </Box>
+            )}
           </Box>
         ) : (
           // 新規通知がない場合
